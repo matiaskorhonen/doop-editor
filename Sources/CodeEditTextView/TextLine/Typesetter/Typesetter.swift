@@ -181,6 +181,7 @@ final public class Typesetter {
             )
 
             // Indicates the subrange on the range that the typesetter knows about. This may not be the entire line
+            // Convert the absolute position to an offset relative to the typesetter's range.
             let startOffset = context.currentPosition - range.location
             let typesetSubrange = NSRange(location: startOffset, length: lineBreak - startOffset)
             let typesetData = typesetLine(typesetter: typesetter, range: typesetSubrange)
