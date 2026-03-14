@@ -5,10 +5,9 @@
 //  Created by Austin Condiff on 3/12/25.
 //
 
-import SwiftUI
 import AppKit
-import CodeEditSymbols
 import CodeEditTextView
+import SwiftUI
 
 /// A SwiftUI view that provides a find and replace interface for the text editor.
 ///
@@ -107,39 +106,45 @@ class MockFindPanelTarget: FindPanelTarget {
 }
 
 #Preview("Find Mode") {
-    FindPanelView(viewModel: {
-        let vm = FindPanelViewModel(target: MockFindPanelTarget())
-        vm.findText = "example"
-        vm.findMatches = [NSRange(location: 0, length: 7)]
-        vm.currentFindMatchIndex = 0
-        return vm
-    }())
+    FindPanelView(
+        viewModel: {
+            let vm = FindPanelViewModel(target: MockFindPanelTarget())
+            vm.findText = "example"
+            vm.findMatches = [NSRange(location: 0, length: 7)]
+            vm.currentFindMatchIndex = 0
+            return vm
+        }()
+    )
     .frame(width: 400)
     .padding()
 }
 
 #Preview("Replace Mode") {
-    FindPanelView(viewModel: {
-        let vm = FindPanelViewModel(target: MockFindPanelTarget())
-        vm.mode = .replace
-        vm.findText = "example"
-        vm.replaceText = "test"
-        vm.findMatches = [NSRange(location: 0, length: 7)]
-        vm.currentFindMatchIndex = 0
-        return vm
-    }())
+    FindPanelView(
+        viewModel: {
+            let vm = FindPanelViewModel(target: MockFindPanelTarget())
+            vm.mode = .replace
+            vm.findText = "example"
+            vm.replaceText = "test"
+            vm.findMatches = [NSRange(location: 0, length: 7)]
+            vm.currentFindMatchIndex = 0
+            return vm
+        }()
+    )
     .frame(width: 400)
     .padding()
 }
 
 #Preview("Condensed Layout") {
-    FindPanelView(viewModel: {
-        let vm = FindPanelViewModel(target: MockFindPanelTarget())
-        vm.findText = "example"
-        vm.findMatches = [NSRange(location: 0, length: 7)]
-        vm.currentFindMatchIndex = 0
-        return vm
-    }())
+    FindPanelView(
+        viewModel: {
+            let vm = FindPanelViewModel(target: MockFindPanelTarget())
+            vm.findText = "example"
+            vm.findMatches = [NSRange(location: 0, length: 7)]
+            vm.currentFindMatchIndex = 0
+            return vm
+        }()
+    )
     .frame(width: 300)
     .padding()
 }

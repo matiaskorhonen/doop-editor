@@ -24,11 +24,6 @@ let package = Package(
             url: "https://github.com/CodeEditApp/CodeEditLanguages.git",
             exact: "0.1.20"
         ),
-        // CodeEditSymbols
-        .package(
-            url: "https://github.com/CodeEditApp/CodeEditSymbols.git",
-            exact: "0.2.3"
-        ),
         // Rules for indentation, pair completion, whitespace
         .package(
             url: "https://github.com/ChimeHQ/TextFormation",
@@ -44,7 +39,6 @@ let package = Package(
                 "CodeEditTextView",
                 "CodeEditLanguages",
                 "TextFormation",
-                "CodeEditSymbols",
             ]
         ),
 
