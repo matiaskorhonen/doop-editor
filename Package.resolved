@@ -21,10 +21,10 @@
     {
       "identity" : "codeedittextview",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/CodeEditApp/CodeEditTextView.git",
+      "location" : "https://github.com/matiaskorhonen/CodeEditTextView.git",
       "state" : {
-        "revision" : "d7ac3f11f22ec2e820187acce8f3a3fb7aa8ddec",
-        "version" : "0.12.1"
+        "branch" : "fix/word-wrap-duplication",
+        "revision" : "092ab9cbb7692986c706c9ea5b67e5be5670ab62"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
-        "version" : "1.2.1"
+        "revision" : "8d9834a6189db730f6264db7556a7ffb751e99ee",
+        "version" : "1.4.0"
       }
     },
     {
