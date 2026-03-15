@@ -24,11 +24,6 @@ let package = Package(
             url: "https://github.com/apple/swift-collections.git",
             .upToNextMajor(from: "1.0.0")
         ),
-        // SwiftLint
-        .package(
-            url: "https://github.com/lukepistrol/SwiftLintPlugin",
-            from: "0.52.2"
-        )
     ],
     targets: [
         // The main text view target.
@@ -39,9 +34,6 @@ let package = Package(
                 .product(name: "Collections", package: "swift-collections"),
                 "CodeEditTextViewObjC"
             ],
-            plugins: [
-                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
-            ]
         ),
 
         // ObjC addons
@@ -56,9 +48,6 @@ let package = Package(
             dependencies: [
                 "CodeEditTextView"
             ],
-            plugins: [
-                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
-            ]
         ),
     ]
 )
