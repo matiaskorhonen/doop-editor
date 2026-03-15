@@ -150,15 +150,28 @@ package extension TextSelectionManager {
     ///   - delta: The direction the selection should be extended. `1` for forwards, `-1` for backwards.
     /// - Returns: The range of the extended selection.
     private func extendSelectionVisualLine(string: NSString, from offset: Int, delta: Int) -> NSRange {
-        guard let line = layoutManager?.textLineForOffset(offset),
-              let lineFragment = line.data.typesetter.lineFragments.getLine(atOffset: offset - line.range.location)
+        guard let line = layoutManager?.textLineForOffset(offset) else {
+            return NSRange(location: offset, length: 0)
+        }
+        let fragmentOffset = offset - line.range.location
+        // When the cursor is at the end of the last line fragment (e.g. end of the last line in the document),
+        // getLine(atOffset:) won't find it since it uses a half-open range. Fall back to the last fragment.
+        guard let lineFragment = line.data.typesetter.lineFragments.getLine(atOffset: fragmentOffset)
+                ?? (fragmentOffset == line.data.typesetter.lineFragments.length
+                    ? line.data.typesetter.lineFragments.last
+                    : nil)
         else {
             return NSRange(location: offset, length: 0)
         }
+        // Detect the actual line ending for this line rather than using the global detectedLineEnding,
+        // since the last line of a file may not have a trailing newline.
+        let lineEndingLength = LineEnding(
+            line: string.substring(with: line.range)
+        )?.length ?? 0
         let lineBound = delta > 0
         ? line.range.location + min(
             lineFragment.range.max,
-            line.range.max - line.range.location - (layoutManager?.detectedLineEnding.length ?? 1)
+            line.range.max - line.range.location - lineEndingLength
         )
         : line.range.location + lineFragment.range.location
 
