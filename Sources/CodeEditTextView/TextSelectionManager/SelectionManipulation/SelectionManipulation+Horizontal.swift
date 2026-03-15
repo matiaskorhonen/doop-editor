@@ -155,10 +155,15 @@ package extension TextSelectionManager {
         else {
             return NSRange(location: offset, length: 0)
         }
+        // Detect the actual line ending for this line rather than using the global detectedLineEnding,
+        // since the last line of a file may not have a trailing newline.
+        let lineEndingLength = LineEnding(
+            line: string.substring(with: line.range)
+        )?.length ?? 0
         let lineBound = delta > 0
         ? line.range.location + min(
             lineFragment.range.max,
-            line.range.max - line.range.location - (layoutManager?.detectedLineEnding.length ?? 1)
+            line.range.max - line.range.location - lineEndingLength
         )
         : line.range.location + lineFragment.range.location
 
