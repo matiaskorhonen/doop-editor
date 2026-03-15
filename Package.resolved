@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/matiaskorhonen/CodeEditTextView.git",
       "state" : {
-        "branch" : "fix/word-wrap-duplication",
-        "revision" : "092ab9cbb7692986c706c9ea5b67e5be5670ab62"
+        "branch" : "custom",
+        "revision" : "1589ee7d45b5523084b6f611be2efc1c111cd271"
       }
     },
     {
@@ -43,15 +43,6 @@
       "state" : {
         "revision" : "82645ec760917961cfa08c9c0c7104a57a0fa4b1",
         "version" : "1.3.3"
-      }
-    },
-    {
-      "identity" : "swiftlintplugin",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/lukepistrol/SwiftLintPlugin",
-      "state" : {
-        "revision" : "3780efccceaa87f17ec39638a9d263d0e742b71c",
-        "version" : "0.59.1"
       }
     },
     {

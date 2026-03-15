@@ -17,7 +17,7 @@ let package = Package(
         // A fast, efficient, text view for code.
         .package(
             url: "https://github.com/matiaskorhonen/CodeEditTextView.git",
-            branch: "fix/word-wrap-duplication"
+            branch: "custom"
         ),
         // tree-sitter languages
         .package(
