@@ -282,6 +282,16 @@ public class TextViewController: NSViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    /// Navigate to the next find match.
+    public func findNext() {
+        findViewController?.viewModel.moveToNextMatch()
+    }
+
+    /// Navigate to the previous find match.
+    public func findPrevious() {
+        findViewController?.viewModel.moveToPreviousMatch()
+    }
+
     /// Set the contents of the editor.
     /// - Parameter text: The new contents of the editor.
     public func setText(_ text: String) {
