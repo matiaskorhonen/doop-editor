@@ -292,6 +292,12 @@ public class TextViewController: NSViewController {
         findViewController?.viewModel.moveToPreviousMatch()
     }
 
+    /// Show the find panel in find-and-replace mode.
+    public func showFindAndReplace() {
+        findViewController?.showFindPanel()
+        findViewController?.viewModel.mode = .replace
+    }
+
     /// Set the contents of the editor.
     /// - Parameter text: The new contents of the editor.
     public func setText(_ text: String) {
