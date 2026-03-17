@@ -38,6 +38,8 @@ public class TreeSitterModel {
             return dockerfileQuery
         case .elixir:
             return elixirQuery
+        case .generic:
+            return genericQuery
         case .go:
             return goQuery
         case .goMod:
@@ -145,6 +147,11 @@ public class TreeSitterModel {
     /// Query for `Elixir` files.
     public private(set) lazy var elixirQuery: Query? = {
         return queryFor(.elixir)
+    }()
+
+    /// Query for `Generic` files.
+    public private(set) lazy var genericQuery: Query? = {
+        return queryFor(.generic)
     }()
 
     /// Query for `Go` files.

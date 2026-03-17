@@ -1,0 +1,13 @@
+(line_comment) @comment
+(block_comment) @comment
+(html_comment) @comment
+(hash_comment) @comment
+(quoted_string) @string
+(triple_quoted_string) @string
+(json_label) @string.special
+(number) @number
+(date) @number
+(hash) @string.special
+(tag) @tag
+(attribute) @keyword
+(keyword) @type

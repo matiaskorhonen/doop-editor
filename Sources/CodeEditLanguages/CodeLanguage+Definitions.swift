@@ -22,6 +22,7 @@ public extension CodeLanguage {
         .dart,
         .dockerfile,
         .elixir,
+        .generic,
         .go,
         .goMod,
         .haskell,
@@ -147,6 +148,15 @@ public extension CodeLanguage {
         rangeCommentStrings: ("", ""),
         documentationCommentStrings: [.pair(("\"\"\"", "\"\"\""))],
         highlights: ["folds", "indents", "injections", "locals", "tags"]
+    )
+
+    /// A language structure for `Generic` (fallback syntax highlighting)
+    static let generic: CodeLanguage = .init(
+        id: .generic,
+        tsName: "generic",
+        extensions: [],
+        lineCommentString: "//",
+        rangeCommentStrings: ("/*", "*/")
     )
 
     /// A language structure for `Go`

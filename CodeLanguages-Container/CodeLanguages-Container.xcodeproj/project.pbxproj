@@ -15,6 +15,7 @@
 		28B3F02D290C35D9000CD04D /* TreeSitterC in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F02C290C35D9000CD04D /* TreeSitterC */; };
 		28B3F030290C35F9000CD04D /* TreeSitterCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F02F290C35F9000CD04D /* TreeSitterCPP */; };
 		28B3F033290C3608000CD04D /* TreeSitterCSharp in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F032290C3608000CD04D /* TreeSitterCSharp */; };
+		01B30D91C31941CE8047A4CB /* TreeSitterGeneric in Frameworks */ = {isa = PBXBuildFile; productRef = D4E45069770D4BD5A028C964 /* TreeSitterGeneric */; };
 		28B3F039290C362C000CD04D /* TreeSitterElixir in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F038290C362C000CD04D /* TreeSitterElixir */; };
 		28B3F03C290C363E000CD04D /* TreeSitterGo in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F03B290C363E000CD04D /* TreeSitterGo */; };
 		28B3F03F290C364D000CD04D /* TreeSitterGoMod in Frameworks */ = {isa = PBXBuildFile; productRef = 28B3F03E290C364D000CD04D /* TreeSitterGoMod */; };
@@ -73,6 +74,7 @@
 				9D73992D2A5A34BF00CEF6E8 /* TreeSitterVerilog in Frameworks */,
 				8EFA0B742A559F4C00021CE9 /* TreeSitterSQL in Frameworks */,
 				28B3F039290C362C000CD04D /* TreeSitterElixir in Frameworks */,
+				01B30D91C31941CE8047A4CB /* TreeSitterGeneric in Frameworks */,
 				28B3F02D290C35D9000CD04D /* TreeSitterC in Frameworks */,
 				28B3F04B290C368B000CD04D /* TreeSitterJS in Frameworks */,
 				28B3F03C290C363E000CD04D /* TreeSitterGo in Frameworks */,
@@ -169,6 +171,7 @@
 				28B3F02F290C35F9000CD04D /* TreeSitterCPP */,
 				28B3F032290C3608000CD04D /* TreeSitterCSharp */,
 				28B3F038290C362C000CD04D /* TreeSitterElixir */,
+				D4E45069770D4BD5A028C964 /* TreeSitterGeneric */,
 				28B3F03B290C363E000CD04D /* TreeSitterGo */,
 				28B3F03E290C364D000CD04D /* TreeSitterGoMod */,
 				28B3F041290C365C000CD04D /* TreeSitterHaskell */,
@@ -238,6 +241,7 @@
 				28B3F02E290C35F9000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-cpp" */,
 				28B3F031290C3608000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-c-sharp" */,
 				28B3F037290C362C000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-elixir" */,
+				8699443F4437469F97859E55 /* XCRemoteSwiftPackageReference "tree-sitter-generic" */,
 				28B3F03A290C363E000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-go" */,
 				28B3F03D290C364D000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-go-mod" */,
 				28B3F040290C365C000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-haskell" */,
@@ -584,6 +588,14 @@
 				kind = branch;
 			};
 		};
+		8699443F4437469F97859E55 /* XCRemoteSwiftPackageReference "tree-sitter-generic" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/matiaskorhonen/tree-sitter-generic.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		28B3F03A290C363E000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-go" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tree-sitter/tree-sitter-go.git";
@@ -858,6 +870,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 28B3F037290C362C000CD04D /* XCRemoteSwiftPackageReference "tree-sitter-elixir" */;
 			productName = TreeSitterElixir;
+		};
+		D4E45069770D4BD5A028C964 /* TreeSitterGeneric */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8699443F4437469F97859E55 /* XCRemoteSwiftPackageReference "tree-sitter-generic" */;
+			productName = TreeSitterGeneric;
 		};
 		28B3F03B290C363E000CD04D /* TreeSitterGo */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -105,6 +105,8 @@ public struct CodeLanguage {
             return tree_sitter_dockerfile()
         case .elixir:
             return tree_sitter_elixir()
+        case .generic:
+            return tree_sitter_generic()
         case .go:
             return tree_sitter_go()
         case .goMod:
