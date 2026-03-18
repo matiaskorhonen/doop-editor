@@ -28,6 +28,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - Dart
 - Dockerfile
 - Elixir
+- Generic
 - Go
 - Go Mod
 - Haskell
@@ -85,6 +86,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``dart``
 - ``dockerfile``
 - ``elixir``
+- ``generic``
 - ``go``
 - ``goMod``
 - ``haskell``
