@@ -146,13 +146,13 @@ status "Language queries copied to package resources!"
 
 status "Downloading missing queries from neovim-treesitter"
 
-CLONE_DIR="$PWD/DerivedData/Clones"
+CLONE_DIR="$OLD_PWD/DerivedData/Clones"
 
 rm -rf $CLONE_DIR
 mkdir -p $CLONE_DIR
 
 MISSING_QUERIES_URL="https://github.com/nvim-treesitter/nvim-treesitter"
-MISSING_QUERIES_ROOT="queries"
+MISSING_QUERIES_ROOT="runtime/queries"
 LICENSE_NOTICE='; Copyright 2025 nvim-treesitter
 ;
 ; Licensed under the Apache License, Version 2.0 (the "License");
