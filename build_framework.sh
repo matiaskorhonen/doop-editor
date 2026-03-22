@@ -201,6 +201,80 @@ for lang in $LIST ; do
     done
 done
 
+# Remove node types from Swift queries that don't exist in the bundled grammar.
+# nvim-treesitter targets a different version of tree-sitter-swift than what's
+# bundled via SwiftTreeSitter, so some node types are missing.
+# Uses a Python script to handle both single-line and multi-line S-expression blocks.
+SWIFT_RESOURCES="$RESOURCES_PATH/tree-sitter-swift"
+if [ -d "$SWIFT_RESOURCES" ]; then
+    chmod u+w "$SWIFT_RESOURCES"/*.scm
+    for scm_file in "$SWIFT_RESOURCES"/*.scm; do
+        [ -f "$scm_file" ] || continue
+        python3 -c "
+import re, sys
+
+with open(sys.argv[1]) as f:
+    text = f.read()
+
+# Node types that exist in nvim-treesitter's queries but not in our bundled grammar
+remove = {'init_declaration', 'willset_didset_block', 'willset_clause', 'didset_clause'}
+
+# Remove single-line references inside lists: '  (node_type)' with optional trailing content
+for node in remove:
+    text = re.sub(r'^\s*\(' + node + r'\).*\n', '', text, flags=re.MULTILINE)
+
+# Remove multi-line top-level S-expressions starting with a removed node type:
+#   (node_type
+#     ...)
+# These are balanced-paren expressions at the start of a line.
+for node in remove:
+    # Match opening '(node_type' at line start, then everything up to the balanced closing ')'
+    pattern = r'^(\(' + node + r'\b)'
+    while re.search(pattern, text, re.MULTILINE):
+        match = re.search(pattern, text, re.MULTILINE)
+        start = match.start()
+        # Find the balanced closing paren
+        depth = 0
+        i = start
+        while i < len(text):
+            if text[i] == '(':
+                depth += 1
+            elif text[i] == ')':
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        # Remove from start through end of line containing closing paren
+        end = text.index('\n', i) + 1 if '\n' in text[i:] else len(text)
+        # Also remove a preceding comment line if it exists (e.g. '; indentation for init parameters')
+        line_start = text.rfind('\n', 0, start)
+        if line_start == -1:
+            line_start = 0
+        else:
+            line_start += 1
+        # Check if the previous non-empty line is a comment about this node
+        prev_end = line_start
+        prev_start = text.rfind('\n', 0, max(0, prev_end - 1))
+        if prev_start == -1:
+            prev_start = 0
+        else:
+            prev_start += 1
+        prev_line = text[prev_start:prev_end].rstrip()
+        if prev_line.startswith(';') and node.replace('_', ' ') in prev_line.lower():
+            start = prev_start
+        text = text[:start] + text[end:]
+
+# Clean up excessive blank lines left behind
+text = re.sub(r'\n{3,}', '\n\n', text)
+
+with open(sys.argv[1], 'w') as f:
+    f.write(text)
+" "$scm_file"
+    done
+
+    echo "  Patched Swift queries for bundled grammar compatibility" &> $QUIET_OUTPUT
+fi
+
 status "Missing queries successfully added!"
 
 # cleanup derived derived data
