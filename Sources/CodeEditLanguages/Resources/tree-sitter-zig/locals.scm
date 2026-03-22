@@ -1,167 +1,111 @@
-; TLA+ scopes and definitions
-[
-  (bounded_quantification)
-  (choose)
-  (function_definition)
-  (function_literal)
-  (lambda)
-  (let_in)
-  (module)
-  (module_definition)
-  (operator_definition)
-  (set_filter)
-  (set_map)
-  (unbounded_quantification)
-] @local.scope
+; Copyright 2025 nvim-treesitter
+;
+; Licensed under the Apache License, Version 2.0 (the "License");
+; you may not use this file except in compliance with the License.
+; You may obtain a copy of the License at
+;
+;     http://www.apache.org/licenses/LICENSE-2.0
+;
+; Unless required by applicable law or agreed to in writing, software
+; distributed under the License is distributed on an "AS IS" BASIS,
+; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+; See the License for the specific language governing permissions and
+; limitations under the License.
 
-(choose
-  (identifier) @local.definition.parameter)
 
-(choose
-  (tuple_of_identifiers
-    (identifier) @local.definition.parameter))
+; Definitions
+(function_declaration
+  name: (identifier) @local.definition.function)
 
-(constant_declaration
-  (identifier) @local.definition.constant)
-
-(constant_declaration
-  (operator_declaration
-    name: (_) @local.definition.constant))
-
-(function_definition
-  name: (identifier) @local.definition.function
-  (#set! definition.function.scope "parent"))
-
-(lambda
-  (identifier) @local.definition.parameter)
-
-(module_definition
-  name: (_) @local.definition.import
-  (#set! definition.import.scope "parent"))
-
-(module_definition
-  parameter: (identifier) @local.definition.parameter)
-
-(module_definition
-  parameter: (operator_declaration
-    name: (_) @local.definition.parameter))
-
-(operator_definition
-  name: (_) @local.definition.macro
-  (#set! definition.macro.scope "parent"))
-
-(operator_definition
-  parameter: (identifier) @local.definition.parameter)
-
-(operator_definition
-  parameter: (operator_declaration
-    name: (_) @local.definition.parameter))
-
-(quantifier_bound
-  (identifier) @local.definition.parameter)
-
-(quantifier_bound
-  (tuple_of_identifiers
-    (identifier) @local.definition.parameter))
-
-(unbounded_quantification
-  (identifier) @local.definition.parameter)
+(parameter
+  name: (identifier) @local.definition.parameter)
 
 (variable_declaration
   (identifier) @local.definition.var)
 
-; Proof scopes and definitions
-[
-  (non_terminal_proof)
-  (suffices_proof_step)
-  (theorem)
-] @local.scope
+(variable_declaration
+  (identifier) @local.definition.type
+  (enum_declaration))
 
-(assume_prove
-  (new
-    (identifier) @local.definition.parameter))
+(container_field
+  type: (identifier) @local.definition.field)
 
-(assume_prove
-  (new
-    (operator_declaration
-      name: (_) @local.definition.parameter)))
+(enum_declaration
+  (function_declaration
+    name: (identifier) @local.definition.method))
 
-(assumption
-  name: (identifier) @local.definition.constant)
+(variable_declaration
+  (identifier) @local.definition.type
+  (struct_declaration))
 
-(pick_proof_step
-  (identifier) @local.definition.parameter)
+(struct_declaration
+  (function_declaration
+    name: (identifier) @local.definition.method))
 
-(take_proof_step
-  (identifier) @local.definition.parameter)
+(container_field
+  name: (identifier) @local.definition.field)
 
-(theorem
-  name: (identifier) @local.definition.constant
-  (#set! definition.constant.scope "parent"))
+(variable_declaration
+  (identifier) @local.definition.type
+  (union_declaration))
 
-; PlusCal scopes and definitions
-[
-  (pcal_algorithm)
-  (pcal_macro)
-  (pcal_procedure)
-  (pcal_with)
-] @local.scope
+(union_declaration
+  (function_declaration
+    name: (identifier) @local.definition.method))
 
-(pcal_macro_decl
-  parameter: (identifier) @local.definition.parameter)
-
-(pcal_proc_var_decl
-  (identifier) @local.definition.parameter)
-
-(pcal_var_decl
+(payload
   (identifier) @local.definition.var)
 
-(pcal_with
-  (identifier) @local.definition.parameter)
-
-; Built-in PlusCal variables
-(pcal_algorithm_body
-  [
-    (_
-      (identifier_ref) @local.definition.var)
-    (_
-      (_
-        (identifier_ref) @local.definition.var))
-    (_
-      (_
-        (_
-          (identifier_ref) @local.definition.var)))
-    (_
-      (_
-        (_
-          (_
-            (identifier_ref) @local.definition.var))))
-    (_
-      (_
-        (_
-          (_
-            (_
-              (identifier_ref) @local.definition.var)))))
-  ]
-  (#any-of? @local.definition.var "self" "pc" "stack"))
+(block_label
+  (identifier) @local.definition)
 
 ; References
-(identifier_ref) @local.reference
+(identifier) @local.reference
 
-(prefix_op_symbol) @local.reference
+(parameter
+  type: (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(bound_prefix_op
-  symbol: (_) @local.reference)
+(pointer_type
+  (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(infix_op_symbol) @local.reference
+(nullable_type
+  (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(bound_infix_op
-  symbol: (_) @local.reference)
+(struct_initializer
+  (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(postfix_op_symbol) @local.reference
+(array_type
+  (_)
+  (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(bound_postfix_op
-  symbol: (_) @local.reference)
+(slice_type
+  (identifier) @local.reference
+  (#set! reference.kind "type"))
 
-(bound_nonfix_op
-  symbol: (_) @local.reference)
+(field_expression
+  member: (identifier) @local.reference
+  (#set! reference.kind "field"))
+
+(call_expression
+  function: (field_expression
+    member: (identifier) @local.reference
+    (#set! reference.kind "function")))
+
+(break_label
+  (identifier) @local.reference)
+
+[
+  (for_statement)
+  (if_statement)
+  (while_statement)
+  (function_declaration)
+  (block)
+  (source_file)
+  (enum_declaration)
+  (struct_declaration)
+] @local.scope
