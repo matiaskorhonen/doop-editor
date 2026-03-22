@@ -27,7 +27,22 @@ extension EditorTheme {
             numbers: Attribute(color: NSColor(hex: "1C00CF")),
             strings: Attribute(color: NSColor(hex: "C41A16")),
             characters: Attribute(color: NSColor(hex: "1C00CF")),
-            comments: Attribute(color: NSColor(hex: "267507"))
+            comments: Attribute(color: NSColor(hex: "267507")),
+            operators: Attribute(color: NSColor(hex: "000000")),
+            constants: Attribute(color: NSColor(hex: "6C36A9")),
+            namespaces: Attribute(color: NSColor(hex: "0B4F79")),
+            labels: Attribute(color: NSColor(hex: "0F68A0")),
+            preproc: Attribute(color: NSColor(hex: "643820")),
+            stringEscape: Attribute(color: NSColor(hex: "C41A16"), bold: true),
+            textTitle: Attribute(color: NSColor(hex: "9B2393"), bold: true),
+            textStrong: Attribute(color: NSColor(hex: "000000"), bold: true),
+            textEmphasis: Attribute(color: NSColor(hex: "000000"), italic: true),
+            textLiteral: Attribute(color: NSColor(hex: "C41A16")),
+            textUri: Attribute(color: NSColor(hex: "0F68A0")),
+            textReference: Attribute(color: NSColor(hex: "0B4F79")),
+            punctuationSpecial: Attribute(color: NSColor(hex: "9B2393")),
+            punctuationDelimiter: Attribute(color: NSColor(hex: "666666")),
+            punctuationBracket: Attribute(color: NSColor(hex: "666666"))
         )
     }
     static var dark: EditorTheme {
@@ -47,7 +62,22 @@ extension EditorTheme {
             numbers: Attribute(color: NSColor(hex: "D9C97C")),
             strings: Attribute(color: NSColor(hex: "FF8170")),
             characters: Attribute(color: NSColor(hex: "D9C97C")),
-            comments: Attribute(color: NSColor(hex: "7F8C98"))
+            comments: Attribute(color: NSColor(hex: "7F8C98")),
+            operators: Attribute(color: NSColor(hex: "FFFFFF")),
+            constants: Attribute(color: NSColor(hex: "B281EB")),
+            namespaces: Attribute(color: NSColor(hex: "6BDFFF")),
+            labels: Attribute(color: NSColor(hex: "4EB0CC")),
+            preproc: Attribute(color: NSColor(hex: "FFA14F")),
+            stringEscape: Attribute(color: NSColor(hex: "FF8170"), bold: true),
+            textTitle: Attribute(color: NSColor(hex: "FF7AB2"), bold: true),
+            textStrong: Attribute(color: NSColor(hex: "FFFFFF"), bold: true),
+            textEmphasis: Attribute(color: NSColor(hex: "FFFFFF"), italic: true),
+            textLiteral: Attribute(color: NSColor(hex: "FF8170")),
+            textUri: Attribute(color: NSColor(hex: "4EB0CC")),
+            textReference: Attribute(color: NSColor(hex: "6BDFFF")),
+            punctuationSpecial: Attribute(color: NSColor(hex: "FF7AB2")),
+            punctuationDelimiter: Attribute(color: NSColor(hex: "7F8C98")),
+            punctuationBracket: Attribute(color: NSColor(hex: "7F8C98"))
         )
     }
 }
