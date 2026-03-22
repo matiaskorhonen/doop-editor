@@ -210,7 +210,12 @@ public final class TreeSitterClient: HighlightProviding {
         completion: @escaping @MainActor (Result<[HighlightRange], Error>) -> Void
     ) {
         let operation = { [weak self] in
-            return (self?.queryHighlightsForRange(range: range) ?? []).sorted { $0.range.location < $1.range.location }
+            return (self?.queryHighlightsForRange(range: range) ?? []).sorted {
+                if $0.range.location != $1.range.location {
+                    return $0.range.location < $1.range.location
+                }
+                return $0.range.length > $1.range.length
+            }
         }
 
         let longQuery = range.length > Constants.maxSyncQueryLength
