@@ -42,6 +42,25 @@ public struct EditorTheme: Equatable {
     public var characters: Attribute
     public var comments: Attribute
 
+    // MARK: Extended Capture Attributes
+    public var operators: Attribute
+    public var constants: Attribute
+    public var namespaces: Attribute
+    public var labels: Attribute
+    public var preproc: Attribute
+    public var stringEscape: Attribute
+
+    // MARK: Markdown / Text Attributes
+    public var textTitle: Attribute
+    public var textStrong: Attribute
+    public var textEmphasis: Attribute
+    public var textLiteral: Attribute
+    public var textUri: Attribute
+    public var textReference: Attribute
+    public var punctuationSpecial: Attribute
+    public var punctuationDelimiter: Attribute
+    public var punctuationBracket: Attribute
+
     public init(
         text: Attribute,
         insertionPoint: NSColor,
@@ -58,7 +77,22 @@ public struct EditorTheme: Equatable {
         numbers: Attribute,
         strings: Attribute,
         characters: Attribute,
-        comments: Attribute
+        comments: Attribute,
+        operators: Attribute? = nil,
+        constants: Attribute? = nil,
+        namespaces: Attribute? = nil,
+        labels: Attribute? = nil,
+        preproc: Attribute? = nil,
+        stringEscape: Attribute? = nil,
+        textTitle: Attribute? = nil,
+        textStrong: Attribute? = nil,
+        textEmphasis: Attribute? = nil,
+        textLiteral: Attribute? = nil,
+        textUri: Attribute? = nil,
+        textReference: Attribute? = nil,
+        punctuationSpecial: Attribute? = nil,
+        punctuationDelimiter: Attribute? = nil,
+        punctuationBracket: Attribute? = nil
     ) {
         self.text = text
         self.insertionPoint = insertionPoint
@@ -76,6 +110,23 @@ public struct EditorTheme: Equatable {
         self.strings = strings
         self.characters = characters
         self.comments = comments
+
+        self.operators = operators ?? keywords
+        self.constants = constants ?? values
+        self.namespaces = namespaces ?? types
+        self.labels = labels ?? variables
+        self.preproc = preproc ?? keywords
+        self.stringEscape = stringEscape ?? strings
+
+        self.textTitle = textTitle ?? Attribute(color: keywords.color, bold: true)
+        self.textStrong = textStrong ?? Attribute(color: text.color, bold: true)
+        self.textEmphasis = textEmphasis ?? Attribute(color: text.color, italic: true)
+        self.textLiteral = textLiteral ?? strings
+        self.textUri = textUri ?? values
+        self.textReference = textReference ?? types
+        self.punctuationSpecial = punctuationSpecial ?? keywords
+        self.punctuationDelimiter = punctuationDelimiter ?? text
+        self.punctuationBracket = punctuationBracket ?? text
     }
 
     /// Maps a capture type to the attributes for that capture determined by the theme.
@@ -84,28 +135,32 @@ public struct EditorTheme: Equatable {
     private func mapCapture(_ capture: CaptureName?) -> Attribute {
         switch capture {
         case .include, .constructor, .keyword, .boolean, .variableBuiltin,
-                .keywordReturn, .keywordFunction, .repeat, .conditional, .tag,
-                .operator, .preproc:
+                .keywordReturn, .keywordFunction, .repeat, .conditional, .tag:
             return keywords
         case .comment: return comments
         case .variable, .property: return variables
         case .function, .method: return variables
         case .number, .float: return numbers
-        case .string, .stringEscape: return strings
-        case .type, .namespace: return types
+        case .string: return strings
+        case .type: return types
         case .parameter: return variables
         case .typeAlternate, .attribute: return attributes
-        case .constant: return values
-        case .label: return variables
         case .character: return characters
-
-        // MARK: Markdown / Text
-        case .textTitle, .textStrong, .punctuationSpecial: return keywords
-        case .textEmphasis: return text
-        case .textLiteral: return strings
-        case .textUri: return values
-        case .textReference: return types
-        case .punctuationDelimiter, .punctuationBracket: return text
+        case .operator: return operators
+        case .constant: return constants
+        case .namespace: return namespaces
+        case .label: return labels
+        case .preproc: return preproc
+        case .stringEscape: return stringEscape
+        case .textTitle: return textTitle
+        case .textStrong: return textStrong
+        case .textEmphasis: return textEmphasis
+        case .textLiteral: return textLiteral
+        case .textUri: return textUri
+        case .textReference: return textReference
+        case .punctuationSpecial: return punctuationSpecial
+        case .punctuationDelimiter: return punctuationDelimiter
+        case .punctuationBracket: return punctuationBracket
         default: return text
         }
     }
