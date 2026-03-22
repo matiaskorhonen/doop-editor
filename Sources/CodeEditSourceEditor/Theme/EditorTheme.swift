@@ -17,11 +17,13 @@ public struct EditorTheme: Equatable {
         public let color: NSColor
         public let bold: Bool
         public let italic: Bool
+        public let underline: Bool
 
-        public init(color: NSColor, bold: Bool = false, italic: Bool = false) {
+        public init(color: NSColor, bold: Bool = false, italic: Bool = false, underline: Bool = false) {
             self.color = color
             self.bold = bold
             self.italic = italic
+            self.underline = underline
         }
     }
 
@@ -122,7 +124,7 @@ public struct EditorTheme: Equatable {
         self.textStrong = textStrong ?? Attribute(color: text.color, bold: true)
         self.textEmphasis = textEmphasis ?? Attribute(color: text.color, italic: true)
         self.textLiteral = textLiteral ?? strings
-        self.textUri = textUri ?? values
+        self.textUri = textUri ?? Attribute(color: values.color, underline: true)
         self.textReference = textReference ?? types
         self.punctuationSpecial = punctuationSpecial ?? keywords
         self.punctuationDelimiter = punctuationDelimiter ?? text
@@ -194,5 +196,12 @@ public struct EditorTheme: Equatable {
         }
 
         return font
+    }
+
+    /// Returns the underline style for a given capture name.
+    /// - Parameter capture: The capture name.
+    /// - Returns: The underline style to apply, or `0` for no underline.
+    func underlineStyleFor(_ capture: CaptureName?) -> NSUnderlineStyle {
+        mapCapture(capture).underline ? .single : []
     }
 }

@@ -40,10 +40,16 @@ extension TextViewController {
 
 extension TextViewController: ThemeAttributesProviding {
     public func attributesFor(_ capture: CaptureName?) -> [NSAttributedString.Key: Any] {
-        [
-            .font: configuration.appearance.theme.fontFor(for: capture, from: font),
-            .foregroundColor: configuration.appearance.theme.colorFor(capture),
+        let theme = configuration.appearance.theme
+        var attrs: [NSAttributedString.Key: Any] = [
+            .font: theme.fontFor(for: capture, from: font),
+            .foregroundColor: theme.colorFor(capture),
             .kern: textView.kern
         ]
+        let underlineStyle = theme.underlineStyleFor(capture)
+        if underlineStyle != [] {
+            attrs[.underlineStyle] = underlineStyle.rawValue
+        }
+        return attrs
     }
 }

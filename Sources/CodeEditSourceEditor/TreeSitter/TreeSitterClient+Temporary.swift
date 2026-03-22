@@ -54,13 +54,15 @@ extension TreeSitterClient {
             let string = NSMutableAttributedString(string: string)
 
             for highlight in highlights {
-                string.setAttributes(
-                    [
-                        .font: theme.fontFor(for: highlight.capture, from: font),
-                        .foregroundColor: theme.colorFor(highlight.capture)
-                    ],
-                    range: highlight.range
-                )
+                var attrs: [NSAttributedString.Key: Any] = [
+                    .font: theme.fontFor(for: highlight.capture, from: font),
+                    .foregroundColor: theme.colorFor(highlight.capture)
+                ]
+                let underlineStyle = theme.underlineStyleFor(highlight.capture)
+                if underlineStyle != [] {
+                    attrs[.underlineStyle] = underlineStyle.rawValue
+                }
+                string.setAttributes(attrs, range: highlight.range)
             }
 
             return string
