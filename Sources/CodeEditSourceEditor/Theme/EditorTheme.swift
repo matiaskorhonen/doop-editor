@@ -84,16 +84,28 @@ public struct EditorTheme: Equatable {
     private func mapCapture(_ capture: CaptureName?) -> Attribute {
         switch capture {
         case .include, .constructor, .keyword, .boolean, .variableBuiltin,
-                .keywordReturn, .keywordFunction, .repeat, .conditional, .tag:
+                .keywordReturn, .keywordFunction, .repeat, .conditional, .tag,
+                .operator, .preproc:
             return keywords
         case .comment: return comments
         case .variable, .property: return variables
         case .function, .method: return variables
         case .number, .float: return numbers
-        case .string: return strings
-        case .type: return types
+        case .string, .stringEscape: return strings
+        case .type, .namespace: return types
         case .parameter: return variables
-        case .typeAlternate: return attributes
+        case .typeAlternate, .attribute: return attributes
+        case .constant: return values
+        case .label: return variables
+        case .character: return characters
+
+        // MARK: Markdown / Text
+        case .textTitle, .textStrong, .punctuationSpecial: return keywords
+        case .textEmphasis: return text
+        case .textLiteral: return strings
+        case .textUri: return values
+        case .textReference: return types
+        case .punctuationDelimiter, .punctuationBracket: return text
         default: return text
         }
     }

@@ -33,6 +33,25 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
     case variableBuiltin
     case keywordReturn
     case keywordFunction
+    case `operator`
+    case constant
+    case namespace
+    case attribute
+    case label
+    case character
+    case preproc
+
+    // MARK: Markdown / Text
+    case textTitle
+    case textStrong
+    case textEmphasis
+    case textLiteral
+    case textUri
+    case textReference
+    case punctuationSpecial
+    case punctuationDelimiter
+    case punctuationBracket
+    case stringEscape
 
     var alternate: CaptureName {
         switch self {
@@ -92,16 +111,61 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
             return .keywordReturn
         case "keyword.function":
             return .keywordFunction
-        case "text.title", "text.strong", "punctuation.special":
+        case "keyword.operator", "keyword.directive", "keyword.modifier",
+             "keyword.type", "keyword.conditional", "keyword.exception":
             return .keyword
-        case "text.literal", "text.uri", "string.escape":
-            return .string
-        case "text.reference":
+        case "operator":
+            return .operator
+        case "constant", "constant.builtin":
+            return .constant
+        case "namespace", "module":
+            return .namespace
+        case "attribute":
+            return .attribute
+        case "label":
+            return .label
+        case "character", "character.special":
+            return .character
+        case "preproc":
+            return .preproc
+        case "type.builtin", "type.definition", "type.qualifier":
             return .type
-        case "text.emphasis":
-            return .variable
-        case "punctuation.delimiter":
+        case "function.builtin", "function.call", "function.macro", "function.special":
+            return .function
+        case "method.call":
+            return .method
+        case "variable.member":
+            return .property
+        case "variable.parameter":
+            return .parameter
+        case "number.float":
+            return .float
+        case "string.regex", "string.special":
+            return .string
+        case "comment.documentation", "comment.doc":
             return .comment
+
+        // MARK: Markdown / Text
+        case "text.title":
+            return .textTitle
+        case "text.strong":
+            return .textStrong
+        case "text.emphasis":
+            return .textEmphasis
+        case "text.literal":
+            return .textLiteral
+        case "text.uri":
+            return .textUri
+        case "text.reference":
+            return .textReference
+        case "punctuation.special":
+            return .punctuationSpecial
+        case "punctuation.delimiter":
+            return .punctuationDelimiter
+        case "punctuation.bracket":
+            return .punctuationBracket
+        case "string.escape":
+            return .stringEscape
         case "none":
             return nil
         default:
@@ -154,6 +218,40 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
             return "keywordReturn"
         case .keywordFunction:
             return "keywordFunction"
+        case .operator:
+            return "operator"
+        case .constant:
+            return "constant"
+        case .namespace:
+            return "namespace"
+        case .attribute:
+            return "attribute"
+        case .label:
+            return "label"
+        case .character:
+            return "character"
+        case .preproc:
+            return "preproc"
+        case .textTitle:
+            return "text.title"
+        case .textStrong:
+            return "text.strong"
+        case .textEmphasis:
+            return "text.emphasis"
+        case .textLiteral:
+            return "text.literal"
+        case .textUri:
+            return "text.uri"
+        case .textReference:
+            return "text.reference"
+        case .punctuationSpecial:
+            return "punctuation.special"
+        case .punctuationDelimiter:
+            return "punctuation.delimiter"
+        case .punctuationBracket:
+            return "punctuation.bracket"
+        case .stringEscape:
+            return "string.escape"
         }
     }
 }
