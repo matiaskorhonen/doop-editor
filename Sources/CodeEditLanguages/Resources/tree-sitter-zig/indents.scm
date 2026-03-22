@@ -1,22 +1,29 @@
 [
-  (block)
-  (switch_expression)
-  (initializer_list)
+  (select)
+  (cte)
+  (column_definitions)
+  (case)
+  (subquery)
+  (insert)
+  (when_clause)
 ] @indent.begin
 
 (block
-  "}" @indent.end)
+  (keyword_begin)) @indent.begin
+
+(column_definitions
+  ")" @indent.branch)
+
+(subquery
+  ")" @indent.branch)
+
+(cte
+  ")" @indent.branch)
 
 [
-  "("
-  ")"
-  "["
-  "]"
-  "{"
-  "}"
+  (keyword_end)
+  (keyword_values)
+  (keyword_into)
 ] @indent.branch
 
-[
-  (comment)
-  (multiline_string)
-] @indent.ignore
+(keyword_end) @indent.end

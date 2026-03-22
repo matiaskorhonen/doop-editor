@@ -14,25 +14,34 @@
 
 
 [
-  (seq_block)
-  (function_body_declaration)
-  (task_body_declaration)
-  (generate_block)
-  (always_construct)
-  (property_declaration)
-  (checker_declaration)
-  (class_declaration)
-  (config_declaration)
-  (covergroup_declaration)
-  (clocking_declaration)
-  (interface_declaration)
-  (module_declaration)
-  (package_declaration)
-  (module_instantiation)
-  (program_declaration)
-  (specify_block)
-  (generate_region)
-  (package_import_declaration)
-  (text_macro_definition)
-  (include_compiler_directive)+
-] @fold
+  (if_statement)
+  (for_statement)
+  (while_statement)
+  (case_statement)
+  (function_definition)
+  (compound_statement)
+  (subshell)
+  (command_substitution)
+  (do_group)
+  (case_item)
+] @indent.begin
+
+[
+  "fi"
+  "done"
+  "esac"
+  "}"
+  ")"
+  "then"
+  "do"
+  (elif_clause)
+  (else_clause)
+] @indent.branch
+
+[
+  "fi"
+  "done"
+  "esac"
+  "}"
+  ")"
+] @indent.end
