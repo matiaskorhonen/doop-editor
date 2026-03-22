@@ -226,7 +226,8 @@ public final class TreeSitterState {
         var updatedRanges = IndexSet()
 
         for (languageName, ranges) in languageRanges {
-            guard let treeSitterLanguage = TreeSitterLanguage(rawValue: languageName) else {
+            guard let treeSitterLanguage = TreeSitterLanguage(rawValue: languageName)
+                    ?? TreeSitterLanguage(rawValue: Self.snakeToCamelCase(languageName)) else {
                 continue
             }
 
@@ -286,5 +287,13 @@ public final class TreeSitterState {
         }
 
         return languages
+    }
+
+    /// Converts a snake_case string to camelCase to match `TreeSitterLanguage` raw values.
+    /// For example, `"markdown_inline"` becomes `"markdownInline"`.
+    private static func snakeToCamelCase(_ string: String) -> String {
+        let parts = string.split(separator: "_")
+        guard let first = parts.first else { return string }
+        return String(first) + parts.dropFirst().map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined()
     }
 }
