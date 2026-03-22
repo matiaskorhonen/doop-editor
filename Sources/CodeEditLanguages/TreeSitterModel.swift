@@ -304,29 +304,57 @@ public class TreeSitterModel {
         guard let language = codeLanguage.language,
               let url = codeLanguage.queryURL else { return nil }
 
-        // 1. if the language depends on another language combine the query files
-        // 2. if the language has additional query files combine them with the main one
-        // 3. otherwise return the query file
-        if let parentURL = codeLanguage.parentQueryURL,
-           let data = combinedQueryData(for: [url, parentURL]) {
-            return try? Query(language: language, data: data)
-        } else if let additionalHighlights = codeLanguage.additionalHighlights {
-            var addURLs = additionalHighlights.compactMap({ codeLanguage.queryURL(for: $0) })
-            addURLs.append(url)
-            guard let data = combinedQueryData(for: addURLs) else { return nil }
-            return try? Query(language: language, data: data)
-        } else {
-            return try? language.query(contentsOf: url)
+        // Start with the base highlights query
+        var queryURLs = [url]
+
+        // Add the parent language query if this language inherits from another
+        if let parentURL = codeLanguage.parentQueryURL {
+            queryURLs.insert(parentURL, at: 0)
         }
+
+        // Add any additional highlight files (e.g., folds, indents, injections)
+        if let additionalHighlights = codeLanguage.additionalHighlights {
+            let addURLs = additionalHighlights.compactMap({ codeLanguage.queryURL(for: $0) })
+            queryURLs.append(contentsOf: addURLs)
+        }
+
+        // Load each query file individually, skipping files that fail to compile.
+        // This prevents one bad .scm file from breaking all syntax highlighting.
+        return resilientQuery(language: language, fileURLs: queryURLs)
     }
 
-    private func combinedQueryData(for fileURLs: [URL]) -> Data? {
-        let rawQuery = fileURLs.compactMap { try? String(contentsOf: $0) }.joined(separator: "\n")
-        if !rawQuery.isEmpty {
-            return rawQuery.data(using: .utf8)
-        } else {
+    /// Loads query files individually and combines them, skipping any that fail to compile.
+    /// This ensures a single invalid .scm file does not break all highlighting for a language.
+    private func resilientQuery(language: Language, fileURLs: [URL]) -> Query? {
+        var validQueries: [String] = []
+
+        for url in fileURLs {
+            guard let contents = try? String(contentsOf: url) else { continue }
+            // Strip nvim-treesitter inheritance directives that aren't understood by tree-sitter
+            let stripped = contents
+                .components(separatedBy: .newlines)
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("; inherits:") }
+                .joined(separator: "\n")
+            guard let data = stripped.data(using: .utf8) else { continue }
+
+            do {
+                // Validate this file compiles on its own against the grammar
+                _ = try Query(language: language, data: data)
+                validQueries.append(stripped)
+            } catch {
+                print(
+                    "[TreeSitterModel] Warning: skipping \(url.lastPathComponent) — "
+                    + "query failed to compile: \(error)"
+                )
+            }
+        }
+
+        guard !validQueries.isEmpty,
+              let combined = validQueries.joined(separator: "\n").data(using: .utf8) else {
             return nil
         }
+
+        return try? Query(language: language, data: combined)
     }
 
     private init() {}
