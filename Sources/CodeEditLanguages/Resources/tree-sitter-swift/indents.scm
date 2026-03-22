@@ -48,27 +48,8 @@
   (tuple_expression)            ; ( foo + bar )
   (array_literal)               ; [ foo, bar ]
   (dictionary_literal)          ; [ foo: bar, x: y ]
-  (lambda_literal) 
-  (willset_didset_block)
-  (willset_clause)
-  (didset_clause)
+  (lambda_literal)
 ] @indent.begin
-
-(init_declaration) @indent.begin
-
-(init_declaration
-  [
-    "init"
-    "("
-  ] @indent.branch)
-
-; indentation for init parameters
-(init_declaration
-  ")" @indent.branch @indent.end)
-
-(init_declaration
-  (parameter) @indent.begin
-  (#set! indent.immediate))
 
 ; @something(...)
 (modifiers
