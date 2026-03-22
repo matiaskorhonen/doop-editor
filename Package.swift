@@ -21,8 +21,8 @@ let package = Package(
         ),
         // tree-sitter languages
         .package(
-            url: "https://github.com/CodeEditApp/CodeEditLanguages.git",
-            exact: "0.1.20"
+            url: "https://github.com/matiaskorhonen/CodeEditLanguages.git",
+            branch: "add-tree-sitter-generic"
         ),
         // Rules for indentation, pair completion, whitespace
         .package(
