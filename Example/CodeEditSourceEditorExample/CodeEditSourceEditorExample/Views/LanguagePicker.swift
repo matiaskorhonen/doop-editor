@@ -16,7 +16,10 @@ struct LanguagePicker: View {
             "Language",
             selection: $language
         ) {
-            ForEach([.default] + CodeLanguage.allLanguages, id: \.id) { language in
+            ForEach(
+                [.default] + CodeLanguage.allLanguages.filter { !$0.extensions.isEmpty },
+                id: \.id
+            ) { language in
                 Text(language.id.rawValue)
                     .tag(language)
             }
