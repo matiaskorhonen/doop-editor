@@ -13,16 +13,13 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter.git", exact: "0.10.0"),
+        .package(url: "https://github.com/tree-sitter/swift-tree-sitter.git", exact: "0.10.0"),
 
         // Tree-sitter grammars
-        // Packages pinned to last versions compatible with ChimeHQ/SwiftTreeSitter identity.
-        // Newer versions use tree-sitter/swift-tree-sitter URL which causes SPM identity
-        // mismatch in their test targets on Swift 6.x.
         .package(url: "https://github.com/tree-sitter/tree-sitter-agda.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-bash.git", exact: "0.23.3"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-c.git", exact: "0.23.6"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", exact: "0.23.4"),
+        .package(url: "https://github.com/1024jp/tree-sitter-c.git", branch: "swiftPackage"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c-sharp.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-css.git", exact: "0.23.2"),
         // TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
@@ -30,7 +27,7 @@ let package = Package(
         .package(url: "https://github.com/camdencheek/tree-sitter-dockerfile.git", branch: "main"),
         .package(url: "https://github.com/elixir-lang/tree-sitter-elixir.git", branch: "main"),
         .package(url: "https://github.com/matiaskorhonen/tree-sitter-generic.git", branch: "main"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.23.4"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.25.0"),
         .package(url: "https://github.com/camdencheek/tree-sitter-go-mod.git", branch: "main"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-haskell.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-html.git", branch: "master"),
@@ -41,13 +38,13 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-julia.git", exact: "0.23.1"),
         .package(url: "https://github.com/fwcd/tree-sitter-kotlin", branch: "main"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-lua", exact: "0.3.0"),
-        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.1"),
+        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-objc", branch: "master"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-ocaml.git", exact: "0.24.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-ocaml.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter-perl/tree-sitter-perl.git", branch: "release"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-php.git", exact: "0.23.12"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-php.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-python.git", exact: "0.23.6"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.24.3"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.25.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-ruby.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-rust.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-scala.git", branch: "master"),
@@ -58,13 +55,13 @@ let package = Package(
         // TODO: tree-sitter-verilog has no query files at pinned version
         // .package(url: "https://github.com/tree-sitter/tree-sitter-verilog.git", exact: "1.0.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git", exact: "0.7.0"),
-        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", exact: "1.1.2"),
+        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", branch: "update"),
     ],
     targets: [
         .target(
             name: "CodeEditLanguages",
             dependencies: [
-                "SwiftTreeSitter",
+                .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
                 .product(name: "TreeSitterAgda", package: "tree-sitter-agda"),
                 .product(name: "TreeSitterBash", package: "tree-sitter-bash"),
                 .product(name: "TreeSitterC", package: "tree-sitter-c"),

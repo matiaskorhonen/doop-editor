@@ -208,4 +208,13 @@ with open(sys.argv[1], 'w') as f:
     echo "  Patched Swift queries for bundled grammar compatibility"
 fi
 
+# Patch OCaml highlights for OCaml Interface compatibility
+# The (shebang) node exists in the OCaml grammar but not in OCaml Interface,
+# and both share the same highlights.scm via tsName "ocaml".
+OCAML_HIGHLIGHTS="$RESOURCES_PATH/tree-sitter-ocaml/highlights.scm"
+if [ -f "$OCAML_HIGHLIGHTS" ]; then
+    sed -i '' 's/(shebang) //' "$OCAML_HIGHLIGHTS"
+    echo "  Patched OCaml highlights for OCaml Interface compatibility"
+fi
+
 status "Done!"
