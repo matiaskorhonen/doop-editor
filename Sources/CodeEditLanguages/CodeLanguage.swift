@@ -34,8 +34,7 @@ import TreeSitterMarkdown
 import TreeSitterMarkdownInline
 import TreeSitterObjc
 import TreeSitterOCaml
-// TODO: tree-sitter-perl missing bindings/swift directory
-// import TreeSitterPerl
+import TreeSitterPerl
 import TreeSitterPHP
 import TreeSitterPython
 import TreeSitterRegex
@@ -184,8 +183,7 @@ public struct CodeLanguage {
         case .ocamlInterface:
             return tree_sitter_ocaml_interface()
         case .perl:
-            // TODO: tree-sitter-perl missing bindings/swift directory
-            return nil
+            return tree_sitter_perl()
         case .php:
             return tree_sitter_php()
         case .python:

@@ -44,8 +44,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.1"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-objc", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-ocaml.git", exact: "0.24.0"),
-        // TODO: tree-sitter-perl missing bindings/swift directory on master
-        // .package(url: "https://github.com/ganezdragon/tree-sitter-perl.git", branch: "master"),
+        .package(url: "https://github.com/tree-sitter-perl/tree-sitter-perl.git", branch: "release"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-php.git", exact: "0.23.12"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-python.git", exact: "0.23.6"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.24.3"),
@@ -89,7 +88,7 @@ let package = Package(
                 .product(name: "TreeSitterMarkdown", package: "tree-sitter-markdown"),
                 .product(name: "TreeSitterObjc", package: "tree-sitter-objc"),
                 .product(name: "TreeSitterOCaml", package: "tree-sitter-ocaml"),
-                // .product(name: "TreeSitterPerl", package: "tree-sitter-perl"),
+                .product(name: "TreeSitterPerl", package: "tree-sitter-perl"),
                 .product(name: "TreeSitterPHP", package: "tree-sitter-php"),
                 .product(name: "TreeSitterPython", package: "tree-sitter-python"),
                 .product(name: "TreeSitterRegex", package: "tree-sitter-regex"),
