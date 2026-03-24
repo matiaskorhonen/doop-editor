@@ -8,7 +8,48 @@
 import Foundation
 import TreeSitter
 import SwiftTreeSitter
-import CodeLanguages_Container
+import TreeSitterAgda
+import TreeSitterBash
+import TreeSitterC
+import TreeSitterCPP
+import TreeSitterCSharp
+import TreeSitterCSS
+// TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
+// import TreeSitterDart
+import TreeSitterDockerfile
+import TreeSitterElixir
+import TreeSitterGeneric
+import TreeSitterGo
+import TreeSitterGoMod
+import TreeSitterHaskell
+import TreeSitterHTML
+import TreeSitterJava
+import TreeSitterJavaScript
+import TreeSitterJSDoc
+import TreeSitterJSON
+import TreeSitterJulia
+import TreeSitterKotlin
+import TreeSitterLua
+import TreeSitterMarkdown
+import TreeSitterMarkdownInline
+import TreeSitterObjc
+import TreeSitterOCaml
+// TODO: tree-sitter-perl missing bindings/swift directory
+// import TreeSitterPerl
+import TreeSitterPHP
+import TreeSitterPython
+import TreeSitterRegex
+import TreeSitterRuby
+import TreeSitterRust
+import TreeSitterScala
+import TreeSitterSql
+import TreeSitterSwift
+import TreeSitterTOML
+import TreeSitterTypeScript
+import TreeSitterTSX
+import TreeSitterVerilog
+import TreeSitterYAML
+import TreeSitterZig
 import RegexBuilder
 
 /// A structure holding metadata for code languages
@@ -81,7 +122,7 @@ public struct CodeLanguage {
 
     internal func queryURL(for highlights: String = "highlights") -> URL? {
         return resourceURL?
-            .appendingPathComponent("Resources/tree-sitter-\(tsName)/\(highlights).scm")
+            .appendingPathComponent("tree-sitter-\(tsName)/\(highlights).scm")
     }
 
     /// Gets the TSLanguage from `tree-sitter`
@@ -100,7 +141,8 @@ public struct CodeLanguage {
         case .css:
             return tree_sitter_css()
         case .dart:
-            return tree_sitter_dart()
+            // TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
+            return nil
         case .dockerfile:
             return tree_sitter_dockerfile()
         case .elixir:
@@ -142,7 +184,8 @@ public struct CodeLanguage {
         case .ocamlInterface:
             return tree_sitter_ocaml_interface()
         case .perl:
-            return tree_sitter_perl()
+            // TODO: tree-sitter-perl missing bindings/swift directory
+            return nil
         case .php:
             return tree_sitter_php()
         case .python:
