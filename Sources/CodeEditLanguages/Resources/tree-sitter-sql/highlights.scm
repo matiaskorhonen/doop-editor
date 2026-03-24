@@ -1,3 +1,6 @@
+(object_reference
+  name: (identifier) @type)
+
 (invocation
   (object_reference
     name: (identifier) @function.call))
@@ -10,10 +13,8 @@
   (keyword_gin)
   (keyword_brin)
   (keyword_array)
+  (keyword_object_id)
 ] @function.call
-
-(object_reference
-  name: (identifier) @type)
 
 (relation
   alias: (identifier) @variable)
@@ -34,10 +35,10 @@
 (marginalia) @comment
 
 ((literal) @number
-   (#match? @number "^%d+$"))
+   (#match? @number "^[-+]?%d+$"))
 
 ((literal) @float
-  (#match? @float "^[-|+]?%d*\.%d*$"))
+  (#match? @float "^[-+]?%d*\.%d*$"))
 
 (parameter) @parameter
 
@@ -110,6 +111,8 @@
   (keyword_primary)
   (keyword_delete)
   (keyword_create)
+  (keyword_show)
+  (keyword_unload)
   (keyword_insert)
   (keyword_merge)
   (keyword_distinct)
@@ -144,12 +147,10 @@
   (keyword_constraint)
   (keyword_force)
   (keyword_use)
+  (keyword_include)
   (keyword_for)
   (keyword_if)
   (keyword_exists)
-  (keyword_max)
-  (keyword_min)
-  (keyword_avg)
   (keyword_column)
   (keyword_columns)
   (keyword_cross)
@@ -168,6 +169,7 @@
   (keyword_data)
   (keyword_type)
   (keyword_rename)
+  (keyword_refresh)
   (keyword_to)
   (keyword_schema)
   (keyword_owner)
@@ -182,6 +184,7 @@
   (keyword_transaction)
   (keyword_only)
   (keyword_like)
+  (keyword_rlike)
   (keyword_similar)
   (keyword_over)
   (keyword_change)
@@ -195,7 +198,6 @@
   (keyword_current)
   (keyword_ties)
   (keyword_others)
-  (keyword_preserve)
   (keyword_zerofill)
   (keyword_format)
   (keyword_fields)
@@ -219,7 +221,6 @@
   (keyword_vacuum)
   (keyword_cache)
   (keyword_language)
-  (keyword_sql)
   (keyword_called)
   (keyword_conflict)
   (keyword_declare)
@@ -229,8 +230,6 @@
   (keyword_name)
   (keyword_oid)
   (keyword_oids)
-  (keyword_options)
-  (keyword_plpgsql)
   (keyword_precision)
   (keyword_regclass)
   (keyword_regnamespace)
@@ -258,22 +257,34 @@
   (keyword_password)
   (keyword_reset)
   (keyword_role)
+  (keyword_current_role)
   (keyword_sequence)
   (keyword_start)
   (keyword_restart)
   (keyword_tablespace)
+  (keyword_split)
+  (keyword_tablets)
   (keyword_until)
   (keyword_user)
+  (keyword_current_user)
+  (keyword_session_user)
   (keyword_valid)
   (keyword_action)
   (keyword_definer)
   (keyword_invoker)
+  (keyword_enable)
+  (keyword_disable)
   (keyword_security)
+  (keyword_policy)
+  (keyword_permissive)
+  (keyword_restrictive)
+  (keyword_public)
   (keyword_extension)
   (keyword_version)
   (keyword_out)
   (keyword_inout)
   (keyword_variadic)
+  (keyword_ordinality)
   (keyword_session)
   (keyword_isolation)
   (keyword_level)
@@ -304,6 +315,26 @@
   (keyword_statement)
   (keyword_execute)
   (keyword_procedure)
+  (keyword_copy)
+  (keyword_delimiter)
+  (keyword_encoding)
+  (keyword_escape)
+  (keyword_force_not_null)
+  (keyword_force_null)
+  (keyword_force_quote)
+  (keyword_freeze)
+  (keyword_header)
+  (keyword_match)
+  (keyword_program)
+  (keyword_quote)
+  (keyword_stdin)
+  (keyword_extended)
+  (keyword_main)
+  (keyword_plain)
+  (keyword_storage)
+  (keyword_compression)
+  (keyword_duplicate)
+  (keyword_while)
 ] @keyword
 
 [

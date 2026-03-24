@@ -325,15 +325,6 @@
       }
     },
     {
-      "identity" : "tree-sitter-verilog",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-verilog.git",
-      "state" : {
-        "revision" : "521b535e41a5acd2c6539a922d4649bbe8275110",
-        "version" : "1.0.3"
-      }
-    },
-    {
       "identity" : "tree-sitter-yaml",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git",

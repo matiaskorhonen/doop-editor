@@ -55,7 +55,8 @@ let package = Package(
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", branch: "with-generated-files"),
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", branch: "feature/spm"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript.git", branch: "master"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-verilog.git", exact: "1.0.3"),
+        // TODO: tree-sitter-verilog has no query files at pinned version
+        // .package(url: "https://github.com/tree-sitter/tree-sitter-verilog.git", exact: "1.0.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git", exact: "0.7.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", exact: "1.1.2"),
     ],
@@ -99,7 +100,7 @@ let package = Package(
                 .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
                 .product(name: "TreeSitterTOML", package: "tree-sitter-toml"),
                 .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
-                .product(name: "TreeSitterVerilog", package: "tree-sitter-verilog"),
+                // .product(name: "TreeSitterVerilog", package: "tree-sitter-verilog"),
                 .product(name: "TreeSitterYAML", package: "tree-sitter-yaml"),
                 .product(name: "TreeSitterZig", package: "tree-sitter-zig"),
             ],

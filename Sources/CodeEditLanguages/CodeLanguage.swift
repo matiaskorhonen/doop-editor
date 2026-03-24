@@ -46,7 +46,8 @@ import TreeSitterSwift
 import TreeSitterTOML
 import TreeSitterTypeScript
 import TreeSitterTSX
-import TreeSitterVerilog
+// TODO: tree-sitter-verilog has no query files at pinned version
+// import TreeSitterVerilog
 import TreeSitterYAML
 import TreeSitterZig
 import RegexBuilder
@@ -207,7 +208,8 @@ public struct CodeLanguage {
         case .typescript:
             return tree_sitter_typescript()
         case .verilog:
-            return tree_sitter_verilog()
+            // TODO: tree-sitter-verilog has no query files at pinned version
+            return nil
         case .yaml:
             return tree_sitter_yaml()
         case .zig:

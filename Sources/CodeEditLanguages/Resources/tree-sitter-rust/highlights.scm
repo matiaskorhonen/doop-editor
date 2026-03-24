@@ -1,8 +1,18 @@
+; Identifiers
+
+(type_identifier) @type
+(primitive_type) @type.builtin
+(field_identifier) @property
+
 ; Identifier conventions
 
 ; Assume all-caps names are constants
 ((identifier) @constant
  (#match? @constant "^[A-Z][A-Z\\d_]+$'"))
+
+; Assume uppercase names are enum constructors
+((identifier) @constructor
+ (#match? @constructor "^[A-Z]"))
 
 ; Assume that uppercase names in paths are types
 ((scoped_identifier
@@ -19,10 +29,6 @@
   path: (scoped_identifier
     name: (identifier) @type))
  (#match? @type "^[A-Z]"))
-
-; Assume other uppercase names are enum constructors
-((identifier) @constructor
- (#match? @constructor "^[A-Z]"))
 
 ; Assume all qualified names in struct patterns are enum constructors. (They're
 ; either that, or struct names; highlighting both as constructors seems to be
@@ -61,14 +67,11 @@
 (function_item (identifier) @function)
 (function_signature_item (identifier) @function)
 
-; Other identifiers
-
-(type_identifier) @type
-(primitive_type) @type.builtin
-(field_identifier) @property
-
 (line_comment) @comment
 (block_comment) @comment
+
+(line_comment (doc_comment)) @comment.documentation
+(block_comment (doc_comment)) @comment.documentation
 
 "(" @punctuation.bracket
 ")" @punctuation.bracket
@@ -107,6 +110,7 @@
 "extern" @keyword
 "fn" @keyword
 "for" @keyword
+"gen" @keyword
 "if" @keyword
 "impl" @keyword
 "in" @keyword
@@ -117,6 +121,7 @@
 "mod" @keyword
 "move" @keyword
 "pub" @keyword
+"raw" @keyword
 "ref" @keyword
 "return" @keyword
 "static" @keyword
@@ -128,6 +133,7 @@
 "use" @keyword
 "where" @keyword
 "while" @keyword
+"yield" @keyword
 (crate) @keyword
 (mutable_specifier) @keyword
 (use_list (self) @keyword)
