@@ -22,7 +22,7 @@ let package = Package(
         // tree-sitter languages
         .package(
             url: "https://github.com/matiaskorhonen/CodeEditLanguages.git",
-            branch: "custom"
+            branch: "spm-direct-dependencies"
         ),
         // Rules for indentation, pair completion, whitespace
         .package(

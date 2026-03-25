@@ -112,13 +112,19 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
         case "keyword.function":
             return .keywordFunction
         case "keyword.operator", "keyword.directive", "keyword.modifier",
-             "keyword.type", "keyword.conditional", "keyword.exception":
+             "keyword.type", "keyword.conditional", "keyword.conditional.ternary",
+             "keyword.exception", "keyword.coroutine", "keyword.debug",
+             "keyword.phaser":
             return .keyword
+        case "keyword.import", "import":
+            return .include
+        case "keyword.repeat":
+            return .repeat
         case "operator":
             return .operator
-        case "constant", "constant.builtin":
+        case "constant", "constant.builtin", "constant.macro", "constant.character":
             return .constant
-        case "namespace", "module":
+        case "namespace", "module", "module.builtin":
             return .namespace
         case "attribute":
             return .attribute
@@ -130,19 +136,21 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
             return .preproc
         case "type.builtin", "type.definition", "type.qualifier":
             return .type
-        case "function.builtin", "function.call", "function.macro", "function.special":
+        case "function.builtin", "function.call", "function.macro", "function.macro.builtin",
+             "function.special":
             return .function
-        case "method.call":
+        case "function.method", "function.method.builtin", "method.call":
             return .method
-        case "variable.member":
+        case "variable.member", "field", "property.definition":
             return .property
-        case "variable.parameter":
+        case "variable.parameter", "parameter.builtin":
             return .parameter
         case "number.float":
             return .float
-        case "string.regex", "string.special":
+        case "string.regex", "string.regexp", "string.special", "string.special.key",
+             "string.special.regex", "string.special.symbol", "string.documentation":
             return .string
-        case "comment.documentation", "comment.doc":
+        case "comment.documentation", "comment.doc", "comment.unused":
             return .comment
 
         // MARK: Markdown / Text
@@ -164,8 +172,16 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
             return .punctuationDelimiter
         case "punctuation.bracket":
             return .punctuationBracket
-        case "string.escape":
+        case "string.escape", "escape":
             return .stringEscape
+        case "exception":
+            return .keyword
+        case "delimiter":
+            return .punctuationDelimiter
+        case "storageclass":
+            return .keyword
+        case "embedded":
+            return .string
         case "none":
             return nil
         default:
