@@ -32,8 +32,6 @@ public class TreeSitterModel {
             return cSharpQuery
         case .css:
             return cssQuery
-        case .dart:
-            return dartQuery
         case .dockerfile:
             return dockerfileQuery
         case .elixir:
@@ -98,8 +96,6 @@ public class TreeSitterModel {
             return tsxQuery
         case .typescript:
             return typescriptQuery
-        case .verilog:
-            return nil
         case .yaml:
             return yamlQuery
         case .zig:
@@ -132,11 +128,6 @@ public class TreeSitterModel {
     /// Query for `CSS` files.
     public private(set) lazy var cssQuery: Query? = {
         return queryFor(.css)
-    }()
-
-    /// Query for `Dart` files.
-    public private(set) lazy var dartQuery: Query? = {
-        return queryFor(.dart)
     }()
 
     /// Query for `Dockerfile` files.

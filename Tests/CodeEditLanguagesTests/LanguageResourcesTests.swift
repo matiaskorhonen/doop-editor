@@ -17,7 +17,7 @@ final class LanguageResourcesTests: XCTestCase {
     /// - All files referenced by ``CodeLanguage.additionalHighlights`` are bundled. If this fails we fail the test.
     func test_allResourcesAreReferencedInDefinitions() throws {
         for language in CodeLanguage.allLanguages {
-            // Skip languages whose grammar is not available (e.g. Dart)
+            // Skip languages whose grammar is not available
             guard language.language != nil else { continue }
 
             let resourceURL = try XCTUnwrap(

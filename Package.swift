@@ -22,8 +22,6 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c-sharp.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-css.git", exact: "0.23.2"),
-        // TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
-        // .package(url: "https://github.com/UserNobody14/tree-sitter-dart.git", branch: "master"),
         .package(url: "https://github.com/camdencheek/tree-sitter-dockerfile.git", branch: "main"),
         .package(url: "https://github.com/elixir-lang/tree-sitter-elixir.git", branch: "main"),
         .package(url: "https://github.com/matiaskorhonen/tree-sitter-generic.git", branch: "main"),
@@ -52,8 +50,6 @@ let package = Package(
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", branch: "with-generated-files"),
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", branch: "feature/spm"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript.git", branch: "master"),
-        // TODO: tree-sitter-verilog has no query files at pinned version
-        // .package(url: "https://github.com/tree-sitter/tree-sitter-verilog.git", exact: "1.0.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git", exact: "0.7.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", branch: "update"),
     ],
@@ -68,7 +64,6 @@ let package = Package(
                 .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
                 .product(name: "TreeSitterCSharp", package: "tree-sitter-c-sharp"),
                 .product(name: "TreeSitterCSS", package: "tree-sitter-css"),
-                // .product(name: "TreeSitterDart", package: "tree-sitter-dart"),
                 .product(name: "TreeSitterDockerfile", package: "tree-sitter-dockerfile"),
                 .product(name: "TreeSitterElixir", package: "tree-sitter-elixir"),
                 .product(name: "TreeSitterGeneric", package: "tree-sitter-generic"),
@@ -97,7 +92,6 @@ let package = Package(
                 .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
                 .product(name: "TreeSitterTOML", package: "tree-sitter-toml"),
                 .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
-                // .product(name: "TreeSitterVerilog", package: "tree-sitter-verilog"),
                 .product(name: "TreeSitterYAML", package: "tree-sitter-yaml"),
                 .product(name: "TreeSitterZig", package: "tree-sitter-zig"),
             ],

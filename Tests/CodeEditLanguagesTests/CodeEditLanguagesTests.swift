@@ -138,20 +138,6 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotEqual(query?.patternCount, 0)
     }
 
-// MARK: - CSS
-
-    func test_CodeLanguageDart() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.dart")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .dart)
-    }
-
-    func test_FetchQueryDart() throws {
-        // TODO: tree-sitter-dart disabled (SSH submodule breaks SPM checkout)
-        try XCTSkipIf(CodeLanguage.dart.language == nil, "Dart grammar not available")
-    }
-
 // MARK: - Dockerfile
 
     func test_CodeLanguageDockerfile() throws {
@@ -778,15 +764,6 @@ final class CodeEditLanguagesTests: XCTestCase {
         let query = try? Query(language: language.language!, data: data)
         XCTAssertNotNil(query)
         XCTAssertNotEqual(query?.patternCount, 0)
-    }
-
-// MARK: - Verilog
-
-    func test_CodeLanguageVerilog() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.v")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .verilog)
     }
 
 // MARK: - YAML

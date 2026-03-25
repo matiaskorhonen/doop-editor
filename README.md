@@ -52,7 +52,6 @@ In order to add support for additional languages we have a complete guide on how
 | [C++](https://github.com/tree-sitter/tree-sitter-cpp) | ✅ | ✅ |
 | [C#](https://github.com/tree-sitter/tree-sitter-c-sharp) | ✅ | ✅ |
 | [CSS](https://github.com/tree-sitter/tree-sitter-css.git) | ✅ | ✅ |
-| [Dart](https://github.com/UserNobody14/tree-sitter-dart.git) | ✅ | ✅ |
 | [Dockerfile](https://github.com/camdencheek/tree-sitter-dockerfile) | ✅ | ✅ |
 | [Elixir](https://github.com/elixir-lang/tree-sitter-elixir) | ✅ | ✅ |
 | [ERB, EJS](https://github.com/tree-sitter/tree-sitter-embedded-template) |  |  |
@@ -81,7 +80,6 @@ In order to add support for additional languages we have a complete guide on how
 | [Swift](https://github.com/alex-pinkus/tree-sitter-swift/tree/with-generated-files) | ✅ | ✅ |
 | [TOML](https://github.com/cengelbart39/tree-sitter-toml/tree/feature/spm) | ✅ | ✅ |
 | [TypeScript/TSX](https://github.com/tree-sitter/tree-sitter-typescript) | ✅ | ✅ |
-| [Verilog](https://github.com/tree-sitter/tree-sitter-verilog) | ✅ | _not available_ |
 | [YAML](https://github.com/tree-sitter-grammars/tree-sitter-yaml.git) | ✅ | ✅ |
 | [Zig](https://github.com/tree-sitter-grammars/tree-sitter-zig.git) | ✅ | ✅ |
 

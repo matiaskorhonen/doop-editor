@@ -14,8 +14,6 @@ import TreeSitterC
 import TreeSitterCPP
 import TreeSitterCSharp
 import TreeSitterCSS
-// TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
-// import TreeSitterDart
 import TreeSitterDockerfile
 import TreeSitterElixir
 import TreeSitterGeneric
@@ -46,8 +44,6 @@ import TreeSitterSwift
 import TreeSitterTOML
 import TreeSitterTypeScript
 import TreeSitterTSX
-// TODO: tree-sitter-verilog has no query files at pinned version
-// import TreeSitterVerilog
 import TreeSitterYAML
 import TreeSitterZig
 import RegexBuilder
@@ -140,9 +136,6 @@ public struct CodeLanguage {
             return tree_sitter_c_sharp()
         case .css:
             return tree_sitter_css()
-        case .dart:
-            // TODO: tree-sitter-dart has an SSH submodule that breaks SPM checkout
-            return nil
         case .dockerfile:
             return tree_sitter_dockerfile()
         case .elixir:
@@ -207,9 +200,6 @@ public struct CodeLanguage {
             return tree_sitter_tsx()
         case .typescript:
             return tree_sitter_typescript()
-        case .verilog:
-            // TODO: tree-sitter-verilog has no query files at pinned version
-            return nil
         case .yaml:
             return tree_sitter_yaml()
         case .zig:

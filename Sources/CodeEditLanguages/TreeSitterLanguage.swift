@@ -15,7 +15,6 @@ public enum TreeSitterLanguage: String {
     case cpp
     case cSharp
     case css
-    case dart
     case dockerfile
     case elixir
     case generic
@@ -48,7 +47,6 @@ public enum TreeSitterLanguage: String {
     case toml
     case tsx
     case typescript
-    case verilog
     case yaml
     case zig
     case plainText

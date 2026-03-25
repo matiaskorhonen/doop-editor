@@ -19,7 +19,6 @@ public extension CodeLanguage {
         .cpp,
         .cSharp,
         .css,
-        .dart,
         .dockerfile,
         .elixir,
         .generic,
@@ -52,7 +51,6 @@ public extension CodeLanguage {
         .toml,
         .tsx,
         .typescript,
-        .verilog,
         .yaml,
         .zig
     ]
@@ -117,16 +115,6 @@ public extension CodeLanguage {
         lineCommentString: "",
         rangeCommentStrings: ("/*", "*/"),
         highlights: ["folds", "indents", "injections"]
-    )
-
-    /// A language structure for `Dart`
-    static let dart: CodeLanguage = .init(
-        id: .dart,
-        tsName: "dart",
-        extensions: ["dart"],
-        lineCommentString: "//",
-        rangeCommentStrings: ("/*", "*/"),
-        highlights: ["folds", "indents", "injections", "locals", "tags"]
     )
 
     /// A language structure for `Dockerfile`
@@ -460,16 +448,6 @@ public extension CodeLanguage {
         rangeCommentStrings: ("/*", "*/"),
         parentURL: CodeLanguage.javascript.queryURL,
         highlights: ["folds", "indents", "injections", "locals", "tags"]
-    )
-
-    /// A language structure for `Verilog`
-    static let verilog: CodeLanguage = .init(
-        id: .verilog,
-        tsName: "verilog",
-        extensions: ["v"],
-        lineCommentString: "//",
-        rangeCommentStrings: ("/*", "*/"),
-        highlights: ["folds", "injections"]
     )
 
     /// A language structure for `YAML`

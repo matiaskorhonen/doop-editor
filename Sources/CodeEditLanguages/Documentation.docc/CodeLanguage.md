@@ -25,7 +25,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - C++
 - C#
 - CSS
-- Dart
 - Dockerfile
 - Elixir
 - Generic
@@ -52,7 +51,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - SQL
 - Swift
 - TOML
-- Verilog
 - YAML
 - Zig
 
@@ -83,7 +81,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``cpp``
 - ``cSharp``
 - ``css``
-- ``dart``
 - ``dockerfile``
 - ``elixir``
 - ``generic``
@@ -111,7 +108,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``sql``
 - ``swift``
 - ``toml``
-- ``verilog``
 - ``yaml``
 - ``zig``
 
