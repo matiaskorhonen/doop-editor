@@ -83,6 +83,29 @@ In order to add support for additional languages we have a complete guide on how
 | [YAML](https://github.com/tree-sitter-grammars/tree-sitter-yaml.git) | ✅ | ✅ |
 | [Zig](https://github.com/tree-sitter-grammars/tree-sitter-zig.git) | ✅ | ✅ |
 
+## Grammar Version Upgrade Blockers
+
+Several grammar packages are pinned to older versions due to upstream issues.
+
+### Blocked by FileManager scanner detection bug
+
+Newer versions (≥ 0.25.0 for most) use `FileManager.default.fileExists(atPath: "src/scanner.c")` to dynamically include the external scanner source. This path is resolved relative to the _consumer's_ working directory rather than the package checkout, so the file is never found when the grammar is consumed as an SPM dependency. Needs an upstream fix to hardcode `scanner.c` in the `sources` list.
+
+| Package | Current | Target |
+| ------- | :-----: | :----: |
+| [tree-sitter-css](https://github.com/tree-sitter/tree-sitter-css) | 0.23.2 | 0.25.0 |
+| [tree-sitter-javascript](https://github.com/tree-sitter/tree-sitter-javascript) | 0.23.1 | 0.25.0 |
+| [tree-sitter-jsdoc](https://github.com/tree-sitter/tree-sitter-jsdoc) | 0.23.2 | 0.25.0 |
+| [tree-sitter-julia](https://github.com/tree-sitter/tree-sitter-julia) | 0.23.1 | 0.25.0 |
+| [tree-sitter-lua](https://github.com/tree-sitter-grammars/tree-sitter-lua) | 0.3.0 | 0.5.0 |
+| [tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python) | 0.23.6 | 0.25.0 |
+| [tree-sitter-yaml](https://github.com/tree-sitter-grammars/tree-sitter-yaml) | 0.7.0 | 0.7.2 |
+
+### Other blockers
+
+- **[tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash) (0.23.3):** `master` declares a dependency on `SwiftTreeSitter` with `from: "0.25.0"`, incompatible with this package's `exact: "0.10.0"` pin of `tree-sitter/swift-tree-sitter`.
+- **[tree-sitter-json](https://github.com/tree-sitter/tree-sitter-json) (0.24.8):** `master` still references the old `ChimeHQ/SwiftTreeSitter` URL instead of `tree-sitter/swift-tree-sitter`.
+
 ## Related Repositories
 
 <table>
