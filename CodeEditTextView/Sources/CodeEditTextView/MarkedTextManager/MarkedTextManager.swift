@@ -93,10 +93,6 @@ class MarkedTextManager {
         }
 
         // If any remaining marked ranges, we need to unmark.
-        if !markedRanges.isEmpty {
-            return false
-        } else {
-            return true
-        }
+        return markedRanges.isEmpty
     }
 }
