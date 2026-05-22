@@ -254,10 +254,6 @@ extension TextLayoutManager {
 
         var height: CGFloat = 0
         var width: CGFloat = 0
-//        for lineFragmentPosition in line.lineFragments.linesStartingAt(
-//            relativeMinY,
-//            until: relativeMaxY
-//        ) {
         for lineFragmentPosition in line.lineFragments {
             let lineFragment = lineFragmentPosition.data
             lineFragment.documentRange = lineFragmentPosition.range.translate(location: position.range.location)
