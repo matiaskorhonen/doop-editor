@@ -255,7 +255,6 @@ extension TextLayoutManager {
         var height: CGFloat = 0
         var width: CGFloat = 0
         let relativeMinY = max(layoutData.minY - position.yPos, 0)
-        let relativeMaxY = max(layoutData.maxY - position.yPos, relativeMinY)
 
 //        for lineFragmentPosition in line.lineFragments.linesStartingAt(
 //            relativeMinY,
