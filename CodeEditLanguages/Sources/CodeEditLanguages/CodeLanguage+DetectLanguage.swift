@@ -25,7 +25,7 @@ public extension CodeLanguage {
                   let shebangLanguage = detectLanguageUsingShebang(contents: prefixBuffer.lowercased()) {
             return shebangLanguage
         } else if let prefixBuffer,
-                  let modelineLanguage = detecLanguageUsingModeline(
+                  let modelineLanguage = detectLanguageUsingModeline(
                     prefixBuffer: prefixBuffer.lowercased(),
                     suffixBuffer: suffixBuffer?.lowercased()
                   ) {
@@ -136,7 +136,7 @@ public extension CodeLanguage {
     ///   - prefixBuffer: The first few lines of a document.
     ///   - suffixBuffer: The last few lines of a document.
     /// - Returns: The detected code language, if any.
-    private static func detecLanguageUsingModeline(prefixBuffer: String, suffixBuffer: String?) -> CodeLanguage? {
+    private static func detectLanguageUsingModeline(prefixBuffer: String, suffixBuffer: String?) -> CodeLanguage? {
         func detectModeline(in string: String) -> CodeLanguage? {
             guard !string.isEmpty else { return nil }
 
