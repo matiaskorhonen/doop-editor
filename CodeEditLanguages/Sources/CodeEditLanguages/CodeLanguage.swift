@@ -107,7 +107,7 @@ public struct CodeLanguage {
     /// The bundle's resource URL
     internal var resourceURL: URL? = Bundle.module.resourceURL
 
-    /// A set of aditional identifiers to use for things like shebang matching.
+    /// A set of additional identifiers to use for things like shebang matching.
     public let additionalIdentifiers: Set<String>
 
     /// The tree-sitter language for the language if available
