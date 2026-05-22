@@ -21,7 +21,7 @@ public class TreeSitterModel {
         // swiftlint:disable:previous cyclomatic_complexity function_body_length
         switch language {
         case .agda:
-            return nil
+            return agdaQuery
         case .bash:
             return bashQuery
         case .c:
@@ -57,7 +57,7 @@ public class TreeSitterModel {
         case .jsx:
             return jsxQuery
         case .julia:
-            return nil
+            return juliaQuery
         case .kotlin:
             return kotlinQuery
         case .lua:
@@ -73,7 +73,7 @@ public class TreeSitterModel {
         case .ocamlInterface:
             return ocamlInterfaceQuery
         case .perl:
-            return nil
+            return perlQuery
         case .php:
             return phpQuery
         case .python:
@@ -104,6 +104,11 @@ public class TreeSitterModel {
             return nil
         }
     }
+
+    /// Query for `Agda` files.
+    public private(set) lazy var agdaQuery: Query? = {
+        return queryFor(.agda)
+    }()
 
     /// Query for `Bash` files.
     public private(set) lazy var bashQuery: Query? = {
@@ -190,6 +195,11 @@ public class TreeSitterModel {
         return queryFor(.json)
     }()
 
+    /// Query for `Julia` files.
+    public private(set) lazy var juliaQuery: Query? = {
+        return queryFor(.julia)
+    }()
+
     /// Query for `Kotlin` files.
     public private(set) lazy var kotlinQuery: Query? = {
         return queryFor(.kotlin)
@@ -223,6 +233,11 @@ public class TreeSitterModel {
     /// Query for `OCaml Interface` files.
     public private(set) lazy var ocamlInterfaceQuery: Query? = {
         return queryFor(.ocamlInterface)
+    }()
+
+    /// Query for `Perl` files.
+    public private(set) lazy var perlQuery: Query? = {
+        return queryFor(.perl)
     }()
 
     /// Query for `PHP` files.
