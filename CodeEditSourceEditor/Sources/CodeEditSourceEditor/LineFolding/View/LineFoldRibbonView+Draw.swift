@@ -133,7 +133,7 @@ extension LineFoldRibbonView {
                 maxYPosition: maxYPosition,
                 in: context
             )
-        } else if hoveringFold.fold?.isHoveringEqual(foldInfo.fold) == true {
+        } else if hoveringFold.fold?.isHoveringEqual(foldInfo.fold) ?? false {
             drawHoveredFold(
                 foldInfo: foldInfo,
                 foldCaps: foldCaps,

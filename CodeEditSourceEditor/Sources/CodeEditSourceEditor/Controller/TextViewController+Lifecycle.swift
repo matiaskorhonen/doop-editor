@@ -262,7 +262,7 @@ extension TextViewController {
             self.findViewController?.showFindPanel()
             return nil
         case (.init(rawValue: 0), "\u{1b}"): // Escape key
-            if findViewController?.viewModel.isShowingFindPanel == true {
+            if findViewController?.viewModel.isShowingFindPanel ?? false {
                 self.findViewController?.hideFindPanel()
                 return nil
             }

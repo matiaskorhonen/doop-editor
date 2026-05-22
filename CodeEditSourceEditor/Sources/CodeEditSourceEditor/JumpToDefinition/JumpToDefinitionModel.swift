@@ -46,7 +46,7 @@ final class JumpToDefinitionModel {
     /// - Returns: A range that contains a potential identifier to look up.
     private func findDefinitionRange(at location: Int) async -> NSRange? {
         guard let nodes = try? await treeSitterClient?.nodesAt(location: location),
-              let node = nodes.first(where: { $0.node.nodeType?.contains("identifier") == true }) else {
+              let node = nodes.first(where: { $0.node.nodeType?.contains("identifier") ?? false }) else {
             cancelHover()
             return nil
         }
@@ -127,7 +127,7 @@ final class JumpToDefinitionModel {
             return
         }
 
-        if hoveredRange?.contains(location) == false {
+        if !(hoveredRange?.contains(location) ?? false) {
             cancelHover()
         }
 

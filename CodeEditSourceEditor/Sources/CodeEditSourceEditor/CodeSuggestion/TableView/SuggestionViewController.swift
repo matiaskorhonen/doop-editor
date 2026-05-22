@@ -167,7 +167,7 @@ class SuggestionViewController: NSViewController {
     }
 
     func updateSize(using controller: TextViewController?) {
-        guard model?.items.isEmpty == false && tableView.numberOfRows > 0 else {
+        guard !(model?.items.isEmpty ?? true) && tableView.numberOfRows > 0 else {
             let size = NSSize(width: 256, height: noItemsLabel.fittingSize.height + 20)
             preferredContentSize = size
             windowController?.updateWindowSize(newSize: size)
@@ -279,7 +279,7 @@ class SuggestionViewController: NSViewController {
         clipView.scroll(to: NSPoint(x: 0, y: -SuggestionController.WINDOW_PADDING))
 
         // Select the first item
-        if model?.items.isEmpty == false {
+        if !(model?.items.isEmpty ?? true) {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         }
     }

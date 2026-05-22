@@ -13,7 +13,7 @@ final class LineIndentationFoldProvider: LineFoldProvider {
     func indentLevelAtLine(substring: NSString) -> Int? {
         for idx in 0..<substring.length {
             let character = UnicodeScalar(substring.character(at: idx))
-            if character?.properties.isWhitespace == false {
+            if character?.properties.isWhitespace != true {
                 return idx
             }
         }

@@ -105,7 +105,7 @@ struct PanelTextField<LeadingAccessories: View, TrailingAccessories: View>: View
                         .lineLimit(1)
                 }
             }
-            if clearable == true {
+            if clearable {
                 Button {
                     self.text = ""
                     onClear()
