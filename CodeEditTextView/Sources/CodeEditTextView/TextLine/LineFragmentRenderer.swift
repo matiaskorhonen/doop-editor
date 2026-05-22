@@ -44,7 +44,7 @@ public final class LineFragmentRenderer {
     ///   - context: The drawing context to draw into.
     ///   - yPos: In the drawing context, what `y` position to start drawing at.
     public func draw(lineFragment: LineFragment, in context: CGContext, yPos: CGFloat) {
-        if invisibleCharacterDelegate?.invisibleStyleShouldClearCache() == true {
+        if invisibleCharacterDelegate?.invisibleStyleShouldClearCache() ?? false {
             attributedStringCache.removeAll(keepingCapacity: true)
         }
 
