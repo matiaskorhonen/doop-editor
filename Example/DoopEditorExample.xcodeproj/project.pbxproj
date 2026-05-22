@@ -23,6 +23,7 @@
 		B58434F8AC2A3D1F5D9E22CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D87F01F73A473D610E875E40 /* ContentView.swift */; };
 		C2B56009851682D55FA937B5 /* EditorTheme+Default.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E61213D41A5D68851876CD /* EditorTheme+Default.swift */; };
 		C8421688006A671667424F9F /* DoopEditorExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B83982C9910F8D67D3190FB /* DoopEditorExampleApp.swift */; };
+		C99510F12FC08045004F44E8 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C99510F02FC08045004F44E8 /* AppIcon.icon */; };
 		DA8DB287A699285BCE9BDCC0 /* MockCompletionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61BE6EAB676EBBEA25EC5888 /* MockCompletionDelegate.swift */; };
 		DBA7EF7D0EE6371DEFE3ACB8 /* SourceEditorStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90C0E9571065FEB41ACD1E7 /* SourceEditorStatusBar.swift */; };
 /* End PBXBuildFile section */
@@ -44,6 +45,7 @@
 		B9F5C4E61D6DB248F94F3226 /* doop-editor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "doop-editor"; path = ..; sourceTree = SOURCE_ROOT; };
 		C3F7B7E2E93B507F51788233 /* NSColor+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSColor+Hex.swift"; sourceTree = "<group>"; };
 		C86AB9C5300607DB76DB9923 /* RawTextViewStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawTextViewStatusBar.swift; sourceTree = "<group>"; };
+		C99510F02FC08045004F44E8 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		D87F01F73A473D610E875E40 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		DA1F00A59296F3FDD9C4CEDD /* String+Lines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Lines.swift"; sourceTree = "<group>"; };
 		DAC4B1D719C8FA97515AEDC5 /* RawTextViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawTextViewController.swift; sourceTree = "<group>"; };
@@ -75,6 +77,7 @@
 		1FB7F60F573483744EB7154A /* DoopEditorExample */ = {
 			isa = PBXGroup;
 			children = (
+				C99510F02FC08045004F44E8 /* AppIcon.icon */,
 				AC5532F2BD5EE0A5CF0A820C /* Assets.xcassets */,
 				D87F01F73A473D610E875E40 /* ContentView.swift */,
 				7294881A5AF35FFCE29364F5 /* DoopEditorExample.entitlements */,
@@ -211,6 +214,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				17E8773075C68F4ACA909160 /* Assets.xcassets in Resources */,
+				C99510F12FC08045004F44E8 /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
