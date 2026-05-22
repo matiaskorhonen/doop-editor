@@ -1,0 +1,3 @@
+[submodule "CodeEditLanguages/vendor/nvim-treesitter"]
+	path = CodeEditLanguages/vendor/nvim-treesitter
+	url = https://github.com/nvim-treesitter/nvim-treesitter
