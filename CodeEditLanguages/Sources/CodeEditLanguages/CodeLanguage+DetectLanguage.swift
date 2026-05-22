@@ -42,7 +42,7 @@ public extension CodeLanguage {
         let fileExtension = url.pathExtension.lowercased()
         let fileName = url.pathComponents.last // should not be lowercase since it has to match e.g. `Dockerfile`
         // This is to handle special file types without an extension (e.g., Makefile, Dockerfile)
-        let fileNameOrExtension = fileExtension.isEmpty ? (fileName != nil ? fileName! : "") : fileExtension
+        let fileNameOrExtension = fileExtension.isEmpty ? (fileName ?? "") : fileExtension
         if let lang = allLanguages.first(where: { lang in lang.extensions.contains(fileNameOrExtension)}) {
             return lang
         } else {
