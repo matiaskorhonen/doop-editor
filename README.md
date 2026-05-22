@@ -62,8 +62,33 @@ git subtree pull --prefix=CodeEditLanguages \
 - Swift 5.9+
 - Xcode 15+
 
+## Usage
+
+Add DoopEditor as a SwiftPM dependency in your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/matiaskorhonen/doop-editor.git", branch: "main"),
+],
+```
+
+Then add the products you need to your target:
+
+```swift
+.target(
+    name: "MyTarget",
+    dependencies: [
+        .product(name: "CodeEditSourceEditor", package: "doop-editor"),
+        // Optionally also:
+        // .product(name: "CodeEditTextView", package: "doop-editor"),
+        // .product(name: "CodeEditLanguages", package: "doop-editor"),
+    ]
+),
+```
+
+`CodeEditSourceEditor` is the top-level component and pulls in `CodeEditTextView` and `CodeEditLanguages` transitively. Depend on the lower-level libraries directly only if you need them without the editor.
+
 ## Notes
 
-- `CodeEditLanguages` uses direct SPM tree-sitter grammar dependencies — the old `CodeLanguagesContainer.xcframework.zip` is not used.
 - The root `Package.swift` is the source of truth for the package graph. Each subtree may contain its own `Package.swift` from the upstream fork, which is kept in place to ease future subtree pulls but is not used during normal monorepo development.
 - This monorepo is optimized for Doop development and is not intended for clean upstream contribution.
