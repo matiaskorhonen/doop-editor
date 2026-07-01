@@ -43,7 +43,8 @@ extension TextSelectionManager {
         context: CGContext,
         highlightedLines: inout Set<TextLine.ID>
     ) {
-        guard let linePosition = layoutManager?.textLineForOffset(textSelection.range.location),
+        guard highlightSelectedLine,
+              let linePosition = layoutManager?.textLineForOffset(textSelection.range.location),
               !highlightedLines.contains(linePosition.data.id) else {
             return
         }
