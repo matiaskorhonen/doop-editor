@@ -14,6 +14,10 @@ extension SourceEditorConfiguration {
         /// false, the editor is selectable but not editable.
         public var isSelectable: Bool = true
 
+        /// Controls whether the current line is highlighted. Has no effect if `isEditable` is `false`, since the
+        /// line highlight is always hidden in that case.
+        public var highlightSelectedLine: Bool = true
+
         /// Determines what character(s) to insert when the tab key is pressed. Defaults to 4 spaces.
         public var indentOption: IndentOption = .spaces(count: 4)
 
@@ -23,24 +27,29 @@ extension SourceEditorConfiguration {
         public init(
             isEditable: Bool = true,
             isSelectable: Bool = true,
+            highlightSelectedLine: Bool = true,
             indentOption: IndentOption = .spaces(count: 4),
             reformatAtColumn: Int = 80
         ) {
             self.isEditable = isEditable
             self.isSelectable = isSelectable
+            self.highlightSelectedLine = highlightSelectedLine
             self.indentOption = indentOption
             self.reformatAtColumn = reformatAtColumn
         }
 
         @MainActor
         func didSetOnController(controller: TextViewController, oldConfig: Behavior?) {
-            if oldConfig?.isEditable != isEditable {
+            if oldConfig?.isEditable != isEditable || oldConfig?.highlightSelectedLine != highlightSelectedLine {
                 controller.textView.isEditable = isEditable
-                controller.textView.selectionManager.highlightSelectedLine = isEditable
-                controller.gutterView.highlightSelectedLines = isEditable
-                if !isEditable {
+                let shouldHighlight = isEditable && highlightSelectedLine
+                controller.textView.selectionManager.highlightSelectedLine = shouldHighlight
+                controller.gutterView.highlightSelectedLines = shouldHighlight
+                if !shouldHighlight {
                     controller.gutterView.selectedLineTextColor = nil
                     controller.gutterView.selectedLineColor = .clear
+                } else {
+                    controller.configuration.appearance.applySelectedLineColors(controller: controller)
                 }
             }
 

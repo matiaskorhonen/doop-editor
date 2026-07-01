@@ -147,6 +147,9 @@ public class TextViewController: NSViewController {
     /// Whether or not text view is selectable by user
     public var isSelectable: Bool { configuration.behavior.isSelectable }
 
+    /// Whether or not the current line is highlighted
+    public var highlightSelectedLine: Bool { configuration.behavior.highlightSelectedLine }
+
     /// A multiplier that determines the amount of space between characters. `1.0` indicates no space,
     /// `2.0` indicates one character of space between other characters.
     public var letterSpacing: Double { configuration.appearance.letterSpacing }

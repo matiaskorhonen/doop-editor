@@ -153,14 +153,7 @@ extension SourceEditorConfiguration {
             }
 
             controller.gutterView.textColor = theme.text.color.withAlphaComponent(0.35)
-            controller.gutterView.selectedLineTextColor = theme.text.color
-            controller.gutterView.selectedLineColor = if useThemeBackground {
-                theme.lineHighlight
-            } else if controller.systemAppearance == .darkAqua {
-                NSColor.quaternaryLabelColor
-            } else {
-                NSColor.selectedTextBackgroundColor.withSystemEffect(.disabled)
-            }
+            applySelectedLineColors(controller: controller)
             controller.gutterView.backgroundColor = if useThemeBackground {
                 theme.background
             } else {
@@ -170,6 +163,20 @@ extension SourceEditorConfiguration {
             controller.minimapView.setTheme(theme)
             controller.reformattingGuideView?.theme = theme
             controller.textView.typingAttributes = controller.attributesFor(nil)
+        }
+
+        /// Applies the theme/appearance-derived colors for the selected line highlight to the gutter.
+        /// - Note: This does not check ``SourceEditorConfiguration/Behavior/highlightSelectedLine``; callers are
+        ///         expected to only call this when the highlight should be visible.
+        func applySelectedLineColors(controller: TextViewController) {
+            controller.gutterView.selectedLineTextColor = theme.text.color
+            controller.gutterView.selectedLineColor = if useThemeBackground {
+                theme.lineHighlight
+            } else if controller.systemAppearance == .darkAqua {
+                NSColor.quaternaryLabelColor
+            } else {
+                NSColor.selectedTextBackgroundColor.withSystemEffect(.disabled)
+            }
         }
 
         /// Finds the preferred use theme background.
