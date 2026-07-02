@@ -105,7 +105,8 @@ public extension TextLayoutManager {
             if let currentPosition {
                 guard let nextPosition = layoutManager?.lineStorage.getLine(
                     atIndex: currentPosition.indexRange.upperBound + 1
-                ), nextPosition.range.location < range.max else {
+                ), nextPosition.range.location < range.max
+                    || (nextPosition.range.isEmpty && nextPosition.range.location == range.max) else {
                     return nil
                 }
                 self.currentPosition = layoutManager?.determineVisiblePosition(for: nextPosition)

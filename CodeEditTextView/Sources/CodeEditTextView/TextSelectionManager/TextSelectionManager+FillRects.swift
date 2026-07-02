@@ -74,6 +74,7 @@ extension TextSelectionManager {
             let maxRect: CGRect
             let endOfLine = fragmentRange.max <= range.max || range.contains(fragmentRange.max)
             let endOfDocument = intersectionRange.max == layoutManager.lineStorage.length
+                && linePosition.index == layoutManager.lineStorage.count - 1
             let emptyLine = linePosition.range.isEmpty
 
             // If the selection is at the end of the line, or contains the end of the fragment, and is not the end

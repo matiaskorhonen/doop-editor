@@ -181,6 +181,39 @@ struct TextLayoutManagerTests {
         }
     }
 
+    /// When the document ends with a newline, the storage keeps a zero-length final line to represent the empty
+    /// row after it. Selecting to the very end of the document (e.g. Select All) must still include that line,
+    /// otherwise ``TextLayoutManager/linesInRange(_:)`` stops one line short.
+    @Test
+    func rangeIteratorIncludesTrailingEmptyLine() {
+        textStorage.mutableString.setString("A\n\nB\n\nC\n")
+        layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+
+        let documentRange = NSRange(location: 0, length: textStorage.length)
+        let lineIndexes = Array(layoutManager.linesInRange(documentRange).map(\.index))
+
+        #expect(lineIndexes == Array(0..<layoutManager.lineCount), "Trailing empty line was skipped.")
+    }
+
+    /// Regression test: selecting through the end of a document that ends with a newline previously left the
+    /// last visible line with a zero-width fill rect, so its selection highlight wasn't drawn.
+    @Test
+    func selectAllFillRectsCoverEveryVisibleLine() {
+        textStorage.mutableString.setString("A\n\nB\n\nC\n")
+        layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+
+        let documentRange = NSRange(location: 0, length: textStorage.length)
+        let selection = TextSelectionManager.TextSelection(range: documentRange)
+        let fillRects = textView.selectionManager.getFillRects(
+            in: NSRect(x: 0, y: 0, width: 1000, height: layoutManager.estimatedHeight()),
+            for: selection
+        )
+
+        // One rect per non-empty line ("A\n", "\n", "B\n", "\n", "C\n"); the trailing empty line contributes none.
+        #expect(fillRects.count == layoutManager.lineCount - 1)
+        #expect(fillRects.allSatisfy { $0.width > 0 }, "A line's selection highlight had zero width.")
+    }
+
     @Test
     func afterLayoutDoesntNeedLayout() {
         layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
