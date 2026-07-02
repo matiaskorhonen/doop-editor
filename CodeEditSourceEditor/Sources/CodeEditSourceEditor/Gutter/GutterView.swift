@@ -64,6 +64,11 @@ public class GutterView: NSView {
     @Invalidating(.display)
     var backgroundColor: NSColor? = NSColor.controlBackgroundColor
 
+    /// A vertical divider drawn at the trailing edge of the gutter, between the gutter and the text view.
+    /// No divider is drawn if `nil`.
+    @Invalidating(.display)
+    var dividerColor: NSColor? = nil
+
     @Invalidating(.display)
     var highlightSelectedLines: Bool = true
 
@@ -314,6 +319,19 @@ public class GutterView: NSView {
         context.restoreGState()
     }
 
+    /// Draws a hairline divider at the trailing edge of the gutter's background.
+    /// - Parameter context: The drawing context to draw in.
+    private func drawDivider(_ context: CGContext) {
+        guard let dividerColor else { return }
+        let dividerWidth: CGFloat = 1.0
+        let xPos = frame.width - backgroundEdgeInsets.trailing - foldingRibbonWidth - dividerWidth
+
+        context.saveGState()
+        context.setFillColor(dividerColor.cgColor)
+        context.fill(CGRect(x: xPos, y: bounds.minY, width: dividerWidth, height: bounds.height).pixelAligned)
+        context.restoreGState()
+    }
+
     override public func setNeedsDisplay(_ invalidRect: NSRect) {
         updateWidthIfNeeded()
         super.setNeedsDisplay(invalidRect)
@@ -327,6 +345,7 @@ public class GutterView: NSView {
         drawBackground(context, dirtyRect: dirtyRect)
         drawSelectedLines(context)
         drawLineNumbers(context, dirtyRect: dirtyRect)
+        drawDivider(context)
         context.restoreGState()
     }
 

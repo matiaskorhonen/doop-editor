@@ -155,10 +155,11 @@ extension SourceEditorConfiguration {
             controller.gutterView.textColor = theme.text.color.withAlphaComponent(0.35)
             applySelectedLineColors(controller: controller)
             controller.gutterView.backgroundColor = if useThemeBackground {
-                theme.background
+                theme.gutterBackground ?? theme.background
             } else {
                 .windowBackgroundColor
             }
+            controller.gutterView.dividerColor = theme.gutterDividerColor
 
             controller.minimapView.setTheme(theme)
             controller.reformattingGuideView?.theme = theme

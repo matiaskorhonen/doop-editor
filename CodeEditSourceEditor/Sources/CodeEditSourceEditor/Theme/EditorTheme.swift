@@ -9,8 +9,8 @@ import SwiftUI
 
 /// A collection of attributes used for syntax highlighting and other colors for the editor.
 ///
-/// Attributes of a theme that do not apply to text (background, line highlight) are a single `NSColor` for simplicity.
-/// All other attributes use the ``EditorTheme/Attribute`` type to store
+/// Attributes of a theme that do not apply to text (background, line highlight, gutter) are a single `NSColor` for
+/// simplicity. All other attributes use the ``EditorTheme/Attribute`` type to store
 public struct EditorTheme: Equatable {
     /// Represents attributes that can be applied to style text.
     public struct Attribute: Equatable, Hashable, Sendable {
@@ -33,6 +33,11 @@ public struct EditorTheme: Equatable {
     public var background: NSColor
     public var lineHighlight: NSColor
     public var selection: NSColor
+
+    /// The gutter's background color. Defaults to ``background`` when `nil`.
+    public var gutterBackground: NSColor?
+    /// A vertical divider drawn between the gutter and the text view. No divider is drawn when `nil`.
+    public var gutterDividerColor: NSColor?
     public var keywords: Attribute
     public var commands: Attribute
     public var types: Attribute
@@ -70,6 +75,8 @@ public struct EditorTheme: Equatable {
         background: NSColor,
         lineHighlight: NSColor,
         selection: NSColor,
+        gutterBackground: NSColor? = nil,
+        gutterDividerColor: NSColor? = nil,
         keywords: Attribute,
         commands: Attribute,
         types: Attribute,
@@ -102,6 +109,8 @@ public struct EditorTheme: Equatable {
         self.background = background
         self.lineHighlight = lineHighlight
         self.selection = selection
+        self.gutterBackground = gutterBackground
+        self.gutterDividerColor = gutterDividerColor
         self.keywords = keywords
         self.commands = commands
         self.types = types
