@@ -12,7 +12,7 @@ DoopEditor/
 └── CodeEditLanguages/         # git subtree from matiaskorhonen/CodeEditLanguages@custom
 ```
 
-Each subdirectory contains the full imported history from its upstream fork. Each may have its own `Package.swift` left over from the fork — ignore it; only the root `Package.swift` matters.
+Each subdirectory contains the full imported history from its upstream fork. Only the root `Package.swift` matters.
 
 ## Package
 

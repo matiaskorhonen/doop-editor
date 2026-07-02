@@ -90,5 +90,5 @@ Then add the products you need to your target:
 
 ## Notes
 
-- The root `Package.swift` is the source of truth for the package graph. Each subtree may contain its own `Package.swift` from the upstream fork, which is kept in place to ease future subtree pulls but is not used during normal monorepo development.
+- The root `Package.swift` is the source of truth for the package graph.
 - This monorepo is optimized for Doop development and is not intended for clean upstream contribution.
