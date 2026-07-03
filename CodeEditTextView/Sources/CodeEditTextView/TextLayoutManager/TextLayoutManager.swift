@@ -214,6 +214,15 @@ public class TextLayoutManager: NSObject {
         }
     }
 
+    /// Invalidates the cached line height estimate, forcing it to be recalculated using the current typing
+    /// attributes the next time ``estimateLineHeight()`` is called. Callers that change the typing attributes
+    /// (e.g. the font) should call this, since the estimate is otherwise cached indefinitely and would keep
+    /// returning a value based on stale attributes — including for empty lines, which size themselves using
+    /// this estimate rather than measuring their own (contentless) text.
+    public func invalidateEstimatedLineHeight() {
+        _estimateLineHeight = nil
+    }
+
     /// The last known line height estimate. If  set to `nil`, will be recalculated the next time
     /// ``TextLayoutManager/estimateLineHeight()`` is called.
     private var _estimateLineHeight: CGFloat?

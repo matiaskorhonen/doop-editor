@@ -65,6 +65,9 @@ open class TextView: NSView, NSTextContent {
     /// The attributes to apply to inserted text.
     public var typingAttributes: [NSAttributedString.Key: Any] = [:] {
         didSet {
+            // The layout manager's line height estimate (used to size empty lines) is derived from these
+            // attributes and cached indefinitely, so it needs to be invalidated whenever they change.
+            layoutManager?.invalidateEstimatedLineHeight()
             setNeedsDisplay()
             layoutManager?.setNeedsLayout()
         }
