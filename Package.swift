@@ -53,7 +53,7 @@ let package = Package(
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", revision: "28db724e8e30920638b46d408c0fbac007ac6a62"), // feature/spm
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript.git", revision: "75b3874edb2dc714fb1fd77a32013d0f8699989f"), // master
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git", exact: "0.7.0"),
-        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", branch: "update"),
+        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", revision: "b0b21e587fb0702d67e276b6ef574cd1c2313c15"), // update
     ],
     targets: [
         // MARK: - CodeEditTextView
