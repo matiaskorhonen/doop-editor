@@ -30,7 +30,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.25.0"),
         .package(url: "https://github.com/camdencheek/tree-sitter-go-mod.git", revision: "2e886870578eeba1927a2dc4bd2e2b3f598c5f9a"), // main
         .package(url: "https://github.com/tree-sitter/tree-sitter-haskell.git", revision: "0975ef72fc3c47b530309ca93937d7d143523628"), // master
-        .package(url: "https://github.com/tree-sitter/tree-sitter-html.git", branch: "master"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-html.git", revision: "73a3947324f6efddf9e17c0ea58d454843590cc0"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-java.git", branch: "master"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-javascript.git", exact: "0.23.1"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-jsdoc.git", exact: "0.23.2"),
