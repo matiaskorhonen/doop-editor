@@ -146,11 +146,12 @@ extension SourceEditorConfiguration {
                 systemAppearance: controller.systemAppearance
             )
             controller.textView.selectionManager.insertionPointColor = theme.insertionPoint
-            controller.textView.enclosingScrollView?.backgroundColor = if useThemeBackground {
+            let editorBackgroundColor: NSColor = if useThemeBackground {
                 theme.background
             } else {
                 .clear
             }
+            controller.textView.enclosingScrollView?.backgroundColor = editorBackgroundColor
 
             controller.gutterView.textColor = theme.text.color.withAlphaComponent(0.35)
             applySelectedLineColors(controller: controller)
@@ -160,6 +161,12 @@ extension SourceEditorConfiguration {
                 .windowBackgroundColor
             }
             controller.gutterView.dividerColor = theme.gutterDividerColor
+
+            // Keeps the elastic/rubber-band overscroll area's two-tone fill in sync with the colors above.
+            if let backgroundClipView = controller.scrollView.contentView as? GutterBackgroundClipView {
+                backgroundClipView.editorBackgroundColor = editorBackgroundColor
+                backgroundClipView.needsDisplay = true
+            }
 
             controller.minimapView.setTheme(theme)
             controller.reformattingGuideView?.theme = theme

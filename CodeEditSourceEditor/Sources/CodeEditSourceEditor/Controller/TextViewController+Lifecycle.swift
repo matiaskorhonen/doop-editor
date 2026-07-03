@@ -30,6 +30,7 @@ extension TextViewController {
         super.loadView()
 
         scrollView = NSScrollView()
+        scrollView.contentView = GutterBackgroundClipView()
         scrollView.documentView = textView
 
         gutterView = GutterView(
@@ -39,6 +40,7 @@ extension TextViewController {
         )
         gutterView.updateWidthIfNeeded()
         scrollView.addFloatingSubview(gutterView, for: .horizontal)
+        (scrollView.contentView as? GutterBackgroundClipView)?.gutterView = gutterView
 
         reformattingGuideView = ReformattingGuideView(configuration: configuration)
         scrollView.addFloatingSubview(reformattingGuideView, for: .vertical)

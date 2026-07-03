@@ -216,14 +216,24 @@ public class GutterView: NSView {
         }
     }
 
+    /// The horizontal extent, in the gutter view's own coordinate space, that receives the solid gutter
+    /// background fill. Excludes the trailing edge inset and folding ribbon width, which are intentionally left
+    /// unfilled so text can be scrolled underneath the gutter before being clipped.
+    var backgroundFillRect: NSRect {
+        let minX = backgroundEdgeInsets.leading
+        let maxX = frame.width - backgroundEdgeInsets.trailing - foldingRibbonWidth
+        return NSRect(x: minX, y: 0, width: max(0, maxX - minX), height: frame.height)
+    }
+
     /// Fills the gutter background color.
     /// - Parameters:
     ///   - context: The drawing context to draw in.
     ///   - dirtyRect: A rect to draw in, received from ``draw(_:)``.
     private func drawBackground(_ context: CGContext, dirtyRect: NSRect) {
         guard let backgroundColor else { return }
-        let minX = max(backgroundEdgeInsets.leading, dirtyRect.minX)
-        let maxX = min(frame.width - backgroundEdgeInsets.trailing - foldingRibbonWidth, dirtyRect.maxX)
+        let fillRect = backgroundFillRect
+        let minX = max(fillRect.minX, dirtyRect.minX)
+        let maxX = min(fillRect.maxX, dirtyRect.maxX)
         let width = maxX - minX
 
         context.saveGState()
@@ -319,16 +329,18 @@ public class GutterView: NSView {
         context.restoreGState()
     }
 
+    /// The width of the hairline divider drawn at the trailing edge of the gutter's background.
+    static let dividerWidth: CGFloat = 1.0
+
     /// Draws a hairline divider at the trailing edge of the gutter's background.
     /// - Parameter context: The drawing context to draw in.
     private func drawDivider(_ context: CGContext) {
         guard let dividerColor else { return }
-        let dividerWidth: CGFloat = 1.0
-        let xPos = frame.width - backgroundEdgeInsets.trailing - foldingRibbonWidth - dividerWidth
+        let xPos = backgroundFillRect.maxX - Self.dividerWidth
 
         context.saveGState()
         context.setFillColor(dividerColor.cgColor)
-        context.fill(CGRect(x: xPos, y: bounds.minY, width: dividerWidth, height: bounds.height).pixelAligned)
+        context.fill(CGRect(x: xPos, y: bounds.minY, width: Self.dividerWidth, height: bounds.height).pixelAligned)
         context.restoreGState()
     }
 
