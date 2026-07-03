@@ -51,7 +51,7 @@ let package = Package(
         .package(url: "https://github.com/DerekStride/tree-sitter-sql.git", revision: "851e9cb257ba7c66cc8c14214a31c44d2f1e954e"), // gh-pages
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", revision: "31d17fe7e818a2048c808b5c6fdc2dc792f4f5b5"), // with-generated-files
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", revision: "28db724e8e30920638b46d408c0fbac007ac6a62"), // feature/spm
-        .package(url: "https://github.com/tree-sitter/tree-sitter-typescript.git", branch: "master"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-typescript.git", revision: "75b3874edb2dc714fb1fd77a32013d0f8699989f"), // master
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-yaml.git", exact: "0.7.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", branch: "update"),
     ],
