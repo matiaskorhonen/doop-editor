@@ -36,7 +36,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-jsdoc.git", exact: "0.23.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-json.git", exact: "0.24.8"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-julia.git", exact: "0.23.1"),
-        .package(url: "https://github.com/fwcd/tree-sitter-kotlin", branch: "main"),
+        .package(url: "https://github.com/fwcd/tree-sitter-kotlin", revision: "c8ac3d2627240160b999a2c100de3babbdb8f419"), // main
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-lua", exact: "0.3.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-objc", branch: "master"),
