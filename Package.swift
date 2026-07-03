@@ -18,7 +18,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.0.0"),
         // CodeEditLanguages deps
         .package(url: "https://github.com/tree-sitter/swift-tree-sitter.git", exact: "0.10.0"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-agda.git", branch: "master"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-agda.git", revision: "e8d47a6987effe34d5595baf321d82d3519a8527"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-bash.git", exact: "0.23.3"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", branch: "master"),
