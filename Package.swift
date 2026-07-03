@@ -47,7 +47,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.25.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-ruby.git", revision: "ad907a69da0c8a4f7a943a7fe012712208da6dee"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-rust.git", revision: "77a3747266f4d621d0757825e6b11edcbf991ca5"), // master
-        .package(url: "https://github.com/tree-sitter/tree-sitter-scala.git", branch: "master"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-scala.git", revision: "4d081d98670ff6e98ca42c085294fc75eec15e1d"), // master
         .package(url: "https://github.com/DerekStride/tree-sitter-sql.git", branch: "gh-pages"),
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", branch: "with-generated-files"),
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", branch: "feature/spm"),
