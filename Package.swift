@@ -25,7 +25,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-c-sharp.git", revision: "af29416d729b7a6603101b513604392d8f675e3b"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-css.git", exact: "0.23.2"),
         .package(url: "https://github.com/camdencheek/tree-sitter-dockerfile.git", revision: "971acdd908568b4531b0ba28a445bf0bb720aba5"), // main
-        .package(url: "https://github.com/elixir-lang/tree-sitter-elixir.git", branch: "main"),
+        .package(url: "https://github.com/elixir-lang/tree-sitter-elixir.git", revision: "c4f9f5a15ddad8635ba59a5b99c2e9124e74ad91"), // main
         .package(url: "https://github.com/matiaskorhonen/tree-sitter-generic.git", branch: "main"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.25.0"),
         .package(url: "https://github.com/camdencheek/tree-sitter-go-mod.git", branch: "main"),
