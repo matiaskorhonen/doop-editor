@@ -6,7 +6,7 @@ This package uses **direct SPM grammar dependencies** (no xcframework). It heavi
 
 ## Documentation
 
-The documentation including a guide on how to add support for new languages can be found **[here](https://codeeditapp.github.io/CodeEditLanguages/documentation/codeeditlanguages)**!
+API documentation is available in the `Documentation.docc` catalog (browse it in Xcode via **Product > Build Documentation**). Its `Add-Languages.md` guide describes an upstream `xcframework`-based workflow that this fork no longer uses — see [CLAUDE.md](../CLAUDE.md) for how to add a language here (a direct SPM grammar dependency plus edits to `TreeSitterLanguage.swift`, `CodeLanguage.swift`, `CodeLanguage+Definitions.swift`, and `TreeSitterModel.swift`).
 
 ## Supported Languages
 
@@ -25,13 +25,13 @@ The documentation including a guide on how to add support for new languages can 
 | [JavaScript/JSX](https://github.com/tree-sitter/tree-sitter-javascript) | ✅ | ✅ |
 | [JSDoc](https://github.com/tree-sitter/tree-sitter-jsdoc) | ✅ | ✅ |
 | [JSON](https://github.com/tree-sitter/tree-sitter-json) | ✅ | ✅ |
-| [Julia](https://github.com/tree-sitter/tree-sitter-julia) | ✅ | _not available_ |
+| [Julia](https://github.com/tree-sitter/tree-sitter-julia) | ✅ | ✅ |
 | [Kotlin](https://github.com/fwcd/tree-sitter-kotlin) | ✅ | ✅ |
 | [Lua](https://github.com/tree-sitter-grammars/tree-sitter-lua) | ✅ | ✅ |
 | [Markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown) | ✅ | ✅ |
 | [Objective C](https://github.com/tree-sitter-grammars/tree-sitter-objc) | ✅ | ✅ |
 | Plain Text | ✅ | _not available_ |
-| [Perl](https://github.com/ganezdragon/tree-sitter-perl) | ✅ | _not available_ |
+| [Perl](https://github.com/ganezdragon/tree-sitter-perl) | ✅ | ✅ |
 | [PHP](https://github.com/tree-sitter/tree-sitter-php) | ✅ | ✅ |
 | [Python](https://github.com/tree-sitter/tree-sitter-python) | ✅ | ✅ |
 | [Regex](https://github.com/tree-sitter/tree-sitter-regex) | ✅ | ✅ |
