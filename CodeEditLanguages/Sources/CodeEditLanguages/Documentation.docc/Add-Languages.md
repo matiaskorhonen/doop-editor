@@ -1,143 +1,46 @@
 # Add Languages
 
-This article is a writedown on how to add support for more languages to ``CodeLanguage``.
+This article explains how to add support for a new language to ``CodeLanguage``.
 
 ## Overview
 
-First of all have a look at the corresponding [GitHub Issue](https://github.com/CodeEditApp/CodeEditTextView/issues/15) to see which languages still need implementation.
+This fork depends directly on a SwiftPM grammar package per `tree-sitter` language — there is no `xcframework` build step.
 
-> Note: If you want to update existing languages see <doc:Update-Languages> instead.
+> Note: If you want to update an existing language's grammar version instead, see <doc:Update-Languages>.
 
-## Add SPM support
+## Find or create a grammar package
 
-If you find one you want to add, fork and clone the linked repo and create a new branch `feature/spm`.
+You need a SwiftPM-compatible `tree-sitter` grammar package: one with a `Package.swift` exposing a `TreeSitter{Lang}` library product built from `src/parser.c` (and `src/scanner.c`/`.cc` if the grammar has an external scanner). Many `tree-sitter-{lang}` repositories already have one; check for a `Package.swift` at the root or on a branch such as `spm` before writing your own.
 
-> Tip: In the following code samples replace `{LANG}` or `{lang}` with the language you add (e.g.: `Swift` or `CPP` and `swift` or `cpp` respectively)
+## Add the dependency
 
-### .gitignore
+1. Add the grammar package to the `dependencies` array in the root `Package.swift`:
 
-Edit the `.gitignore` file to exclude the `.build/` directory from git.
+    ```swift
+    .package(url: "https://github.com/tree-sitter/tree-sitter-{lang}.git", exact: "X.Y.Z"),
+    ```
 
-### Package.swift
+    Prefer an `exact` version pin; fall back to `revision:` (with a trailing comment naming the branch) only if no tagged release works for this package. Check `CodeEditLanguages/README.md`'s "Grammar Version Upgrade Blockers" section for known issues (e.g. some grammars' `FileManager`-based scanner detection breaks when consumed as an SPM dependency) before picking a version.
 
-Create a new file `Package.swift` in the `root` directory of the repository and add the following configuration.
+2. Add the product dependency and a resource copy to the `CodeEditLanguages` target, keeping both lists alphabetical:
 
-> Warning: Make sure to remove the comment in 'sources'.
+    ```swift
+    .product(name: "TreeSitter{Lang}", package: "tree-sitter-{lang}"),
+    ```
 
-```swift
-// swift-tools-version:5.3
-import PackageDescription
+    ```swift
+    .copy("Resources/tree-sitter-{lang}"),
+    ```
 
-let package = Package(
-    name: "TreeSitter{LANG}",
-    platforms: [.macOS(.v10_13), .iOS(.v11)],
-    products: [
-        .library(name: "TreeSitter{LANG}", targets: ["TreeSitter{LANG}"]),
-    ],
-    dependencies: [],
-    targets: [
-        .target(name: "TreeSitter{LANG}",
-                path: ".",
-                exclude: [
-                    "binding.gyp",
-                    "bindings",
-                    "Cargo.toml",
-                    "corpus",
-                    "examples",
-                    "grammar.js",
-                    "LICENSE",
-                    "Makefile",
-                    "package.json",
-                    "README.md",
-                    "src/grammar.json",
-                    "src/node-types.json",
-                    // any additional files to exclude 
-                ],
-                sources: [
-                    "src/parser.c",
-                    "src/scanner.cc", // this might be `scanner.c` or not present at all
-                ],
-                resources: [
-                    .copy("queries")
-                ],
-                publicHeadersPath: "bindings/swift",
-                cSettings: [.headerSearchPath("src")])
-    ]
-)
-```
-
-### Swift Bindings
-
-Now you need to create the Swift bindings which are a `header` file exposing the `tree_sitter_{lang}()` function.
-
-First of all create the following directories inside the `bindings/` directory:
-
-`./bindings/swift/TreeSitter{LANG}/`
-
-Inside that folder create a new header file called `{lang}.h`.
-
-```cpp
-#ifndef TREE_SITTER_{LANG}_H_
-#define TREE_SITTER_{LANG}_H_
-
-typedef struct TSLanguage TSLanguage;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern TSLanguage *tree_sitter_{lang}();
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // TREE_SITTER_{LANG}_H_
-```
+3. Copy the grammar's query files into `Sources/CodeEditLanguages/Resources/tree-sitter-{lang}/` — `highlights.scm` at minimum, plus any of `folds.scm`, `indents.scm`, `injections.scm`, `locals.scm`, or `tags.scm` it provides.
 
 ## Add it to CodeEditLanguages
 
-In order to add a language to ``CodeEditLanguages`` you need to open the `.xcodeproj` file located inside `CodeLanguage-Container`.
-
-![.xcodeproj location](xcodeproj-location)
-
-1. Add the `tree-sitter` package you created earlier as a dependency like you would in a regular Xcode project.
-
-2. Then make sure the framework target loads the package module.
-
-3. Now open the `CodeLanguages_Container.h` header file and add:
-
-    ```cpp
-    extern TSLanguage *tree_sitter_{lang}();
-    ```
-
-    > Important: Please keep an alphabetical order
-
-4. Now create the `xcframework` by running the `build_framework.sh` script from the Package's root directory.
-   ```bash
-   $ ./build_framework.sh
-   ```
-    > Note: To run the script, you need to install `jq` by downloading it [here](https://stedolan.github.io/jq/) or with Homebrew using:
-    > ```bash
-    > $ brew install jq
-    > ```
-
-5. Check the output of the script. It should say `Done!` at the end.
-   ![build_framework.sh console output](build-output)
-   > Tip: If this does not succeed, try running the script using the `--debug` flag to get verbose output:
-   > ```bash
-   > $ ./build_framework.sh --debug
-   > ```
-
-6. You are now done in the Xcode Project and may close it now. Open the Package and continue.
-
-## Add it to CodeLanguage
-
-Now move over to the `Sources/CodeEditLanguages` folder where 3 files need to be updated.
+Four files in `Sources/CodeEditLanguages` need updating.
 
 ### TreeSitterLanguage.swift
 
-Add a case for your language to ``TreeSitterLanguage``:
+Add a case, keeping it alphabetical:
 
 ```swift
 public enum TreeSitterLanguage: String {
@@ -148,32 +51,25 @@ public enum TreeSitterLanguage: String {
 
 ### CodeLanguage.swift
 
-Find the `tsLanguage` computed property and add a `case` to it:
+Import the grammar module and add a case to the `tsLanguage` computed property:
 
 ```swift
-private var tsLanguage: UnsafeMutablePointer<TSLanguage>? {
+import TreeSitter{Lang}
+```
+
+```swift
+private var tsLanguage: OpaquePointer? {
     switch id {
     // other cases
     case .{lang}:
         return tree_sitter_{lang}()
     }
-    // other cases
 }
 ```
 
-On the bottom of the file add a new `static` constant:
+### CodeLanguage+Definitions.swift
 
-```swift
-static let {lang}: CodeLanguage = .init(
-    id: .{lang}, 
-    tsName: {lang}, 
-    extensions: [...]
-)
-```
-
-> Important: in 'extensions' add the proper file extensions your language uses.
-
-Now find the static constant ``CodeLanguage/allLanguages`` and add your language to it:
+Add the language to ``CodeLanguage/allLanguages`` and define its static constant, both alphabetically:
 
 ```swift
 static let allLanguages: [CodeLanguage] = [
@@ -181,11 +77,23 @@ static let allLanguages: [CodeLanguage] = [
     .{lang},
     // other languages
 ]
+
+/// A language structure for `{Lang}`
+static let {lang}: CodeLanguage = .init(
+    id: .{lang},
+    tsName: "{lang}",
+    extensions: ["ext"],
+    lineCommentString: "//",
+    rangeCommentStrings: ("/*", "*/"),
+    highlights: ["folds", "injections", "locals"] // whichever additional query files you bundled
+)
 ```
+
+> Important: `highlights` should list only the *additional* query files beyond `highlights.scm`, which is always loaded.
 
 ### TreeSitterModel.swift
 
-Create a new query like so:
+Add a lazily-computed query property and a case in ``TreeSitterModel/query(for:)``:
 
 ```swift
 public private(set) lazy var {lang}Query: Query? = {
@@ -193,63 +101,49 @@ public private(set) lazy var {lang}Query: Query? = {
 }()
 ```
 
-Find the ``TreeSitterModel/query(for:)`` method and add a `case` for your language:
-
 ```swift
 public func query(for language: TreeSitterLanguage) -> Query? {
     switch language {
     // other cases
     case .{lang}:
         return {lang}Query
-    // other cases
     }
 }
 ```
 
-## Test it!
+## Add tests
 
-Make sure to test the newly created language in a sample project!
-
-When everything is working correctly push your `tree-sitter-{lang}` changes to `origin` and also create a Pull Request to the official repository.
-
-> Tip: Take [this PR description](https://github.com/tree-sitter/tree-sitter-javascript/pull/223) as a template and cross-reference it with your Pull Request.
-
-Now you can remove the local dependencies and replace it with the actual package URLs and submit a Pull Request for `CodeEditTextView`.
-
-## Unit Tests
-
-Also make sure to add test cases for your new language in `Tests/CodeEditLanguagesTests`.
-
-### Example
+Add cases to `Tests/CodeEditLanguagesTests/CodeEditLanguagesTests.swift`, following the existing per-language `// MARK:` sections — one `test_CodeLanguage{Lang}` per file extension, and a `test_FetchQuery{Lang}` confirming the query compiles:
 
 ```swift
-// MARK: - Swift
+func test_CodeLanguage{Lang}() throws {
+    let url = URL(fileURLWithPath: "~/path/to/file.{ext}")
+    let language = CodeLanguage.detectLanguageFrom(url: url)
 
-    // create as many test cases as there are file extensions
-    func test_CodeLanguageSwift() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.swift")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
+    XCTAssertEqual(language.id, .{lang})
+}
 
-        XCTAssertEqual(language.id, .swift)
-    }
+func test_FetchQuery{Lang}() throws {
+    var language = CodeLanguage.{lang}
+    language.resourceURL = bundleURL
 
-    func test_FetchQuerySwift() throws {
-        var language = CodeLanguage.swift
-        language.resourceURL = bundleURL
-
-        let data = try Data(contentsOf: language.queryURL!)
-        let query = try? Query(language: language.language!, data: data)
-        XCTAssertNotNil(query)
-        XCTAssertNotEqual(query?.patternCount, 0)
-    }
+    let data = try Data(contentsOf: language.queryURL!)
+    let query = try? Query(language: language.language!, data: data)
+    XCTAssertNotNil(query)
+    XCTAssertNotEqual(query?.patternCount, 0)
+}
 ```
 
-### Run Tests locally
+`LanguageResourcesTests` also runs automatically and will fail the build if `highlights` references a file that isn't bundled, or log a warning if a bundled file isn't referenced by `highlights` — check its output.
 
-Once you added your unit test cases run all tests locally on your machine by going to `Product>Test` or pressing `⌘+U` to make sure everything is working as intended.
+Run the suite locally:
+
+```bash
+swift test --filter CodeEditLanguagesTests
+```
 ![unit test results](tests-results)
 
 ## Documentation
 
-Please make sure to add the newly created properties to the documentation `*.md` files in the `Documentation.docc` catalog.
+Add the language to the "Supported Languages" list and "Type Properties" topic in <doc:CodeLanguage>, and its query property to <doc:TreeSitterModel>. Update the table in `CodeEditLanguages/README.md` too.
 ![docs location](docs-location)

@@ -1,53 +1,30 @@
 # Update Languages
 
-This article covers all the steps needed to update to the latest version of the `tree-sitter` languages.
+This article covers updating an existing language's `tree-sitter` grammar to a newer version.
 
 ## Overview
 
-From time to time the `tree-sitter` languages need to be updated to their latest version. This is pretty straight forward and can be done in less than 5 minutes.
+Since each grammar is a direct SwiftPM dependency in the root `Package.swift`, bumping a version is usually a one-line edit rather than a rebuild step.
 
-## Update the Dependencies
+## Update the dependency
 
-1. Open the `CodeLanguages-Container.xcodeproj` which is located inside the `./CodeLanguages-Container` directory.
-   ![xcodeproj location](xcodeproj-location)
+1. Find the language's `.package(url:...)` entry in the root `Package.swift` and update its version constraint, matching whatever pinning style it currently uses (`exact:`, or `revision:` with a comment naming the branch).
 
-2. Go to `File > Packages > Update to Latest Package Versions` and let it resolve the SPM dependencies.
-   > Note: Depending on your internet connection and Mac hardware this step can take a couple of minutes.
+2. Resolve and build:
 
-3. Close the project
+    ```bash
+    swift package update {package-name}
+    swift build
+    ```
 
-> Tip: At this stage you can check if anything changed at all by checking the git status. If `Package.resolved` does not appear in the changed files list, you don't need to proceed.
-> ```bash
-> $ git status
-> ```
-
-## Update the Framework
-
-1. Open your terminal and set your working directory
-   ```bash
-   $ cd path/to/CodeEditLanguages
-   ```
-
-2. Run the `build_framework.sh` script
-   ```bash
-   $ ./build_framework.sh
-   ```
-    > Note: To run the script, you need to install `jq` by downloading it [here](https://stedolan.github.io/jq/) or with Homebrew using:
-    > ```bash
-    > $ brew install jq
-    > ```
-
-   > Note: This script automatically removes old artifacts and replaces them with the new ones.
-
-3. Check the console output. It should say `Done!` at the end.
-   ![build output](build-output)
-   > Tip: If you don't get the output and the script terminates early, there might be an issue. Try running the script again with the `--debug` flag appended:
-   > ```bash
-   > $ ./build_framework.sh --debug
-   > ```
+3. If the grammar's query files changed upstream, re-copy them from the updated checkout into `Sources/CodeEditLanguages/Resources/tree-sitter-{lang}/`. SwiftPM does not do this automatically — the `.scm` files are bundled resources, not generated from the grammar source.
 
 ## Check if everything still works
 
-1. Open the ``CodeEditLanguages`` Package in Xcode and run the included unit tests.
+```bash
+swift test --filter CodeEditLanguagesTests
+```
 
-2. Once all the tests succeeded, the changes can be committed, pushed and a pull request can be opened.
+If a query no longer compiles against the new grammar version, `TreeSitterModel`'s query loader skips the offending `.scm` file and logs a warning rather than failing the build — so a version bump can silently regress highlighting for a language. Check the test output, and cross-reference `CodeEditLanguages/README.md`'s "Grammar Version Upgrade Blockers" section, before assuming a bump is safe.
+
+Once everything passes, commit and open a pull request.
