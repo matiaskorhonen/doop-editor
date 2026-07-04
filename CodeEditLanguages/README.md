@@ -37,7 +37,6 @@ The documentation including a guide on how to add support for new languages can 
 | [Regex](https://github.com/tree-sitter/tree-sitter-regex) | ✅ | ✅ |
 | [Ruby](https://github.com/mattmassicotte/tree-sitter-ruby) | ✅ | ✅ |
 | [Rust](https://github.com/tree-sitter/tree-sitter-rust) | ✅ | ✅ |
-| [Scala](https://github.com/tree-sitter/tree-sitter-scala) | ✅ | ✅ |
 | [SQL](https://github.com/DerekStride/tree-sitter-sql) | ✅ | ✅ |
 | [Swift](https://github.com/alex-pinkus/tree-sitter-swift/tree/with-generated-files) | ✅ | ✅ |
 | [TOML](https://github.com/cengelbart39/tree-sitter-toml/tree/feature/spm) | ✅ | ✅ |

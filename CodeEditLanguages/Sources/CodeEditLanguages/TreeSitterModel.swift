@@ -76,8 +76,6 @@ public class TreeSitterModel {
             return rubyQuery
         case .rust:
             return rustQuery
-        case .scala:
-            return scalaQuery
         case .sql:
             return sqlQuery
         case .swift:
@@ -235,11 +233,6 @@ public class TreeSitterModel {
     /// Query for `Rust` files.
     public private(set) lazy var rustQuery: Query? = {
         return queryFor(.rust)
-    }()
-
-    /// Query for `Scala` files.
-    public private(set) lazy var scalaQuery: Query? = {
-        return queryFor(.scala)
     }()
 
     /// Query for `SQL` files.

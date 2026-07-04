@@ -41,7 +41,6 @@ public extension CodeLanguage {
         .regex,
         .ruby,
         .rust,
-        .scala,
         .sql,
         .swift,
         .toml,
@@ -340,16 +339,6 @@ public extension CodeLanguage {
             .pair(("/*!", "*/"))
         ],
         highlights: ["folds", "indents", "injections", "locals", "tags"]
-    )
-
-    /// A language structure for `Scala`
-    static let scala: CodeLanguage = .init(
-        id: .scala,
-        tsName: "scala",
-        extensions: ["scala", "sc"],
-        lineCommentString: "//",
-        rangeCommentStrings: ("/*", "*/"),
-        highlights: ["folds", "injections", "locals"]
     )
 
     /// A language structure for `SQL`

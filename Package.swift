@@ -44,7 +44,6 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.25.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-ruby.git", revision: "ad907a69da0c8a4f7a943a7fe012712208da6dee"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-rust.git", revision: "77a3747266f4d621d0757825e6b11edcbf991ca5"), // master
-        .package(url: "https://github.com/tree-sitter/tree-sitter-scala.git", revision: "4d081d98670ff6e98ca42c085294fc75eec15e1d"), // master
         .package(url: "https://github.com/DerekStride/tree-sitter-sql.git", revision: "851e9cb257ba7c66cc8c14214a31c44d2f1e954e"), // gh-pages
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", revision: "31d17fe7e818a2048c808b5c6fdc2dc792f4f5b5"), // with-generated-files
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", revision: "28db724e8e30920638b46d408c0fbac007ac6a62"), // feature/spm
@@ -105,7 +104,6 @@ let package = Package(
                 .product(name: "TreeSitterRegex", package: "tree-sitter-regex"),
                 .product(name: "TreeSitterRuby", package: "tree-sitter-ruby"),
                 .product(name: "TreeSitterRust", package: "tree-sitter-rust"),
-                .product(name: "TreeSitterScala", package: "tree-sitter-scala"),
                 .product(name: "TreeSitterSql", package: "tree-sitter-sql"),
                 .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
                 .product(name: "TreeSitterTOML", package: "tree-sitter-toml"),
@@ -142,7 +140,6 @@ let package = Package(
                 .copy("Resources/tree-sitter-regex"),
                 .copy("Resources/tree-sitter-ruby"),
                 .copy("Resources/tree-sitter-rust"),
-                .copy("Resources/tree-sitter-scala"),
                 .copy("Resources/tree-sitter-sql"),
                 .copy("Resources/tree-sitter-swift"),
                 .copy("Resources/tree-sitter-toml"),

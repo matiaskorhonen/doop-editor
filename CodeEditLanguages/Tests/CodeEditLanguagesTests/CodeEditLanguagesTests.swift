@@ -580,33 +580,6 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotEqual(query?.patternCount, 0)
     }
     
-    // MARK: - Scala
-
-    func test_CodeLanguageScala() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.scala")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .scala)
-    }
-    
-    func test_CodeLanguageScalaScript() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.sc")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .scala)
-    }
-
-    func test_FetchQueryScala() throws {
-        var language = CodeLanguage.scala
-        language.resourceURL = bundleURL
-
-        let data = try Data(contentsOf: language.queryURL!)
-        let query = try? Query(language: language.language!, data: data)
-        XCTAssertNotNil(query)
-        XCTAssertNotEqual(query?.patternCount, 0)
-    }
-    
-    
     // MARK: - SQL
 
     func test_CodeLanguageSQL() throws {
