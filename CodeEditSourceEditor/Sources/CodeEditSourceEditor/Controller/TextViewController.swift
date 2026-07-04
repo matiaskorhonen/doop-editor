@@ -29,16 +29,10 @@ public class TextViewController: NSViewController {
     internal(set) public var scrollView: NSScrollView!
     internal(set) public var textView: TextView!
     var gutterView: GutterView!
-    var minimapView: MinimapView!
-
-    /// The reformatting guide view
-    var reformattingGuideView: ReformattingGuideView!
 
     /// Middleman between the text view to our invisible characters config, with knowledge of things like the
     ///  /// user's theme and indent option to help correctly draw invisible character placeholders.
     var invisibleCharactersCoordinator: InvisibleCharactersCoordinator
-
-    var minimapXConstraint: NSLayoutConstraint?
 
     var _undoManager: CEUndoManager!
     var systemAppearance: NSAppearance.Name?
@@ -48,8 +42,6 @@ public class TextViewController: NSViewController {
 
     /// A default `NSParagraphStyle` with a set `lineHeight`
     lazy var paragraphStyle: NSMutableParagraphStyle = generateParagraphStyle()
-
-    var suggestionTriggerModel = SuggestionTriggerCharacterModel()
 
     // MARK: - Public Variables
 
@@ -84,24 +76,6 @@ public class TextViewController: NSViewController {
 
     /// The provided highlight provider.
     public var highlightProviders: [HighlightProviding]
-
-    /// A delegate object that can respond to requests for completion items, filtering completion items, and triggering
-    /// the suggestion window. See ``CodeSuggestionDelegate``.
-    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object. To function properly, ensure a
-    ///         strong reference to the delegate is kept *outside* of this variable.
-    public weak var completionDelegate: CodeSuggestionDelegate?
-
-    /// A delegate object that responds to requests for jump to definition actions. see ``JumpToDefinitionDelegate``.
-    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object. To function properly, ensure a
-    ///         strong reference to the delegate is kept *outside* of this variable.
-    public var jumpToDefinitionDelegate: JumpToDefinitionDelegate? {
-        get {
-            jumpToDefinitionModel.delegate
-        }
-        set {
-            jumpToDefinitionModel.delegate = newValue
-        }
-    }
 
     // MARK: - Config Helpers
 
@@ -157,20 +131,11 @@ public class TextViewController: NSViewController {
     /// The type of highlight to use when highlighting bracket pairs. Leave as `nil` to disable highlighting.
     public var bracketPairEmphasis: BracketPairEmphasis? { configuration.appearance.bracketPairEmphasis }
 
-    /// The column at which to show the reformatting guide
-    public var reformatAtColumn: Int { configuration.behavior.reformatAtColumn }
-
     /// If true, uses the system cursor on macOS 14 or greater.
     public var useSystemCursor: Bool { configuration.appearance.useSystemCursor }
 
     /// Toggle the visibility of the gutter view in the editor.
     public var showGutter: Bool { configuration.peripherals.showGutter }
-
-    /// Toggle the visibility of the minimap view in the editor.
-    public var showMinimap: Bool { configuration.peripherals.showMinimap }
-
-    /// Toggle the visibility of the reformatting guide in the editor.
-    public var showReformattingGuide: Bool { configuration.peripherals.showReformattingGuide }
 
     /// Configuration for drawing invisible characters.
     ///
@@ -192,32 +157,17 @@ public class TextViewController: NSViewController {
     /// The tree sitter client managed by the source editor.
     ///
     /// This will be `nil` if another highlighter provider is passed to the source editor.
-    internal(set) public var treeSitterClient: TreeSitterClient? {
-        didSet {
-            jumpToDefinitionModel.treeSitterClient = treeSitterClient
-        }
-    }
-
-    var foldProvider: LineFoldProvider
+    internal(set) public var treeSitterClient: TreeSitterClient?
 
     /// Filters used when applying edits..
     var textFilters: [TextFormation.Filter] = []
 
-    var jumpToDefinitionModel: JumpToDefinitionModel
-
     var cancellables = Set<AnyCancellable>()
-
-    /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
-    var textViewTrailingInset: CGFloat {
-        // See https://github.com/CodeEditApp/CodeEditTextView/issues/66
-        // wrapLines ? 1 : 48
-        (minimapView?.isHidden ?? false) ? 0 : (minimapView?.frame.width ?? 0.0)
-    }
 
     var textViewInsets: HorizontalEdgeInsets {
         HorizontalEdgeInsets(
             left: showGutter ? gutterView.frame.width : 0.0,
-            right: textViewTrailingInset
+            right: 0
         )
     }
 
@@ -229,30 +179,17 @@ public class TextViewController: NSViewController {
         configuration: SourceEditorConfiguration,
         cursorPositions: [CursorPosition],
         highlightProviders: [HighlightProviding] = [TreeSitterClient()],
-        foldProvider: LineFoldProvider? = nil,
         undoManager: CEUndoManager? = nil,
-        coordinators: [TextViewCoordinator] = [],
-        completionDelegate: CodeSuggestionDelegate? = nil,
-        jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil
+        coordinators: [TextViewCoordinator] = []
     ) {
         self.language = language
         self.configuration = configuration
         self.cursorPositions = cursorPositions
         self.highlightProviders = highlightProviders
-        self.foldProvider = foldProvider ?? LineIndentationFoldProvider()
         self._undoManager = undoManager
         self.invisibleCharactersCoordinator = InvisibleCharactersCoordinator(configuration: configuration)
-        self.completionDelegate = completionDelegate
-        self.jumpToDefinitionModel = JumpToDefinitionModel(
-            controller: nil,
-            treeSitterClient: treeSitterClient,
-            delegate: jumpToDefinitionDelegate
-        )
 
         super.init(nibName: nil, bundle: nil)
-
-        jumpToDefinitionModel.controller = self
-        suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
            let client = highlightProviders[idx] as? TreeSitterClient {

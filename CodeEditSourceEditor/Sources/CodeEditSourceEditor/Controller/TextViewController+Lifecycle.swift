@@ -13,7 +13,6 @@ extension TextViewController {
         super.viewWillAppear()
         // The calculation this causes cannot be done until the view knows it's final position
         updateTextInsets()
-        minimapView.layout()
     }
 
     override public func viewDidAppear() {
@@ -42,12 +41,6 @@ extension TextViewController {
         scrollView.addFloatingSubview(gutterView, for: .horizontal)
         (scrollView.contentView as? GutterBackgroundClipView)?.gutterView = gutterView
 
-        reformattingGuideView = ReformattingGuideView(configuration: configuration)
-        scrollView.addFloatingSubview(reformattingGuideView, for: .vertical)
-
-        minimapView = MinimapView(textView: textView, theme: configuration.appearance.theme)
-        scrollView.addFloatingSubview(minimapView, for: .vertical)
-
         let findViewController = FindViewController(target: self, childView: scrollView)
         addChild(findViewController)
         self.findViewController = findViewController
@@ -61,7 +54,6 @@ extension TextViewController {
 
         styleTextView()
         styleScrollView()
-        styleMinimapView()
 
         setUpHighlighter()
         setUpTextFormation()
@@ -87,28 +79,11 @@ extension TextViewController {
     func setUpConstraints() {
         guard let findViewController else { return }
 
-        let maxWidthConstraint = minimapView.widthAnchor.constraint(lessThanOrEqualToConstant: MinimapView.maxWidth)
-        let relativeWidthConstraint = minimapView.widthAnchor.constraint(
-            equalTo: view.widthAnchor,
-            multiplier: 0.17
-        )
-        relativeWidthConstraint.priority = .defaultLow
-        let minimapXConstraint = minimapView.trailingAnchor.constraint(
-            equalTo: scrollView.contentView.safeAreaLayoutGuide.trailingAnchor
-        )
-        self.minimapXConstraint = minimapXConstraint
-
         NSLayoutConstraint.activate([
             findViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             findViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             findViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            findViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            minimapView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor),
-            minimapView.bottomAnchor.constraint(equalTo: scrollView.contentView.bottomAnchor),
-            minimapXConstraint,
-            maxWidthConstraint,
-            relativeWidthConstraint
+            findViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
@@ -118,9 +93,8 @@ extension TextViewController {
             object: scrollView.contentView,
             queue: .main
         ) { [weak self] notification in
-            guard let clipView = notification.object as? NSClipView else { return }
+            guard notification.object is NSClipView else { return }
             self?.gutterView.needsDisplay = true
-            self?.minimapXConstraint?.constant = clipView.bounds.origin.x
             NotificationCenter.default.post(name: Self.scrollPositionDidUpdateNotification, object: self)
         }
     }
@@ -148,8 +122,6 @@ extension TextViewController {
             self.gutterView.frame.size.height = self.textView.frame.height + 10
             self.gutterView.frame.origin.y = self.textView.frame.origin.y - self.scrollView.contentInsets.top
             self.gutterView.needsDisplay = true
-            self.gutterView.foldingRibbon.needsDisplay = true
-            self.reformattingGuideView?.updatePosition(in: self)
             self.scrollView.needsLayout = true
         }
     }
@@ -192,7 +164,7 @@ extension TextViewController {
 
     func setUpKeyBindings(eventMonitor: inout Any?) {
         eventMonitor = NSEvent.addLocalMonitorForEvents(
-            matching: [.keyDown, .flagsChanged, .mouseMoved, .leftMouseUp]
+            matching: [.keyDown]
         ) { [weak self] event -> NSEvent? in
             guard let self = self else { return event }
 
@@ -208,46 +180,17 @@ extension TextViewController {
 
     func handleEvent(event: NSEvent) -> NSEvent? {
         let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        switch event.type {
-        case .keyDown:
-            let tabKey: UInt16 = 0x30
+        let tabKey: UInt16 = 0x30
 
-            if event.keyCode == tabKey {
-                return self.handleTab(event: event, modifierFlags: modifierFlags.rawValue)
-            } else {
-                return self.handleCommand(event: event, modifierFlags: modifierFlags)
-            }
-        case .flagsChanged:
-            if modifierFlags.contains(.command),
-               let coords = view.window?.convertPoint(fromScreen: NSEvent.mouseLocation) {
-                self.jumpToDefinitionModel.mouseHovered(windowCoordinates: coords)
-            }
-
-            if !modifierFlags.contains(.command) {
-                self.jumpToDefinitionModel.cancelHover()
-            }
-            return event
-        case .mouseMoved:
-            guard modifierFlags.contains(.command) else {
-                self.jumpToDefinitionModel.cancelHover()
-                return event
-            }
-            self.jumpToDefinitionModel.mouseHovered(windowCoordinates: event.locationInWindow)
-            return event
-        case .leftMouseUp:
-            if let range = jumpToDefinitionModel.hoveredRange {
-                self.jumpToDefinitionModel.performJump(at: range)
-                return nil
-            }
-            return event
-        default:
-            return event
+        if event.keyCode == tabKey {
+            return self.handleTab(event: event, modifierFlags: modifierFlags.rawValue)
+        } else {
+            return self.handleCommand(event: event, modifierFlags: modifierFlags)
         }
     }
 
     func handleCommand(event: NSEvent, modifierFlags: NSEvent.ModifierFlags) -> NSEvent? {
         let commandKey = NSEvent.ModifierFlags.command
-        let controlKey = NSEvent.ModifierFlags.control
 
         switch (modifierFlags, event.charactersIgnoringModifiers) {
         case (commandKey, "/"):
@@ -268,16 +211,7 @@ extension TextViewController {
                 self.findViewController?.hideFindPanel()
                 return nil
             }
-            // Attempt to show completions otherwise
-            return handleShowCompletions(event)
-        case (controlKey, " "):
-            return handleShowCompletions(event)
-        case ([NSEvent.ModifierFlags.command, NSEvent.ModifierFlags.control], "j"):
-            guard let cursor = cursorPositions.first else {
-                return event
-            }
-            jumpToDefinitionModel.performJump(at: cursor.range)
-            return nil
+            return event
         case (_, _):
             return event
         }
@@ -299,22 +233,5 @@ extension TextViewController {
             handleIndent()
         }
         return nil
-    }
-
-    private func handleShowCompletions(_ event: NSEvent) -> NSEvent? {
-        if let completionDelegate = self.completionDelegate,
-           let cursorPosition = cursorPositions.first {
-            if SuggestionController.shared.isVisible {
-                SuggestionController.shared.close()
-                return event
-            }
-            SuggestionController.shared.showCompletions(
-                textView: self,
-                delegate: completionDelegate,
-                cursorPosition: cursorPosition
-            )
-            return nil
-        }
-        return event
     }
 }

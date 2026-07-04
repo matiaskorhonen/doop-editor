@@ -57,10 +57,6 @@ public class GutterView: NSView {
     @Invalidating(.display)
     var backgroundEdgeInsets: EdgeInsets = EdgeInsets(leading: 0, trailing: 8)
 
-    /// The leading padding for the folding ribbon from the line numbers.
-    @Invalidating(.display)
-    var foldingRibbonPadding: CGFloat = 4
-
     @Invalidating(.display)
     var backgroundColor: NSColor? = NSColor.controlBackgroundColor
 
@@ -77,14 +73,6 @@ public class GutterView: NSView {
 
     @Invalidating(.display)
     var selectedLineColor: NSColor = NSColor.selectedTextBackgroundColor.withSystemEffect(.disabled)
-
-    /// Toggle the visibility of the line fold decoration.
-    @Invalidating(.display)
-    public var showFoldingRibbon: Bool = true {
-        didSet {
-            foldingRibbon.isHidden = !showFoldingRibbon
-        }
-    }
 
     private weak var textView: TextView?
     private weak var delegate: GutterViewDelegate?
@@ -105,37 +93,9 @@ public class GutterView: NSView {
         fontLineHeight = (ascent + descent + leading)
     }
 
-    /// The view that draws the fold decoration in the gutter.
-    var foldingRibbon: LineFoldRibbonView
-
-    /// Syntax helper for determining the required space for the folding ribbon.
-    private var foldingRibbonWidth: CGFloat {
-        if foldingRibbon.isHidden {
-            0.0
-        } else {
-            LineFoldRibbonView.width + foldingRibbonPadding
-        }
-    }
-
     /// The gutter's y positions start at the top of the document and increase as it moves down the screen.
     override public var isFlipped: Bool {
         true
-    }
-
-    /// We override this variable so we can update the ``foldingRibbon``'s frame to match the gutter.
-    override public var frame: NSRect {
-        get {
-            super.frame
-        }
-        set {
-            super.frame = newValue
-            foldingRibbon.frame = NSRect(
-                x: newValue.width - edgeInsets.trailing - foldingRibbonWidth + foldingRibbonPadding,
-                y: 0.0,
-                width: foldingRibbonWidth,
-                height: newValue.height
-            )
-        }
     }
 
     public convenience init(
@@ -165,16 +125,12 @@ public class GutterView: NSView {
         self.textView = controller.textView
         self.delegate = delegate
 
-        foldingRibbon = LineFoldRibbonView(controller: controller)
-
         super.init(frame: .zero)
         clipsToBounds = true
         wantsLayer = true
         layerContentsRedrawPolicy = .onSetNeedsDisplay
         translatesAutoresizingMaskIntoConstraints = false
         layer?.masksToBounds = true
-
-        addSubview(foldingRibbon)
 
         NotificationCenter.default.addObserver(
             forName: TextSelectionManager.selectionChangedNotification,
@@ -189,7 +145,7 @@ public class GutterView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    /// Updates the width of the gutter if needed to match the maximum line number found as well as the folding ribbon.
+    /// Updates the width of the gutter if needed to match the maximum line number found.
     func updateWidthIfNeeded() {
         guard let textView else { return }
         let attributes: [NSAttributedString.Key: Any] = [
@@ -209,7 +165,7 @@ public class GutterView: NSView {
             maxLineLength = lineStorageDigits
         }
 
-        let newWidth = maxLineNumberWidth + edgeInsets.horizontal + foldingRibbonWidth
+        let newWidth = maxLineNumberWidth + edgeInsets.horizontal
         if frame.size.width != newWidth {
             frame.size.width = newWidth
             delegate?.gutterViewWidthDidUpdate()
@@ -217,11 +173,11 @@ public class GutterView: NSView {
     }
 
     /// The horizontal extent, in the gutter view's own coordinate space, that receives the solid gutter
-    /// background fill. Excludes the trailing edge inset and folding ribbon width, which are intentionally left
-    /// unfilled so text can be scrolled underneath the gutter before being clipped.
+    /// background fill. Excludes the trailing edge inset, which is intentionally left unfilled so text can be
+    /// scrolled underneath the gutter before being clipped.
     var backgroundFillRect: NSRect {
         let minX = backgroundEdgeInsets.leading
-        let maxX = frame.width - backgroundEdgeInsets.trailing - foldingRibbonWidth
+        let maxX = frame.width - backgroundEdgeInsets.trailing
         return NSRect(x: minX, y: 0, width: max(0, maxX - minX), height: frame.height)
     }
 

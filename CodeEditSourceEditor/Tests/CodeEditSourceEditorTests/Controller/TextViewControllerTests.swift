@@ -441,42 +441,6 @@ final class TextViewControllerTests: XCTestCase {
         XCTAssertNotNil(controller.treeSitterClient)
     }
 
-    // MARK: - Minimap
-
-    func test_minimapToggle() {
-        XCTAssertFalse(controller.minimapView.isHidden)
-        XCTAssertEqual(controller.minimapView.frame.width, MinimapView.maxWidth)
-        XCTAssertEqual(controller.textViewInsets.right, MinimapView.maxWidth)
-
-        controller.configuration.peripherals.showMinimap = false
-        XCTAssertTrue(controller.minimapView.isHidden)
-        XCTAssertEqual(controller.textViewInsets.right, 0)
-
-        controller.configuration.peripherals.showMinimap = true
-        XCTAssertFalse(controller.minimapView.isHidden)
-        XCTAssertEqual(controller.minimapView.frame.width, MinimapView.maxWidth)
-        XCTAssertEqual(controller.textViewInsets.right, MinimapView.maxWidth)
-    }
-
-    // MARK: Folding Ribbon
-
-    func test_foldingRibbonToggle() {
-        controller.setText("Hello World")
-        controller.configuration.peripherals.showFoldingRibbon = false
-        XCTAssertFalse(controller.gutterView.showFoldingRibbon)
-        controller.gutterView.updateWidthIfNeeded() // Would be called on a display pass
-        let noRibbonWidth = controller.gutterView.frame.width
-
-        controller.configuration.peripherals.showFoldingRibbon = true
-        XCTAssertTrue(controller.gutterView.showFoldingRibbon)
-        XCTAssertFalse(controller.gutterView.foldingRibbon.isHidden)
-        controller.gutterView.updateWidthIfNeeded() // Would be called on a display pass
-        XCTAssertEqual(
-            controller.gutterView.frame.width,
-            noRibbonWidth + 7.0 + controller.gutterView.foldingRibbonPadding
-        )
-    }
-
     // MARK: - Get Overlapping Lines
 
     func test_getOverlappingLines() {

@@ -81,10 +81,6 @@ extension TextViewController {
             coordinator.textViewDidChangeSelection(controller: self, newPositions: cursorPositions)
         }
         isPostingCursorNotification = false
-
-        if let position = cursorPositions.first {
-            suggestionTriggerModel.selectionUpdated(position)
-        }
     }
 
     /// Fills out all properties on the given cursor position if it's missing either the range or line/column

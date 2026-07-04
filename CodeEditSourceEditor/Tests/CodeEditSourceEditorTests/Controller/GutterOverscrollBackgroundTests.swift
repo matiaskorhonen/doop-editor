@@ -150,20 +150,15 @@ final class GutterOverscrollBackgroundTests: XCTestCase {
     /// `backgroundFillRect` backs both the gutter's own background fill (which also determines where its
     /// divider and line numbers sit) and the overscroll fill in `GutterBackgroundClipView`. This confirms the
     /// refactor that exposed it preserves the exact insets the gutter already relied on.
-    func test_backgroundFillRectRespectsEdgeInsetsAndFoldingRibbon() throws {
+    func test_backgroundFillRectRespectsEdgeInsets() throws {
         let gutterView = try XCTUnwrap(controller.gutterView)
 
-        gutterView.showFoldingRibbon = false
         gutterView.backgroundEdgeInsets = GutterView.EdgeInsets(leading: 3, trailing: 8)
         gutterView.frame.size = NSSize(width: 100, height: 50)
 
-        let rectWithoutRibbon = gutterView.backgroundFillRect
-        XCTAssertEqual(rectWithoutRibbon.minX, 3)
-        XCTAssertEqual(rectWithoutRibbon.maxX, 92)
-        XCTAssertEqual(rectWithoutRibbon.height, 50)
-
-        gutterView.showFoldingRibbon = true
-        let rectWithRibbon = gutterView.backgroundFillRect
-        XCTAssertLessThan(rectWithRibbon.maxX, rectWithoutRibbon.maxX, "the folding ribbon's width should be excluded from the fill")
+        let rect = gutterView.backgroundFillRect
+        XCTAssertEqual(rect.minX, 3)
+        XCTAssertEqual(rect.maxX, 92)
+        XCTAssertEqual(rect.height, 50)
     }
 }
