@@ -29,7 +29,6 @@ import TreeSitterLua
 import TreeSitterMarkdown
 import TreeSitterMarkdownInline
 import TreeSitterObjc
-import TreeSitterOCaml
 import TreeSitterPerl
 import TreeSitterPHP
 import TreeSitterPython
@@ -166,10 +165,6 @@ public struct CodeLanguage {
             return tree_sitter_markdown_inline()
         case .objc:
             return tree_sitter_objc()
-        case .ocaml:
-            return tree_sitter_ocaml()
-        case .ocamlInterface:
-            return tree_sitter_ocaml_interface()
         case .perl:
             return tree_sitter_perl()
         case .php:

@@ -489,42 +489,6 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotEqual(query?.patternCount, 0)
     }
     
-// MARK: - OCaml
-    func test_CodeLanguageOCaml() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.ml")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .ocaml)
-    }
-
-    func test_FetchQueryOCaml() throws {
-        var language = CodeLanguage.ocaml
-        language.resourceURL = bundleURL
-
-        let data = try Data(contentsOf: language.queryURL!)
-        let query = try? Query(language: language.language!, data: data)
-        XCTAssertNotNil(query)
-        XCTAssertNotEqual(query?.patternCount, 0)
-    }
-    
-// MARK: - OCaml Interface
-    func test_CodeLanguageOCamlInterface() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.mli")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .ocamlInterface)
-    }
-
-    func test_FetchQueryOCamlInterface() throws {
-        var language = CodeLanguage.ocamlInterface
-        language.resourceURL = bundleURL
-
-        let data = try Data(contentsOf: language.queryURL!)
-        let query = try? Query(language: language.language!, data: data)
-        XCTAssertNotNil(query)
-        XCTAssertNotEqual(query?.patternCount, 0)
-    }
-
 // MARK: - Perl
     func test_CodeLanguagePerl() throws {
         let url = URL(fileURLWithPath: "~/path/to/file.pl")

@@ -38,7 +38,6 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-lua", exact: "0.3.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-objc", revision: "181a81b8f23a2d593e7ab4259981f50122909fda"), // master
-        .package(url: "https://github.com/tree-sitter/tree-sitter-ocaml.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter-perl/tree-sitter-perl.git", revision: "0390ac6f4e26f5805c9d7d9b950685436faa6359"), // release
         .package(url: "https://github.com/tree-sitter/tree-sitter-php.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-python.git", exact: "0.23.6"),
@@ -100,7 +99,6 @@ let package = Package(
                 .product(name: "TreeSitterLua", package: "tree-sitter-lua"),
                 .product(name: "TreeSitterMarkdown", package: "tree-sitter-markdown"),
                 .product(name: "TreeSitterObjc", package: "tree-sitter-objc"),
-                .product(name: "TreeSitterOCaml", package: "tree-sitter-ocaml"),
                 .product(name: "TreeSitterPerl", package: "tree-sitter-perl"),
                 .product(name: "TreeSitterPHP", package: "tree-sitter-php"),
                 .product(name: "TreeSitterPython", package: "tree-sitter-python"),
@@ -138,7 +136,6 @@ let package = Package(
                 .copy("Resources/tree-sitter-markdown"),
                 .copy("Resources/tree-sitter-markdown-inline"),
                 .copy("Resources/tree-sitter-objc"),
-                .copy("Resources/tree-sitter-ocaml"),
                 .copy("Resources/tree-sitter-perl"),
                 .copy("Resources/tree-sitter-php"),
                 .copy("Resources/tree-sitter-python"),

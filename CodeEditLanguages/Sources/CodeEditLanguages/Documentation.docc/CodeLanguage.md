@@ -39,7 +39,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - Lua
 - Markdown
 - Objective C
-- OCaml / OCaml Interface
 - Perl
 - PHP
 - Python

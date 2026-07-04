@@ -30,7 +30,6 @@ The documentation including a guide on how to add support for new languages can 
 | [Lua](https://github.com/tree-sitter-grammars/tree-sitter-lua) | ✅ | ✅ |
 | [Markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown) | ✅ | ✅ |
 | [Objective C](https://github.com/tree-sitter-grammars/tree-sitter-objc) | ✅ | ✅ |
-| [OCaml](https://github.com/tree-sitter/tree-sitter-ocaml) | ✅ | ✅ |
 | Plain Text | ✅ | _not available_ |
 | [Perl](https://github.com/ganezdragon/tree-sitter-perl) | ✅ | _not available_ |
 | [PHP](https://github.com/tree-sitter/tree-sitter-php) | ✅ | ✅ |

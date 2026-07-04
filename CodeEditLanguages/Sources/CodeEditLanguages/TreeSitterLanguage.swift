@@ -31,8 +31,6 @@ public enum TreeSitterLanguage: String {
     case markdown
     case markdownInline
     case objc
-    case ocaml
-    case ocamlInterface
     case perl
     case php
     case python

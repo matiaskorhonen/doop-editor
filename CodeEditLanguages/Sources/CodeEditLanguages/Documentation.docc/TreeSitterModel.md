@@ -53,8 +53,6 @@ let query = TreeSitterModel.shared.swiftQuery
 - ``markdownQuery``
 - ``markdownInlineQuery``
 - ``objcQuery``
-- ``ocamlQuery``
-- ``ocamlInterfaceQuery``
 - ``phpQuery``
 - ``pythonQuery``
 - ``rubyQuery``

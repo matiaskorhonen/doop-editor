@@ -35,8 +35,6 @@ public extension CodeLanguage {
         .markdown,
         .markdownInline,
         .objc,
-        .ocaml,
-        .ocamlInterface,
         .perl,
         .php,
         .python,
@@ -275,27 +273,6 @@ public extension CodeLanguage {
         rangeCommentStrings: ("/*", "*/"),
         parentURL: CodeLanguage.c.queryURL,
         highlights: ["folds", "indents", "injections", "locals"]
-    )
-
-    /// A language structure for `OCaml`
-    static let ocaml: CodeLanguage = .init(
-        id: .ocaml,
-        tsName: "ocaml",
-        extensions: ["ml"],
-        lineCommentString: "",
-        rangeCommentStrings: ("(*", "*)"),
-        documentationCommentStrings: [.pair(("(**", "*)"))],
-        highlights: ["folds", "indents", "injections", "locals", "tags"]
-    )
-
-    /// A language structure for `OCaml Interface`
-    static let ocamlInterface: CodeLanguage = .init(
-        id: .ocamlInterface,
-        tsName: "ocaml",
-        extensions: ["mli"],
-        lineCommentString: "",
-        rangeCommentStrings: ("", ""),
-        highlights: ["folds", "indents", "injections", "locals", "tags"]
     )
 
     /// A language structure for `Perl`
