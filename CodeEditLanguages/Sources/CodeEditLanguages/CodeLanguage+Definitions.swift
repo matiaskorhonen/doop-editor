@@ -23,7 +23,6 @@ public extension CodeLanguage {
         .generic,
         .go,
         .goMod,
-        .haskell,
         .html,
         .java,
         .javascript,
@@ -153,16 +152,6 @@ public extension CodeLanguage {
         extensions: ["mod"],
         lineCommentString: "//",
         rangeCommentStrings: ("/*", "*/")
-    )
-
-    /// A language structure for `Haskell`
-    static let haskell: CodeLanguage = .init(
-        id: .haskell,
-        tsName: "haskell",
-        extensions: ["hs"],
-        lineCommentString: "--",
-        rangeCommentStrings: ("{-", "-}"),
-        highlights: ["folds", "injections", "locals"]
     )
 
     /// A language structure for `HTML`

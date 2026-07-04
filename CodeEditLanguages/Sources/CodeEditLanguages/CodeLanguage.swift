@@ -18,7 +18,6 @@ import TreeSitterElixir
 import TreeSitterGeneric
 import TreeSitterGo
 import TreeSitterGoMod
-import TreeSitterHaskell
 import TreeSitterHTML
 import TreeSitterJava
 import TreeSitterJavaScript
@@ -143,8 +142,6 @@ public struct CodeLanguage {
             return tree_sitter_go()
         case .goMod:
             return tree_sitter_gomod()
-        case .haskell:
-            return tree_sitter_haskell()
         case .html:
             return tree_sitter_html()
         case .java:

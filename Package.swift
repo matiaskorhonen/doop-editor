@@ -28,7 +28,6 @@ let package = Package(
         .package(url: "https://github.com/matiaskorhonen/tree-sitter-generic.git", revision: "4a967c7ca3ce6116827ddf090eaa4ef7d10c03df"), // main
         .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.25.0"),
         .package(url: "https://github.com/camdencheek/tree-sitter-go-mod.git", revision: "2e886870578eeba1927a2dc4bd2e2b3f598c5f9a"), // main
-        .package(url: "https://github.com/tree-sitter/tree-sitter-haskell.git", revision: "0975ef72fc3c47b530309ca93937d7d143523628"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-html.git", revision: "73a3947324f6efddf9e17c0ea58d454843590cc0"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-java.git", revision: "e10607b45ff745f5f876bfa3e94fbcc6b44bdc11"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-javascript.git", exact: "0.23.1"),
@@ -91,7 +90,6 @@ let package = Package(
                 .product(name: "TreeSitterGeneric", package: "tree-sitter-generic"),
                 .product(name: "TreeSitterGo", package: "tree-sitter-go"),
                 .product(name: "TreeSitterGoMod", package: "tree-sitter-go-mod"),
-                .product(name: "TreeSitterHaskell", package: "tree-sitter-haskell"),
                 .product(name: "TreeSitterHTML", package: "tree-sitter-html"),
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
                 .product(name: "TreeSitterJavaScript", package: "tree-sitter-javascript"),
@@ -129,7 +127,6 @@ let package = Package(
                 .copy("Resources/tree-sitter-generic"),
                 .copy("Resources/tree-sitter-go"),
                 .copy("Resources/tree-sitter-go-mod"),
-                .copy("Resources/tree-sitter-haskell"),
                 .copy("Resources/tree-sitter-html"),
                 .copy("Resources/tree-sitter-java"),
                 .copy("Resources/tree-sitter-javascript"),

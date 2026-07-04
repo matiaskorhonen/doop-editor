@@ -20,7 +20,6 @@ The documentation including a guide on how to add support for new languages can 
 | [Dockerfile](https://github.com/camdencheek/tree-sitter-dockerfile) | ✅ | ✅ |
 | [Elixir](https://github.com/elixir-lang/tree-sitter-elixir) | ✅ | ✅ |
 | [Go](https://github.com/tree-sitter/tree-sitter-go) | ✅ | ✅ |
-| [Haskell](https://github.com/tree-sitter/tree-sitter-haskell) | ✅ | ✅ |
 | [HTML](https://github.com/tree-sitter/tree-sitter-html) | ✅ | ✅ |
 | [Java](https://github.com/tree-sitter/tree-sitter-java) | ✅ | ✅ |
 | [JavaScript/JSX](https://github.com/tree-sitter/tree-sitter-javascript) | ✅ | ✅ |

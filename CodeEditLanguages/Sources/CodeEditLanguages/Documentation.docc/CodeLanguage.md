@@ -29,7 +29,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - Generic
 - Go
 - Go Mod
-- Haskell
 - HTML
 - Java
 - JavaScript
@@ -84,7 +83,6 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``generic``
 - ``go``
 - ``goMod``
-- ``haskell``
 - ``html``
 - ``java``
 - ``javascript``

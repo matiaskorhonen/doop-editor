@@ -224,25 +224,6 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotEqual(query?.patternCount, 0)
     }
 
-// MARK: - Haskell
-
-    func test_CodeLanguageHaskell() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.hs")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .haskell)
-    }
-
-    func test_FetchQueryHaskell() throws {
-        var language = CodeLanguage.haskell
-        language.resourceURL = bundleURL
-
-        let data = try Data(contentsOf: language.queryURL!)
-        let query = try? Query(language: language.language!, data: data)
-        XCTAssertNotNil(query)
-        XCTAssertNotEqual(query?.patternCount, 0)
-    }
-
 // MARK: - HTML
 
     func test_CodeLanguageHTML() throws {

@@ -40,8 +40,6 @@ public class TreeSitterModel {
             return goQuery
         case .goMod:
             return goModQuery
-        case .haskell:
-            return haskellQuery
         case .html:
             return htmlQuery
         case .java:
@@ -151,11 +149,6 @@ public class TreeSitterModel {
     /// Query for `GoMod` files.
     public private(set) lazy var goModQuery: Query? = {
         return queryFor(.goMod)
-    }()
-
-    /// Query for `Haskell` files.
-    public private(set) lazy var haskellQuery: Query? = {
-        return queryFor(.haskell)
     }()
 
     /// Query for `HTML` files.
