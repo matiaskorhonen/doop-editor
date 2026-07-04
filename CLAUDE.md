@@ -1,53 +1,44 @@
 # DoopEditor monorepo
 
-A SwiftPM monorepo with customized forks of CodeEdit components, used as dependencies for Doop.
+A SwiftPM monorepo with customized forks of [CodeEdit](https://github.com/CodeEditApp) components, used as dependencies for Doop.
 
 ## Repository structure
 
 ```
 DoopEditor/
 ├── Package.swift              # Root package manifest — source of truth
-├── CodeEditSourceEditor/      # git subtree from matiaskorhonen/CodeEditSourceEditor@custom
-├── CodeEditTextView/          # git subtree from matiaskorhonen/CodeEditTextView@custom
-└── CodeEditLanguages/         # git subtree from matiaskorhonen/CodeEditLanguages@custom
+├── CodeEditSourceEditor/      # Sources/ and Tests/ for the CodeEditSourceEditor target
+├── CodeEditTextView/          # Sources/ and Tests/ for the CodeEditTextView target
+├── CodeEditLanguages/         # Sources/ and Tests/ for the CodeEditLanguages target
+└── Example/                    # Standalone Xcode project exercising CodeEditSourceEditor
 ```
 
-Each subdirectory contains the full imported history from its upstream fork. Only the root `Package.swift` matters.
+Each package directory is a git subtree from an upstream fork; see [UPSTREAM.md](UPSTREAM.md) for fork sources and how to pull upstream changes. Editing across package boundaries (e.g. changing a `CodeEditTextView` API and updating `CodeEditSourceEditor` to match) is just normal file edits within this repo — no package resolution or subtree workflow needed for day-to-day work.
 
 ## Package
 
 - Package name: `DoopEditor`
 - Platforms: macOS 13+
 - Swift tools version: 5.9+
-- Products: `CodeEditSourceEditor`, `CodeEditTextView`, `CodeEditLanguages` libraries
+- Products/targets: `CodeEditSourceEditor` (depends on `CodeEditTextView` + `CodeEditLanguages`), `CodeEditTextView`, `CodeEditLanguages` — each is an independent library target with its own test target
 
 ## Key dependencies
 
 - `ChimeHQ/TextStory`, `ChimeHQ/TextFormation` — text editing primitives
 - `apple/swift-collections` — data structures
 - `tree-sitter/swift-tree-sitter` — tree-sitter Swift bindings (pinned to `0.10.0`)
-- Many tree-sitter grammar packages under `CodeEditLanguages`
-- `CodeEditLanguages` uses **direct SPM grammar dependencies** — no xcframework
+- Many tree-sitter grammar packages under `CodeEditLanguages`, added directly as SPM dependencies (no xcframework)
 
-## Working with git subtrees
-
-Pull changes from an upstream fork branch:
+## Building and testing
 
 ```bash
-git subtree pull --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
-
-git subtree pull --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree pull --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
+swift build              # build all targets
+swift test                # run all tests
+swift test --filter CodeEditLanguagesTests   # run one test target
 ```
 
-Changes made inside a subtree directory are regular commits in this repo — no special workflow needed for day-to-day edits.
+The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
 
 ## Development notes
 
 - This monorepo exists for fast cross-package iteration on Doop. It is **not** intended for upstreaming changes back to CodeEdit.
-- The `custom` branches on all three forks are the canonical sources. `CodeEditLanguages/custom` has the `spm-direct-dependencies` changes already merged in.
-- Editing across package boundaries (e.g. changing a `CodeEditTextView` API and updating `CodeEditSourceEditor` to match) is done with normal file edits — no package resolution needed.
