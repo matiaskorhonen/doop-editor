@@ -19,21 +19,17 @@
 		56E148B309390F380A2DD324 /* CodeEditTextView in Frameworks */ = {isa = PBXBuildFile; productRef = DD0E8000310ADF70989E39E1 /* CodeEditTextView */; };
 		59EB53D94BBD3D7E00E16D2E /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0AEC9FDD6481130062F78D /* Document.swift */; };
 		6F674D57F78689F191F80214 /* SourceEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE20DC2F40D52588F0F16C3 /* SourceEditorView.swift */; };
-		701E319F6DEC8EC0D58F6238 /* MockJumpToDefinitionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D8E6142DB78390E67D457A0 /* MockJumpToDefinitionDelegate.swift */; };
 		B58434F8AC2A3D1F5D9E22CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D87F01F73A473D610E875E40 /* ContentView.swift */; };
 		C2B56009851682D55FA937B5 /* EditorTheme+Default.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E61213D41A5D68851876CD /* EditorTheme+Default.swift */; };
 		C8421688006A671667424F9F /* DoopEditorExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B83982C9910F8D67D3190FB /* DoopEditorExampleApp.swift */; };
 		C99510F12FC08045004F44E8 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C99510F02FC08045004F44E8 /* AppIcon.icon */; };
-		DA8DB287A699285BCE9BDCC0 /* MockCompletionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61BE6EAB676EBBEA25EC5888 /* MockCompletionDelegate.swift */; };
 		DBA7EF7D0EE6371DEFE3ACB8 /* SourceEditorStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90C0E9571065FEB41ACD1E7 /* SourceEditorStatusBar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0FE20DC2F40D52588F0F16C3 /* SourceEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceEditorView.swift; sourceTree = "<group>"; };
 		294AF6886F1AAA78D1E1F565 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		2D8E6142DB78390E67D457A0 /* MockJumpToDefinitionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockJumpToDefinitionDelegate.swift; sourceTree = "<group>"; };
 		52C2214B554314156C8DC9CA /* LanguagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePicker.swift; sourceTree = "<group>"; };
-		61BE6EAB676EBBEA25EC5888 /* MockCompletionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCompletionDelegate.swift; sourceTree = "<group>"; };
 		65E61213D41A5D68851876CD /* EditorTheme+Default.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorTheme+Default.swift"; sourceTree = "<group>"; };
 		7294881A5AF35FFCE29364F5 /* DoopEditorExample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DoopEditorExample.entitlements; sourceTree = "<group>"; };
 		87FB3DB4286140961151D9A0 /* RawTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawTextView.swift; sourceTree = "<group>"; };
@@ -116,8 +112,6 @@
 			children = (
 				EADD95E7F2F8F9BDE179AEBD /* IndentPicker.swift */,
 				52C2214B554314156C8DC9CA /* LanguagePicker.swift */,
-				61BE6EAB676EBBEA25EC5888 /* MockCompletionDelegate.swift */,
-				2D8E6142DB78390E67D457A0 /* MockJumpToDefinitionDelegate.swift */,
 				B90C0E9571065FEB41ACD1E7 /* SourceEditorStatusBar.swift */,
 				0FE20DC2F40D52588F0F16C3 /* SourceEditorView.swift */,
 			);
@@ -231,8 +225,6 @@
 				C2B56009851682D55FA937B5 /* EditorTheme+Default.swift in Sources */,
 				41755257E247EBA65339970C /* IndentPicker.swift in Sources */,
 				11CA370ABD4E01163B853E67 /* LanguagePicker.swift in Sources */,
-				DA8DB287A699285BCE9BDCC0 /* MockCompletionDelegate.swift in Sources */,
-				701E319F6DEC8EC0D58F6238 /* MockJumpToDefinitionDelegate.swift in Sources */,
 				4E102563AB7856CE54A34625 /* NSColor+Hex.swift in Sources */,
 				218236FC676F9B1A1231E586 /* RawTextView.swift in Sources */,
 				2DF24BF94D42BAD3FB0D44CE /* RawTextViewController.swift in Sources */,
