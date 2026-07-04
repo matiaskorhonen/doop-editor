@@ -1,6 +1,6 @@
 # DoopEditor
 
-A SwiftPM monorepo containing customized forks of the CodeEdit editor components used by [Doop](https://github.com/matiaskorhonen/doop).
+A SwiftPM monorepo containing customized forks of the [CodeEdit](https://github.com/CodeEditApp) editor components, used by [Doop](https://github.com/matiaskorhonen/doop).
 
 ## Structure
 
@@ -18,43 +18,7 @@ DoopEditor/
     └── Tests/
 ```
 
-Each subdirectory is a git subtree imported from its respective fork's `custom` branch.
-
-## Upstream forks
-
-| Subtree | Source | Branch |
-|---|---|---|
-| `CodeEditSourceEditor/` | `matiaskorhonen/CodeEditSourceEditor` | `custom` |
-| `CodeEditTextView/` | `matiaskorhonen/CodeEditTextView` | `custom` |
-| `CodeEditLanguages/` | `matiaskorhonen/CodeEditLanguages` | `custom` |
-
-## Bootstrapping
-
-### Import the subtrees
-
-```bash
-git subtree add --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
-
-git subtree add --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree add --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
-
-### Pull upstream changes
-
-```bash
-git subtree pull --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
-
-git subtree pull --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree pull --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
+Each subdirectory is a git subtree. See [UPSTREAM.md](UPSTREAM.md) for the exact upstream sources, branches, and how to bootstrap or update the subtrees.
 
 ## Requirements
 
@@ -87,6 +51,14 @@ Then add the products you need to your target:
 ```
 
 `CodeEditSourceEditor` is the top-level component and pulls in `CodeEditTextView` and `CodeEditLanguages` transitively. Depend on the lower-level libraries directly only if you need them without the editor.
+
+## Example app
+
+The `Example/` directory contains a standalone Xcode project (`DoopEditorExample`) that exercises `CodeEditSourceEditor` directly, useful for manually testing changes without pulling them into Doop first.
+
+## License
+
+Each vendored package retains its original MIT license. See [LICENSE.md](LICENSE.md) for the full text of each.
 
 ## Notes
 
