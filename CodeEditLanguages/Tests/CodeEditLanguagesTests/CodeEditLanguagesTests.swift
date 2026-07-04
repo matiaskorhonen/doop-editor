@@ -361,6 +361,16 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertEqual(language.id, .julia)
     }
 
+    func test_FetchQueryJulia() throws {
+        var language = CodeLanguage.julia
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
+    }
+
 // MARK: - Kotlin
 
     func test_CodeLanguageKotlin() throws {
@@ -502,6 +512,16 @@ final class CodeEditLanguagesTests: XCTestCase {
         let language = CodeLanguage.detectLanguageFrom(url: url)
 
         XCTAssertEqual(language.id, .perl)
+    }
+
+    func test_FetchQueryPerl() throws {
+        var language = CodeLanguage.perl
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
     }
 
 // MARK: - PHP
