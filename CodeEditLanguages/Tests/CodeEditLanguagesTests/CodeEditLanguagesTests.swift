@@ -13,15 +13,6 @@ final class CodeEditLanguagesTests: XCTestCase {
 
     let bundleURL = Bundle.module.resourceURL
 
-// MARK: - Agda
-    
-    func test_CodeLanguageAgda() throws {
-        let url = URL(fileURLWithPath: "~/path/to/file.agda")
-        let language = CodeLanguage.detectLanguageFrom(url: url)
-
-        XCTAssertEqual(language.id, .agda)
-    }
-    
 // MARK: - Bash
 
     func test_CodeLanguageBash() throws {

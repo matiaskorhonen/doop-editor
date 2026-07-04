@@ -8,7 +8,6 @@
 import Foundation
 import TreeSitter
 import SwiftTreeSitter
-import TreeSitterAgda
 import TreeSitterBash
 import TreeSitterC
 import TreeSitterCPP
@@ -124,8 +123,6 @@ public struct CodeLanguage {
     /// Gets the TSLanguage from `tree-sitter`
     private var tsLanguage: OpaquePointer? {
         switch id {
-        case .agda:
-            return tree_sitter_agda()
         case .bash:
             return tree_sitter_bash()
         case .c:

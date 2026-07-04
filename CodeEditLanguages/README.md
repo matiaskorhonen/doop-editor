@@ -12,7 +12,6 @@ The documentation including a guide on how to add support for new languages can 
 
 | Grammar | Implemented | Syntax Highlighting |
 | ------- | :---------: | :-----------------: |
-| [Agda](https://github.com/tree-sitter/tree-sitter-agda.git) | ✅ | _not available_ |
 | [Bash](https://github.com/tree-sitter/tree-sitter-bash) | ✅ | ✅ |
 | [C](https://github.com/tree-sitter/tree-sitter-c) | ✅ | ✅ |
 | [C++](https://github.com/tree-sitter/tree-sitter-cpp) | ✅ | ✅ |

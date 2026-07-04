@@ -18,7 +18,6 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.0.0"),
         // CodeEditLanguages deps
         .package(url: "https://github.com/tree-sitter/swift-tree-sitter.git", exact: "0.10.0"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-agda.git", revision: "e8d47a6987effe34d5595baf321d82d3519a8527"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-bash.git", exact: "0.23.3"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", revision: "8b5b49eb196bec7040441bee33b2c9a4838d6967"), // master
@@ -82,7 +81,6 @@ let package = Package(
             name: "CodeEditLanguages",
             dependencies: [
                 .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
-                .product(name: "TreeSitterAgda", package: "tree-sitter-agda"),
                 .product(name: "TreeSitterBash", package: "tree-sitter-bash"),
                 .product(name: "TreeSitterC", package: "tree-sitter-c"),
                 .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
@@ -121,7 +119,6 @@ let package = Package(
             ],
             path: "CodeEditLanguages/Sources/CodeEditLanguages",
             resources: [
-                .copy("Resources/tree-sitter-agda"),
                 .copy("Resources/tree-sitter-bash"),
                 .copy("Resources/tree-sitter-c"),
                 .copy("Resources/tree-sitter-c-sharp"),
