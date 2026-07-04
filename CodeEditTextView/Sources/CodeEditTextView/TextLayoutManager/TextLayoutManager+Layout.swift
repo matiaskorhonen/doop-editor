@@ -122,6 +122,18 @@ extension TextLayoutManager {
 
             if forceLayout || linePositionNeedsLayout || wasNotVisible || lineNotEntirelyLaidOut {
                 fullLineLayout()
+            } else if linePosition.height > (maxY - minY) {
+                // This line's fragments span more than one viewport (e.g. one long wrapped line of base64 or
+                // minified content). `layoutLineViews` only places fragments visible in the window it was given,
+                // so as the visible window moves within this same line, fragments that scroll into view for the
+                // first time need to be placed. Re-typesetting isn't needed here (the checks above already ruled
+                // that out), so this only re-syncs which fragments have views, which stays cheap since it's
+                // bounded by how many fragments fit in a viewport rather than the line's total fragment count.
+                placeVisibleFragments(
+                    linePosition,
+                    layoutData: LineLayoutData(minY: minY, maxY: maxY, maxWidth: maxLineLayoutWidth),
+                    laidOutFragmentIDs: &usedFragmentIDs
+                )
             } else {
                 if didLayoutChange || yContentAdjustment > 0 {
                     // Layout happened and this line needs to be moved but not necessarily re-added
@@ -263,6 +275,12 @@ extension TextLayoutManager {
             // each placement is an `addSubview(positioned:relativeTo:)` call, which reorders the layout view's
             // entire subview array, so placing every fragment of such a line is O(n^2) in fragment count. Height
             // and width are still accumulated below from the already-computed fragment metadata, no view needed.
+            //
+            // Fragments outside the range are deliberately left out of `laidOutFragmentIDs` (rather than marked
+            // used regardless): if a fragment already has a view but is no longer visible, this lets
+            // `viewReuseQueue.enqueueViews(notInSet:)` reclaim it instead of leaking one subview per fragment
+            // ever scrolled past on a line taller than a viewport. `placeVisibleFragments` re-places fragments
+            // that scroll back into range later without re-typesetting the line.
             let fragmentMinY = position.yPos + lineFragmentPosition.yPos
             let fragmentMaxY = fragmentMinY + lineFragment.scaledHeight
             if fragmentMaxY >= layoutData.minY && fragmentMinY <= layoutData.maxY {
@@ -271,14 +289,43 @@ extension TextLayoutManager {
                     for: lineFragmentPosition,
                     at: fragmentMinY
                 )
+                laidOutFragmentIDs.insert(lineFragment.id)
             }
 
             width = max(width, lineFragment.width)
             height += lineFragment.scaledHeight
-            laidOutFragmentIDs.insert(lineFragment.id)
         }
 
         return CGSize(width: width, height: height)
+    }
+
+    /// Places views for any fragments of this line that intersect `layoutData`'s visible range but don't yet have
+    /// one, without re-typesetting the line. Used from ``layoutLines(in:)`` for lines taller than a single
+    /// viewport: `layoutLineViews` only placed fragments visible in whatever window was current when the line was
+    /// last typeset, so as the visible window moves within the same still-visible line, newly-revealed fragments
+    /// need to be placed here instead of being silently skipped.
+    /// - Parameters:
+    ///   - position: The line position to sync fragment views for.
+    ///   - layoutData: The current visible range and layout width.
+    ///   - laidOutFragmentIDs: Updated with the IDs of fragments left with a placed view in the visible range.
+    private func placeVisibleFragments(
+        _ position: TextLineStorage<TextLine>.TextLinePosition,
+        layoutData: LineLayoutData,
+        laidOutFragmentIDs: inout Set<LineFragment.ID>
+    ) {
+        let line = position.data
+        for lineFragmentPosition in line.lineFragments {
+            let lineFragment = lineFragmentPosition.data
+            let fragmentMinY = position.yPos + lineFragmentPosition.yPos
+            let fragmentMaxY = fragmentMinY + lineFragment.scaledHeight
+            guard fragmentMaxY >= layoutData.minY && fragmentMinY <= layoutData.maxY else { continue }
+
+            laidOutFragmentIDs.insert(lineFragment.id)
+            guard viewReuseQueue.getView(forKey: lineFragment.id) == nil else { continue }
+
+            lineFragment.documentRange = lineFragmentPosition.range.translate(location: position.range.location)
+            layoutFragmentView(inLine: position, for: lineFragmentPosition, at: fragmentMinY)
+        }
     }
 
     // MARK: - Layout Fragment
