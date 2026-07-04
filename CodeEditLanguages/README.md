@@ -2,7 +2,7 @@
 
 A collection of `tree-sitter` languages for syntax highlighting.
 
-This package uses **direct SPM grammar dependencies** (no xcframework). It heavily depends on [SwiftTreeSitter](https://github.com/ChimeHQ/SwiftTreeSitter) by [Matt Massicotte](https://bsky.app/profile/massicotte.org).
+This package uses **direct SPM grammar dependencies** (no xcframework). It heavily depends on [SwiftTreeSitter](https://github.com/tree-sitter/swift-tree-sitter) by [Matt Massicotte](https://bsky.app/profile/massicotte.org).
 
 ## Documentation
 

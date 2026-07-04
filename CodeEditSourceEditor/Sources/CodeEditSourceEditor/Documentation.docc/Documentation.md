@@ -24,7 +24,7 @@ Special thanks to [Matt Massicotte](https://bsky.app/profile/massicotte.org) for
 
 | Package | Source | Author |
 | :- | :- | :- |
-| `SwiftTreeSitter` | [GitHub](https://github.com/ChimeHQ/SwiftTreeSitter) | [Matt Massicotte](https://bsky.app/profile/massicotte.org) |
+| `SwiftTreeSitter` | [GitHub](https://github.com/tree-sitter/swift-tree-sitter) | [Matt Massicotte](https://bsky.app/profile/massicotte.org) |
 
 ## License
 
