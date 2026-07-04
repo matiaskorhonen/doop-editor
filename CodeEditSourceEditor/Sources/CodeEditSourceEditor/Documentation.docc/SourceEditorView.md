@@ -26,7 +26,6 @@ struct ContentView: View {
     @State var font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
     @State var indentOption = .spaces(count: 4)
     @State var editorOverscroll = 0.3
-    @State var showMinimap = true
 
     /// *Powerful* customization options with text coordinators 
     @State var autoCompleteCoordinator = AutoCompleteCoordinator()
@@ -38,8 +37,7 @@ struct ContentView: View {
             configuration: SourceEditorConfiguration(
                 appearance: .init(theme: theme, font: font),
                 behavior: .init(indentOption: indentOption),
-                layout: .init(editorOverscroll: editorOverscroll),
-                peripherals: .init(showMinimap: showMinimap)
+                layout: .init(editorOverscroll: editorOverscroll)
             ),
             state: $editorState,
             coordinators: [autoCompleteCoordinator]
@@ -72,7 +70,6 @@ var theme = EditorTheme(...)
 var font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
 var indentOption = .spaces(count: 4)
 var editorOverscroll = 0.3
-var showMinimap = true
 
 let editorController = TextViewController(
     string: "let x = 10;",
@@ -80,15 +77,12 @@ let editorController = TextViewController(
     config: SourceEditorConfiguration(
         appearance: .init(theme: theme, font: font),
         behavior: .init(indentOption: indentOption),
-        layout: .init(editorOverscroll: editorOverscroll),
-        peripherals: .init(showMinimap: showMinimap)
+        layout: .init(editorOverscroll: editorOverscroll)
     ),
     cursorPositions: [CursorPosition(line: 0, column: 0)],
     highlightProviders: [], // Use the tree-sitter syntax highlighting provider by default
     undoManager: nil,
-    coordinators: [], // Optionally inject editing behavior or other plugins.
-    completionDelegate: nil, // Provide code suggestions while typing via a delegate object.
-    jumpToDefinitionDelegate // Allow users to perform the 'jump to definition' using a delegate object.
+    coordinators: [] // Optionally inject editing behavior or other plugins.
 )
 ```
 
