@@ -258,11 +258,20 @@ extension TextLayoutManager {
             let lineFragment = lineFragmentPosition.data
             lineFragment.documentRange = lineFragmentPosition.range.translate(location: position.range.location)
 
-            layoutFragmentView(
-                inLine: position,
-                for: lineFragmentPosition,
-                at: position.yPos + lineFragmentPosition.yPos
-            )
+            // A single wrapped line can produce a huge number of fragments (e.g. one long line of minified or
+            // base64 content). Only create/place views for fragments that actually intersect the visible range:
+            // each placement is an `addSubview(positioned:relativeTo:)` call, which reorders the layout view's
+            // entire subview array, so placing every fragment of such a line is O(n^2) in fragment count. Height
+            // and width are still accumulated below from the already-computed fragment metadata, no view needed.
+            let fragmentMinY = position.yPos + lineFragmentPosition.yPos
+            let fragmentMaxY = fragmentMinY + lineFragment.scaledHeight
+            if fragmentMaxY >= layoutData.minY && fragmentMinY <= layoutData.maxY {
+                layoutFragmentView(
+                    inLine: position,
+                    for: lineFragmentPosition,
+                    at: fragmentMinY
+                )
+            }
 
             width = max(width, lineFragment.width)
             height += lineFragment.scaledHeight
