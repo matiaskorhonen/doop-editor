@@ -108,8 +108,13 @@ extension CTTypesetter {
     /// - Returns: True, if the character is a whitespace or punctuation character.
     private func ensureCharacterCanBreakLine(at index: Int, for string: NSAttributedString) -> Bool {
         let subrange = (string.string as NSString).rangeOfComposedCharacterSequence(at: index)
-        let set = CharacterSet(charactersIn: (string.string as NSString).substring(with: subrange))
-        return set.isSubset(of: .whitespacesAndNewlines) || set.isSubset(of: .punctuationCharacters)
+        let substring = (string.string as NSString).substring(with: subrange)
+        // Avoid `CharacterSet(charactersIn:).isSubset(of:)`, which allocates a bitmap and performs a full
+        // set intersection per call. A direct scalar membership check is equivalent (a set built from the
+        // substring is a subset of X iff every scalar in the substring belongs to X) and orders of magnitude
+        // cheaper, which matters here since this can run for every character in a long, unbreakable line.
+        return substring.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
+            || substring.unicodeScalars.allSatisfy { CharacterSet.punctuationCharacters.contains($0) }
     }
 
     /// Check if the break index is on a CRLF (`\r\n`) character, indicating a valid break position.
