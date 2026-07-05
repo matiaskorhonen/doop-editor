@@ -23,8 +23,16 @@ extension TextView {
         setUpScrollListeners(scrollView: scrollView)
     }
 
+    override public func viewWillStartLiveResize() {
+        super.viewWillStartLiveResize()
+        isInLiveResizeDrag = true
+    }
+
     override public func viewDidEndLiveResize() {
         super.viewDidEndLiveResize()
+        isInLiveResizeDrag = false
+        // `updatedViewport(_:)` ignores frame/bounds changes while `isInLiveResizeDrag` is true (see
+        // TextView+Layout.swift), so this is what rewraps the text for the final width once the drag ends.
         updateFrameIfNeeded()
     }
 }

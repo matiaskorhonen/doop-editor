@@ -119,6 +119,19 @@ open class TextView: NSView, NSTextContent {
         }
     }
 
+    /// Whether the view is in the middle of a live window resize drag. Tracked separately from AppKit's own
+    /// `inLiveResize` (which can't be driven from tests since it's tied to the window server's resize
+    /// tracking loop) via the `viewWillStartLiveResize`/`viewDidEndLiveResize` overrides in
+    /// `TextView+Lifecycle.swift`, which fire reliably at the start/end of a live resize.
+    var isInLiveResizeDrag = false
+
+    /// Above this many characters, a visible line is skipped for reflow on individual live-resize-drag ticks
+    /// (see `updatedViewport(_:)` in `TextView+Layout.swift`). A single retypeset of an unbreakable line this
+    /// long can already take several milliseconds and grows from there (see `TypesetterBenchTests`), long
+    /// enough to blow a frame's budget in the resize tracking loop and stutter on every tick of a drag;
+    /// shorter lines stay cheap enough to keep reflowing live.
+    static let liveResizeReflowLineLengthThreshold = 15_000
+
     /// Whether or not the editor should wrap lines
     public var wrapLines: Bool {
         get {

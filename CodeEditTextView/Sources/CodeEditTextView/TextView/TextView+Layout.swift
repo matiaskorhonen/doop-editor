@@ -59,10 +59,28 @@ extension TextView {
     }
 
     public func updatedViewport(_ newRect: CGRect) {
+        // This is invoked from both live scrolling and live window resizing (both fire bounds/frame-change
+        // notifications on the scroll view's clip view). During a live resize drag this can fire dozens of
+        // times per second; with `wrapLines` on, each call re-typesets every visible line for the new width.
+        // That's cheap for ordinary lines, but expensive for a document containing one huge unbreakable line
+        // (e.g. base64 content), and doing that on every tick of a drag makes the whole thing stutter. Skip
+        // rewrapping only in that case, and let `viewDidEndLiveResize()` catch up once the drag finishes.
+        if isInLiveResizeDrag && hasVisibleLineExceedingLiveResizeThreshold(in: newRect) {
+            return
+        }
+
         if !updateFrameIfNeeded() {
             layoutManager.layoutLines()
         }
         inputContext?.invalidateCharacterCoordinates()
+    }
+
+    /// Checks whether any line currently visible in `rect` is long enough that retypesetting it on every tick
+    /// of a live resize drag would be expensive. See `TextView.liveResizeReflowLineLengthThreshold`.
+    func hasVisibleLineExceedingLiveResizeThreshold(in rect: CGRect) -> Bool {
+        layoutManager.linesStartingAt(rect.minY, until: rect.maxY).contains { linePosition in
+            linePosition.range.length > Self.liveResizeReflowLineLengthThreshold
+        }
     }
 
     /// Updates the view's frame if needed depending on wrapping lines, a new maximum width, or changed available size.
