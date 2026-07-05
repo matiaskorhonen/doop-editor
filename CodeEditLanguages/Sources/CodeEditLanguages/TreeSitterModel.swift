@@ -20,6 +20,8 @@ public class TreeSitterModel {
     public func query(for language: TreeSitterLanguage) -> Query? {
         // swiftlint:disable:previous cyclomatic_complexity function_body_length
         switch language {
+        case .agda:
+            return agdaQuery
         case .bash:
             return bashQuery
         case .c:
@@ -40,6 +42,8 @@ public class TreeSitterModel {
             return goQuery
         case .goMod:
             return goModQuery
+        case .haskell:
+            return haskellQuery
         case .html:
             return htmlQuery
         case .java:
@@ -64,6 +68,10 @@ public class TreeSitterModel {
             return markdownInlineQuery
         case .objc:
             return objcQuery
+        case .ocaml:
+            return ocamlQuery
+        case .ocamlInterface:
+            return ocamlInterfaceQuery
         case .perl:
             return perlQuery
         case .php:
@@ -76,6 +84,8 @@ public class TreeSitterModel {
             return rubyQuery
         case .rust:
             return rustQuery
+        case .scala:
+            return scalaQuery
         case .sql:
             return sqlQuery
         case .swift:
@@ -94,6 +104,11 @@ public class TreeSitterModel {
             return nil
         }
     }
+
+    /// Query for `Agda` files.
+    public private(set) lazy var agdaQuery: Query? = {
+        return queryFor(.agda)
+    }()
 
     /// Query for `Bash` files.
     public private(set) lazy var bashQuery: Query? = {
@@ -143,6 +158,11 @@ public class TreeSitterModel {
     /// Query for `GoMod` files.
     public private(set) lazy var goModQuery: Query? = {
         return queryFor(.goMod)
+    }()
+
+    /// Query for `Haskell` files.
+    public private(set) lazy var haskellQuery: Query? = {
+        return queryFor(.haskell)
     }()
 
     /// Query for `HTML` files.
@@ -205,6 +225,16 @@ public class TreeSitterModel {
         return queryFor(.objc)
     }()
 
+    /// Query for `OCaml` files.
+    public private(set) lazy var ocamlQuery: Query? = {
+        return queryFor(.ocaml)
+    }()
+
+    /// Query for `OCaml Interface` files.
+    public private(set) lazy var ocamlInterfaceQuery: Query? = {
+        return queryFor(.ocamlInterface)
+    }()
+
     /// Query for `Perl` files.
     public private(set) lazy var perlQuery: Query? = {
         return queryFor(.perl)
@@ -233,6 +263,11 @@ public class TreeSitterModel {
     /// Query for `Rust` files.
     public private(set) lazy var rustQuery: Query? = {
         return queryFor(.rust)
+    }()
+
+    /// Query for `Scala` files.
+    public private(set) lazy var scalaQuery: Query? = {
+        return queryFor(.scala)
     }()
 
     /// Query for `SQL` files.

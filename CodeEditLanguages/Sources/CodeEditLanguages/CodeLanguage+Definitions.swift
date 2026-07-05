@@ -13,6 +13,7 @@ public extension CodeLanguage {
 
     /// An array of all language structures.
     static let allLanguages: [CodeLanguage] = [
+        .agda,
         .bash,
         .c,
         .cpp,
@@ -23,6 +24,7 @@ public extension CodeLanguage {
         .generic,
         .go,
         .goMod,
+        .haskell,
         .html,
         .java,
         .javascript,
@@ -35,12 +37,15 @@ public extension CodeLanguage {
         .markdown,
         .markdownInline,
         .objc,
+        .ocaml,
+        .ocamlInterface,
         .perl,
         .php,
         .python,
         .regex,
         .ruby,
         .rust,
+        .scala,
         .sql,
         .swift,
         .toml,
@@ -49,6 +54,16 @@ public extension CodeLanguage {
         .yaml,
         .zig
     ]
+
+    /// A language structure for `Agda`
+    static let agda: CodeLanguage = .init(
+        id: .agda,
+        tsName: "agda",
+        extensions: ["agda"],
+        lineCommentString: "--",
+        rangeCommentStrings: ("{-", "-}"),
+        highlights: ["folds", "injections"]
+    )
 
     /// A language structure for `Bash`
     static let bash: CodeLanguage = .init(
@@ -149,6 +164,16 @@ public extension CodeLanguage {
         extensions: ["mod"],
         lineCommentString: "//",
         rangeCommentStrings: ("/*", "*/")
+    )
+
+    /// A language structure for `Haskell`
+    static let haskell: CodeLanguage = .init(
+        id: .haskell,
+        tsName: "haskell",
+        extensions: ["hs"],
+        lineCommentString: "--",
+        rangeCommentStrings: ("{-", "-}"),
+        highlights: ["folds", "injections", "locals"]
     )
 
     /// A language structure for `HTML`
@@ -274,6 +299,27 @@ public extension CodeLanguage {
         highlights: ["folds", "indents", "injections", "locals"]
     )
 
+    /// A language structure for `OCaml`
+    static let ocaml: CodeLanguage = .init(
+        id: .ocaml,
+        tsName: "ocaml",
+        extensions: ["ml"],
+        lineCommentString: "",
+        rangeCommentStrings: ("(*", "*)"),
+        documentationCommentStrings: [.pair(("(**", "*)"))],
+        highlights: ["folds", "indents", "injections", "locals", "tags"]
+    )
+
+    /// A language structure for `OCaml Interface`
+    static let ocamlInterface: CodeLanguage = .init(
+        id: .ocamlInterface,
+        tsName: "ocaml",
+        extensions: ["mli"],
+        lineCommentString: "",
+        rangeCommentStrings: ("", ""),
+        highlights: ["folds", "indents", "injections", "locals", "tags"]
+    )
+
     /// A language structure for `Perl`
     static let perl: CodeLanguage = .init(
         id: .perl,
@@ -339,6 +385,16 @@ public extension CodeLanguage {
             .pair(("/*!", "*/"))
         ],
         highlights: ["folds", "indents", "injections", "locals", "tags"]
+    )
+
+    /// A language structure for `Scala`
+    static let scala: CodeLanguage = .init(
+        id: .scala,
+        tsName: "scala",
+        extensions: ["scala", "sc"],
+        lineCommentString: "//",
+        rangeCommentStrings: ("/*", "*/"),
+        highlights: ["folds", "injections", "locals"]
     )
 
     /// A language structure for `SQL`

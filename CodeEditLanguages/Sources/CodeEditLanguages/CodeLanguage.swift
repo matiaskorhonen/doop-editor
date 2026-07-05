@@ -8,6 +8,7 @@
 import Foundation
 import TreeSitter
 import SwiftTreeSitter
+import TreeSitterAgda
 import TreeSitterBash
 import TreeSitterC
 import TreeSitterCPP
@@ -18,6 +19,7 @@ import TreeSitterElixir
 import TreeSitterGeneric
 import TreeSitterGo
 import TreeSitterGoMod
+import TreeSitterHaskell
 import TreeSitterHTML
 import TreeSitterJava
 import TreeSitterJavaScript
@@ -29,12 +31,14 @@ import TreeSitterLua
 import TreeSitterMarkdown
 import TreeSitterMarkdownInline
 import TreeSitterObjc
+import TreeSitterOCaml
 import TreeSitterPerl
 import TreeSitterPHP
 import TreeSitterPython
 import TreeSitterRegex
 import TreeSitterRuby
 import TreeSitterRust
+import TreeSitterScala
 import TreeSitterSql
 import TreeSitterSwift
 import TreeSitterTOML
@@ -120,6 +124,8 @@ public struct CodeLanguage {
     /// Gets the TSLanguage from `tree-sitter`
     private var tsLanguage: OpaquePointer? {
         switch id {
+        case .agda:
+            return tree_sitter_agda()
         case .bash:
             return tree_sitter_bash()
         case .c:
@@ -140,6 +146,8 @@ public struct CodeLanguage {
             return tree_sitter_go()
         case .goMod:
             return tree_sitter_gomod()
+        case .haskell:
+            return tree_sitter_haskell()
         case .html:
             return tree_sitter_html()
         case .java:
@@ -164,6 +172,10 @@ public struct CodeLanguage {
             return tree_sitter_markdown_inline()
         case .objc:
             return tree_sitter_objc()
+        case .ocaml:
+            return tree_sitter_ocaml()
+        case .ocamlInterface:
+            return tree_sitter_ocaml_interface()
         case .perl:
             return tree_sitter_perl()
         case .php:
@@ -176,6 +188,8 @@ public struct CodeLanguage {
             return tree_sitter_ruby()
         case .rust:
             return tree_sitter_rust()
+        case .scala:
+            return tree_sitter_scala()
         case .sql:
             return tree_sitter_sql()
         case .swift:

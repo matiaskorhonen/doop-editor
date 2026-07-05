@@ -18,6 +18,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.0.0"),
         // CodeEditLanguages deps
         .package(url: "https://github.com/tree-sitter/swift-tree-sitter.git", exact: "0.10.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-agda.git", revision: "e8d47a6987effe34d5595baf321d82d3519a8527"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-bash.git", exact: "0.23.3"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp.git", revision: "8b5b49eb196bec7040441bee33b2c9a4838d6967"), // master
@@ -28,6 +29,7 @@ let package = Package(
         .package(url: "https://github.com/matiaskorhonen/tree-sitter-generic.git", revision: "4a967c7ca3ce6116827ddf090eaa4ef7d10c03df"), // main
         .package(url: "https://github.com/tree-sitter/tree-sitter-go.git", exact: "0.25.0"),
         .package(url: "https://github.com/camdencheek/tree-sitter-go-mod.git", revision: "2e886870578eeba1927a2dc4bd2e2b3f598c5f9a"), // main
+        .package(url: "https://github.com/tree-sitter/tree-sitter-haskell.git", revision: "0975ef72fc3c47b530309ca93937d7d143523628"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-html.git", revision: "73a3947324f6efddf9e17c0ea58d454843590cc0"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-java.git", revision: "e10607b45ff745f5f876bfa3e94fbcc6b44bdc11"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-javascript.git", exact: "0.23.1"),
@@ -38,12 +40,14 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-lua", exact: "0.3.0"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.3"),
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-objc", revision: "181a81b8f23a2d593e7ab4259981f50122909fda"), // master
+        .package(url: "https://github.com/tree-sitter/tree-sitter-ocaml.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter-perl/tree-sitter-perl.git", revision: "0390ac6f4e26f5805c9d7d9b950685436faa6359"), // release
         .package(url: "https://github.com/tree-sitter/tree-sitter-php.git", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-python.git", exact: "0.23.6"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-regex.git", exact: "0.25.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-ruby.git", revision: "ad907a69da0c8a4f7a943a7fe012712208da6dee"), // master
         .package(url: "https://github.com/tree-sitter/tree-sitter-rust.git", revision: "77a3747266f4d621d0757825e6b11edcbf991ca5"), // master
+        .package(url: "https://github.com/tree-sitter/tree-sitter-scala.git", revision: "4d081d98670ff6e98ca42c085294fc75eec15e1d"), // master
         .package(url: "https://github.com/DerekStride/tree-sitter-sql.git", revision: "851e9cb257ba7c66cc8c14214a31c44d2f1e954e"), // gh-pages
         .package(url: "https://github.com/alex-pinkus/tree-sitter-swift.git", revision: "31d17fe7e818a2048c808b5c6fdc2dc792f4f5b5"), // with-generated-files
         .package(url: "https://github.com/cengelbart39/tree-sitter-toml.git", revision: "28db724e8e30920638b46d408c0fbac007ac6a62"), // feature/spm
@@ -78,6 +82,7 @@ let package = Package(
             name: "CodeEditLanguages",
             dependencies: [
                 .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
+                .product(name: "TreeSitterAgda", package: "tree-sitter-agda"),
                 .product(name: "TreeSitterBash", package: "tree-sitter-bash"),
                 .product(name: "TreeSitterC", package: "tree-sitter-c"),
                 .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
@@ -88,6 +93,7 @@ let package = Package(
                 .product(name: "TreeSitterGeneric", package: "tree-sitter-generic"),
                 .product(name: "TreeSitterGo", package: "tree-sitter-go"),
                 .product(name: "TreeSitterGoMod", package: "tree-sitter-go-mod"),
+                .product(name: "TreeSitterHaskell", package: "tree-sitter-haskell"),
                 .product(name: "TreeSitterHTML", package: "tree-sitter-html"),
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
                 .product(name: "TreeSitterJavaScript", package: "tree-sitter-javascript"),
@@ -98,12 +104,14 @@ let package = Package(
                 .product(name: "TreeSitterLua", package: "tree-sitter-lua"),
                 .product(name: "TreeSitterMarkdown", package: "tree-sitter-markdown"),
                 .product(name: "TreeSitterObjc", package: "tree-sitter-objc"),
+                .product(name: "TreeSitterOCaml", package: "tree-sitter-ocaml"),
                 .product(name: "TreeSitterPerl", package: "tree-sitter-perl"),
                 .product(name: "TreeSitterPHP", package: "tree-sitter-php"),
                 .product(name: "TreeSitterPython", package: "tree-sitter-python"),
                 .product(name: "TreeSitterRegex", package: "tree-sitter-regex"),
                 .product(name: "TreeSitterRuby", package: "tree-sitter-ruby"),
                 .product(name: "TreeSitterRust", package: "tree-sitter-rust"),
+                .product(name: "TreeSitterScala", package: "tree-sitter-scala"),
                 .product(name: "TreeSitterSql", package: "tree-sitter-sql"),
                 .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
                 .product(name: "TreeSitterTOML", package: "tree-sitter-toml"),
@@ -113,6 +121,7 @@ let package = Package(
             ],
             path: "CodeEditLanguages/Sources/CodeEditLanguages",
             resources: [
+                .copy("Resources/tree-sitter-agda"),
                 .copy("Resources/tree-sitter-bash"),
                 .copy("Resources/tree-sitter-c"),
                 .copy("Resources/tree-sitter-c-sharp"),
@@ -123,6 +132,7 @@ let package = Package(
                 .copy("Resources/tree-sitter-generic"),
                 .copy("Resources/tree-sitter-go"),
                 .copy("Resources/tree-sitter-go-mod"),
+                .copy("Resources/tree-sitter-haskell"),
                 .copy("Resources/tree-sitter-html"),
                 .copy("Resources/tree-sitter-java"),
                 .copy("Resources/tree-sitter-javascript"),
@@ -134,12 +144,14 @@ let package = Package(
                 .copy("Resources/tree-sitter-markdown"),
                 .copy("Resources/tree-sitter-markdown-inline"),
                 .copy("Resources/tree-sitter-objc"),
+                .copy("Resources/tree-sitter-ocaml"),
                 .copy("Resources/tree-sitter-perl"),
                 .copy("Resources/tree-sitter-php"),
                 .copy("Resources/tree-sitter-python"),
                 .copy("Resources/tree-sitter-regex"),
                 .copy("Resources/tree-sitter-ruby"),
                 .copy("Resources/tree-sitter-rust"),
+                .copy("Resources/tree-sitter-scala"),
                 .copy("Resources/tree-sitter-sql"),
                 .copy("Resources/tree-sitter-swift"),
                 .copy("Resources/tree-sitter-toml"),

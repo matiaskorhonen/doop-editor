@@ -9,6 +9,7 @@ import Foundation
 
 /// A collection of languages that are supported by `tree-sitter`
 public enum TreeSitterLanguage: String {
+    case agda
     case bash
     case c
     case cpp
@@ -19,6 +20,7 @@ public enum TreeSitterLanguage: String {
     case generic
     case go
     case goMod
+    case haskell
     case html
     case java
     case javascript
@@ -31,12 +33,15 @@ public enum TreeSitterLanguage: String {
     case markdown
     case markdownInline
     case objc
+    case ocaml
+    case ocamlInterface
     case perl
     case php
     case python
     case regex
     case ruby
     case rust
+    case scala
     case sql
     case swift
     case toml

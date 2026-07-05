@@ -12,6 +12,7 @@ API documentation is available in the `Documentation.docc` catalog (browse it in
 
 | Grammar | Implemented | Syntax Highlighting |
 | ------- | :---------: | :-----------------: |
+| [Agda](https://github.com/tree-sitter/tree-sitter-agda.git) | ✅ | _not available_ |
 | [Bash](https://github.com/tree-sitter/tree-sitter-bash) | ✅ | ✅ |
 | [C](https://github.com/tree-sitter/tree-sitter-c) | ✅ | ✅ |
 | [C++](https://github.com/tree-sitter/tree-sitter-cpp) | ✅ | ✅ |
@@ -20,6 +21,7 @@ API documentation is available in the `Documentation.docc` catalog (browse it in
 | [Dockerfile](https://github.com/camdencheek/tree-sitter-dockerfile) | ✅ | ✅ |
 | [Elixir](https://github.com/elixir-lang/tree-sitter-elixir) | ✅ | ✅ |
 | [Go](https://github.com/tree-sitter/tree-sitter-go) | ✅ | ✅ |
+| [Haskell](https://github.com/tree-sitter/tree-sitter-haskell) | ✅ | ✅ |
 | [HTML](https://github.com/tree-sitter/tree-sitter-html) | ✅ | ✅ |
 | [Java](https://github.com/tree-sitter/tree-sitter-java) | ✅ | ✅ |
 | [JavaScript/JSX](https://github.com/tree-sitter/tree-sitter-javascript) | ✅ | ✅ |
@@ -30,6 +32,7 @@ API documentation is available in the `Documentation.docc` catalog (browse it in
 | [Lua](https://github.com/tree-sitter-grammars/tree-sitter-lua) | ✅ | ✅ |
 | [Markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown) | ✅ | ✅ |
 | [Objective C](https://github.com/tree-sitter-grammars/tree-sitter-objc) | ✅ | ✅ |
+| [OCaml](https://github.com/tree-sitter/tree-sitter-ocaml) | ✅ | ✅ |
 | Plain Text | ✅ | _not available_ |
 | [Perl](https://github.com/ganezdragon/tree-sitter-perl) | ✅ | ✅ |
 | [PHP](https://github.com/tree-sitter/tree-sitter-php) | ✅ | ✅ |
@@ -37,6 +40,7 @@ API documentation is available in the `Documentation.docc` catalog (browse it in
 | [Regex](https://github.com/tree-sitter/tree-sitter-regex) | ✅ | ✅ |
 | [Ruby](https://github.com/mattmassicotte/tree-sitter-ruby) | ✅ | ✅ |
 | [Rust](https://github.com/tree-sitter/tree-sitter-rust) | ✅ | ✅ |
+| [Scala](https://github.com/tree-sitter/tree-sitter-scala) | ✅ | ✅ |
 | [SQL](https://github.com/DerekStride/tree-sitter-sql) | ✅ | ✅ |
 | [Swift](https://github.com/alex-pinkus/tree-sitter-swift/tree/with-generated-files) | ✅ | ✅ |
 | [TOML](https://github.com/cengelbart39/tree-sitter-toml/tree/feature/spm) | ✅ | ✅ |

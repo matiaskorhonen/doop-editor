@@ -19,6 +19,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 
 ### Supported Languages
 
+- Agda
 - Bash
 - C
 - C++
@@ -29,6 +30,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - Generic
 - Go
 - Go Mod
+- Haskell
 - HTML
 - Java
 - JavaScript
@@ -39,11 +41,13 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - Lua
 - Markdown
 - Objective C
+- OCaml / OCaml Interface
 - Perl
 - PHP
 - Python
 - Ruby
 - Rust
+- Scala
 - SQL
 - Swift
 - TOML
@@ -71,6 +75,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 
 - ``allLanguages``
 - ``default``
+- ``agda``
 - ``bash``
 - ``c``
 - ``cpp``
@@ -81,6 +86,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``generic``
 - ``go``
 - ``goMod``
+- ``haskell``
 - ``html``
 - ``java``
 - ``javascript``
@@ -98,6 +104,7 @@ let language = CodeLanguage.detectLanguageFrom(url: fileURL)
 - ``python``
 - ``ruby``
 - ``rust``
+- ``scala``
 - ``sql``
 - ``swift``
 - ``toml``

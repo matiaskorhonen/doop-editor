@@ -13,6 +13,15 @@ final class CodeEditLanguagesTests: XCTestCase {
 
     let bundleURL = Bundle.module.resourceURL
 
+// MARK: - Agda
+    
+    func test_CodeLanguageAgda() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.agda")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .agda)
+    }
+    
 // MARK: - Bash
 
     func test_CodeLanguageBash() throws {
@@ -216,6 +225,25 @@ final class CodeEditLanguagesTests: XCTestCase {
 
     func test_FetchQueryGoMod() throws {
         var language = CodeLanguage.goMod
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
+    }
+
+// MARK: - Haskell
+
+    func test_CodeLanguageHaskell() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.hs")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .haskell)
+    }
+
+    func test_FetchQueryHaskell() throws {
+        var language = CodeLanguage.haskell
         language.resourceURL = bundleURL
 
         let data = try Data(contentsOf: language.queryURL!)
@@ -499,6 +527,42 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotEqual(query?.patternCount, 0)
     }
     
+// MARK: - OCaml
+    func test_CodeLanguageOCaml() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.ml")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .ocaml)
+    }
+
+    func test_FetchQueryOCaml() throws {
+        var language = CodeLanguage.ocaml
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
+    }
+    
+// MARK: - OCaml Interface
+    func test_CodeLanguageOCamlInterface() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.mli")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .ocamlInterface)
+    }
+
+    func test_FetchQueryOCamlInterface() throws {
+        var language = CodeLanguage.ocamlInterface
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
+    }
+
 // MARK: - Perl
     func test_CodeLanguagePerl() throws {
         let url = URL(fileURLWithPath: "~/path/to/file.pl")
@@ -599,6 +663,33 @@ final class CodeEditLanguagesTests: XCTestCase {
         XCTAssertNotNil(query)
         XCTAssertNotEqual(query?.patternCount, 0)
     }
+    
+    // MARK: - Scala
+
+    func test_CodeLanguageScala() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.scala")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .scala)
+    }
+    
+    func test_CodeLanguageScalaScript() throws {
+        let url = URL(fileURLWithPath: "~/path/to/file.sc")
+        let language = CodeLanguage.detectLanguageFrom(url: url)
+
+        XCTAssertEqual(language.id, .scala)
+    }
+
+    func test_FetchQueryScala() throws {
+        var language = CodeLanguage.scala
+        language.resourceURL = bundleURL
+
+        let data = try Data(contentsOf: language.queryURL!)
+        let query = try? Query(language: language.language!, data: data)
+        XCTAssertNotNil(query)
+        XCTAssertNotEqual(query?.patternCount, 0)
+    }
+    
     
     // MARK: - SQL
 
