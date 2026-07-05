@@ -181,4 +181,71 @@ final class TextViewResizeBenchTests: XCTestCase {
         let laterReflowTime = try XCTUnwrap(textView.liveResizeLastReflowTime)
         XCTAssertGreaterThan(laterReflowTime, firstReflowTime)
     }
+
+    // MARK: - Adaptive throttle interval
+
+    func test_effectiveIntervalEqualsFixedIntervalWhenNoDurationMeasuredYet() {
+        let (textView, _) = makeResizableTextView(string: "hello world")
+        XCTAssertNil(textView.liveResizeLastReflowDuration)
+        XCTAssertEqual(
+            textView.effectiveLiveResizeReflowThrottleInterval(),
+            TextView.liveResizeReflowThrottleInterval
+        )
+    }
+
+    func test_effectiveIntervalUsesFixedFloorWhenMeasuredDurationIsCheap() {
+        let (textView, _) = makeResizableTextView(string: "hello world")
+        textView.liveResizeLastReflowDuration = 0.001 // 1ms; * the 2.0x default multiplier is still tiny
+        XCTAssertEqual(
+            textView.effectiveLiveResizeReflowThrottleInterval(),
+            TextView.liveResizeReflowThrottleInterval,
+            "expected the fixed floor to win when the measured reflow was cheap"
+        )
+    }
+
+    func test_effectiveIntervalScalesWithMeasuredDurationWhenExpensive() {
+        let (textView, _) = makeResizableTextView(string: "hello world")
+
+        let originalInterval = TextView.liveResizeReflowThrottleInterval
+        let originalMultiplier = TextView.liveResizeReflowThrottleSafetyMultiplier
+        TextView.liveResizeReflowThrottleInterval = 0.01
+        TextView.liveResizeReflowThrottleSafetyMultiplier = 2.0
+        defer {
+            TextView.liveResizeReflowThrottleInterval = originalInterval
+            TextView.liveResizeReflowThrottleSafetyMultiplier = originalMultiplier
+        }
+
+        textView.liveResizeLastReflowDuration = 0.25 // 250ms, matching the documented pathological case
+        XCTAssertEqual(textView.effectiveLiveResizeReflowThrottleInterval(), 0.5)
+    }
+
+    func test_effectiveIntervalIsCappedForExtremelyExpensiveContent() {
+        let (textView, _) = makeResizableTextView(string: "hello world")
+        textView.liveResizeLastReflowDuration = 10.0 // an extreme, multi-second reflow
+
+        XCTAssertEqual(
+            textView.effectiveLiveResizeReflowThrottleInterval(),
+            TextView.liveResizeReflowThrottleMaxInterval,
+            "expected the interval to be capped rather than growing to 10.0 * the safety multiplier"
+        )
+    }
+
+    /// Proves the just-measured *real* duration of an actual reflow (not an estimate) is what feeds the
+    /// next throttle decision, using the existing 400,000-character fixture.
+    func test_expensiveLineWideningThrottleIntervalBasedOnMeasuredDuration() throws {
+        let string = String(repeating: "a", count: 400_000)
+        let (textView, scrollView) = makeResizableTextView(string: string)
+
+        textView.viewWillStartLiveResize()
+        simulateLiveResizeTicks(1, textView: textView, scrollView: scrollView)
+
+        let duration = try XCTUnwrap(textView.liveResizeLastReflowDuration)
+        XCTAssertGreaterThan(duration, 0)
+
+        let expectedInterval = min(
+            max(TextView.liveResizeReflowThrottleInterval, duration * TextView.liveResizeReflowThrottleSafetyMultiplier),
+            TextView.liveResizeReflowThrottleMaxInterval
+        )
+        XCTAssertEqual(textView.effectiveLiveResizeReflowThrottleInterval(), expectedInterval)
+    }
 }

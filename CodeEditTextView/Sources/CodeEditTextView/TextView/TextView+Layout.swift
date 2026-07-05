@@ -76,28 +76,47 @@ extension TextView {
     }
 
     /// Cancels any pending throttled reflow and performs the standard reflow immediately, recording the
-    /// time for throttling purposes. Shared by the non-throttled path above and by the throttle's own
-    /// immediate/trailing fire paths below, so all three do the exact same work (updateFrameIfNeeded +
-    /// layoutLines + character coordinate invalidation).
+    /// time and duration for throttling purposes. Shared by the non-throttled path above and by the
+    /// throttle's own immediate/trailing fire paths below, so all three do the exact same work
+    /// (updateFrameIfNeeded + layoutLines + character coordinate invalidation).
     private func performViewportReflow() {
         liveResizeReflowWorkItem?.cancel()
         liveResizeReflowWorkItem = nil
         liveResizeLastReflowTime = Date()
+        let reflowStart = Date()
         if !updateFrameIfNeeded() {
             layoutManager.layoutLines()
         }
+        liveResizeLastReflowDuration = Date().timeIntervalSince(reflowStart)
         inputContext?.invalidateCharacterCoordinates()
     }
 
+    /// The throttle interval to use for the *next* throttle decision: `liveResizeReflowThrottleInterval`
+    /// widened by `liveResizeReflowThrottleSafetyMultiplier` if the last measured reflow took long enough
+    /// that the fixed interval alone wouldn't give it real breathing room, but never beyond
+    /// `liveResizeReflowThrottleMaxInterval`. Exposed (not `private`) so tests can exercise the formula
+    /// directly by seeding `liveResizeLastReflowDuration`, without needing a real expensive reflow to
+    /// measure one.
+    func effectiveLiveResizeReflowThrottleInterval() -> TimeInterval {
+        min(
+            max(
+                Self.liveResizeReflowThrottleInterval,
+                (liveResizeLastReflowDuration ?? 0) * Self.liveResizeReflowThrottleSafetyMultiplier
+            ),
+            Self.liveResizeReflowThrottleMaxInterval
+        )
+    }
+
     /// Throttles reflow while a long line is visible during a live resize drag to at most once per
-    /// `liveResizeReflowThrottleInterval`: reflows immediately if the interval has already elapsed since the
-    /// last reflow (this covers the very first tick of a drag too, since `liveResizeLastReflowTime` starts
-    /// `nil`); otherwise schedules a trailing catch-up for whatever time remains in the current window, if
-    /// one isn't already pending. Unlike a plain debounce (cancel-and-reschedule on every tick, which never
-    /// fires while ticks keep arriving faster than the interval), this guarantees a reflow at a steady
-    /// cadence throughout a continuous drag, not just once it pauses or ends.
+    /// `effectiveLiveResizeReflowThrottleInterval()`: reflows immediately if the interval has already
+    /// elapsed since the last reflow (this covers the very first tick of a drag too, since
+    /// `liveResizeLastReflowTime` starts `nil`); otherwise schedules a trailing catch-up for whatever time
+    /// remains in the current window, if one isn't already pending. Unlike a plain debounce
+    /// (cancel-and-reschedule on every tick, which never fires while ticks keep arriving faster than the
+    /// interval), this guarantees a reflow at a steady cadence throughout a continuous drag, not just once
+    /// it pauses or ends.
     private func scheduleThrottledLiveResizeReflow() {
-        let interval = Self.liveResizeReflowThrottleInterval
+        let interval = effectiveLiveResizeReflowThrottleInterval()
         if let lastReflowTime = liveResizeLastReflowTime,
            Date().timeIntervalSince(lastReflowTime) < interval {
             guard liveResizeReflowWorkItem == nil else { return }

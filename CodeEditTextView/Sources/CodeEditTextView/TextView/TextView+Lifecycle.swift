@@ -31,7 +31,10 @@ extension TextView {
         isInLiveResizeDrag = true
         // Reset throttle state so the first tick of this drag always reflows immediately, regardless of
         // when the last drag's last reflow happened (see `scheduleThrottledLiveResizeReflow()` in
-        // TextView+Layout.swift).
+        // TextView+Layout.swift). Deliberately does NOT reset `liveResizeLastReflowDuration`: that reflects
+        // the cost of the document's current content, not the current drag session, so a second drag on
+        // the same huge document doesn't have to rediscover the cost from scratch before widening the
+        // throttle interval again.
         liveResizeLastReflowTime = nil
     }
 

@@ -145,6 +145,30 @@ open class TextView: NSView, NSTextContent {
     /// `TextView+Layout.swift`.
     var liveResizeLastReflowTime: Date?
 
+    /// Multiplier applied to the most recently measured reflow duration to compute how much spacing the next
+    /// throttled reflow of a long line gets (see `effectiveLiveResizeReflowThrottleInterval()` in
+    /// `TextView+Layout.swift`). A `static var`, not `let`, so tests can override it like
+    /// `liveResizeReflowThrottleInterval`.
+    static var liveResizeReflowThrottleSafetyMultiplier: Double = 2.0
+
+    /// Wall-clock duration of the most recent live-resize reflow (the `updateFrameIfNeeded`/`layoutLines` work
+    /// done in `performViewportReflow()`), or `nil` if none has been measured yet. Used to widen the throttle
+    /// interval past `liveResizeReflowThrottleInterval` when a reflow is itself more expensive than the fixed
+    /// interval (e.g. a single 400,000-character line), so consecutive reflows get real breathing room instead
+    /// of running back-to-back. Deliberately *not* reset in `viewWillStartLiveResize()` — it reflects the cost
+    /// of the document's current content, not the current drag session, so a second drag on the same huge
+    /// document doesn't have to rediscover the cost from scratch. (If the content changes drastically between
+    /// drags, e.g. the huge line is deleted, this stays stale until the next reflow re-measures it — the
+    /// interval is just more generous than necessary for one window, not incorrect.)
+    var liveResizeLastReflowDuration: TimeInterval?
+
+    /// Upper bound on the adaptive interval computed by `effectiveLiveResizeReflowThrottleInterval()`: no
+    /// matter how expensive the last measured reflow was, the editor never waits longer than this before
+    /// trying again, so an extremely large document still gets some visible feedback at a bounded cadence
+    /// during a live resize drag rather than the gap growing unbounded. A `static var`, not `let`, so tests
+    /// can override it like the other throttle knobs.
+    static var liveResizeReflowThrottleMaxInterval: TimeInterval = 0.5
+
     /// Pending trailing reflow scheduled when a tick arrives sooner than `liveResizeReflowThrottleInterval`
     /// after the last reflow, so a continuously-dragging resize still catches up at the end of the current
     /// throttle window instead of waiting for ticks to stop. See `updatedViewport(_:)` in
