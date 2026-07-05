@@ -10,6 +10,8 @@ import AppKit
 extension TextView {
     override public func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
+        liveResizeReflowWorkItem?.cancel()
+        liveResizeReflowWorkItem = nil
         layoutManager.layoutLines()
     }
 
@@ -31,8 +33,10 @@ extension TextView {
     override public func viewDidEndLiveResize() {
         super.viewDidEndLiveResize()
         isInLiveResizeDrag = false
-        // `updatedViewport(_:)` ignores frame/bounds changes while `isInLiveResizeDrag` is true (see
-        // TextView+Layout.swift), so this is what rewraps the text for the final width once the drag ends.
+        // Cancel any still-pending debounced reflow (see TextView+Layout.swift) before the catch-up call
+        // below, so a stale timer can't fire a redundant reflow after the drag has already ended.
+        liveResizeReflowWorkItem?.cancel()
+        liveResizeReflowWorkItem = nil
         updateFrameIfNeeded()
     }
 }

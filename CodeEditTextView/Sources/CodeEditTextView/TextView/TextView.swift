@@ -132,6 +132,16 @@ open class TextView: NSView, NSTextContent {
     /// shorter lines stay cheap enough to keep reflowing live.
     static let liveResizeReflowLineLengthThreshold = 15_000
 
+    /// Debounce interval for reflowing a line over `liveResizeReflowLineLengthThreshold` during a live resize
+    /// drag: once ticks stop arriving for this long, one reflow fires (see `updatedViewport(_:)` in
+    /// `TextView+Layout.swift`). A `static var`, not `let`, so tests can shrink it instead of waiting out a
+    /// real 100ms in every test case.
+    static var liveResizeReflowDebounceInterval: TimeInterval = 0.1
+
+    /// Pending debounced reflow scheduled while a long line is visible during a live resize drag. See
+    /// `updatedViewport(_:)` in `TextView+Layout.swift`.
+    var liveResizeReflowWorkItem: DispatchWorkItem?
+
     /// Whether or not the editor should wrap lines
     public var wrapLines: Bool {
         get {

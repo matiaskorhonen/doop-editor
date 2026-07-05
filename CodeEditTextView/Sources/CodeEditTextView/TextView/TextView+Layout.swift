@@ -63,16 +63,41 @@ extension TextView {
         // notifications on the scroll view's clip view). During a live resize drag this can fire dozens of
         // times per second; with `wrapLines` on, each call re-typesets every visible line for the new width.
         // That's cheap for ordinary lines, but expensive for a document containing one huge unbreakable line
-        // (e.g. base64 content), and doing that on every tick of a drag makes the whole thing stutter. Skip
-        // rewrapping only in that case, and let `viewDidEndLiveResize()` catch up once the drag finishes.
+        // (e.g. base64 content), and doing that on every tick of a drag makes the whole thing stutter. Debounce
+        // reflow only in that case, so it fires once ticks go quiet rather than on every tick, and let
+        // `viewDidEndLiveResize()` catch up once the drag finishes.
         if isInLiveResizeDrag && hasVisibleLineExceedingLiveResizeThreshold(in: newRect) {
+            scheduleDebouncedLiveResizeReflow()
             return
         }
 
+        performViewportReflow()
+    }
+
+    /// Cancels any pending debounced reflow and performs the standard reflow immediately. Shared by the
+    /// non-debounced path above and by the debounced timer's fire block below, so both do the exact same
+    /// work (updateFrameIfNeeded + layoutLines + character coordinate invalidation).
+    private func performViewportReflow() {
+        liveResizeReflowWorkItem?.cancel()
+        liveResizeReflowWorkItem = nil
         if !updateFrameIfNeeded() {
             layoutManager.layoutLines()
         }
         inputContext?.invalidateCharacterCoordinates()
+    }
+
+    /// Coalesces reflow while a long line is visible during a live resize drag: cancels any still-pending
+    /// reflow and reschedules one `liveResizeReflowDebounceInterval` seconds out. A fast drag (ticks arriving
+    /// faster than the interval) never actually reflows until it pauses or stops, keeping every individual
+    /// tick cheap — the same cancel-and-reschedule `DispatchWorkItem` pattern `BezelNotification` already uses
+    /// for its hide timer.
+    private func scheduleDebouncedLiveResizeReflow() {
+        liveResizeReflowWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.performViewportReflow()
+        }
+        liveResizeReflowWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.liveResizeReflowDebounceInterval, execute: workItem)
     }
 
     /// Checks whether any line currently visible in `rect` is long enough that retypesetting it on every tick

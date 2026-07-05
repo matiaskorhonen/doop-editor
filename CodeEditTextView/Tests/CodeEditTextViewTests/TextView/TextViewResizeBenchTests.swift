@@ -106,4 +106,38 @@ final class TextViewResizeBenchTests: XCTestCase {
         XCTAssertLessThan(endElapsed, 1.0, "expected the drag-end catch-up relayout to run once, got \(endElapsed)s")
         XCTAssertEqual(textView.frame.size.width, scrollView.contentSize.width)
     }
+
+    // MARK: - Integration: long lines debounce during a paused-but-still-live drag
+
+    /// If the user pauses mid-drag (ticks stop arriving, but the mouse hasn't been released yet), a huge
+    /// line should still catch up once the debounce interval elapses, rather than staying frozen until
+    /// `viewDidEndLiveResize()`. This proves both halves of the debounce: ticks arriving in a tight burst are
+    /// coalesced (no reflow yet immediately after the burst), and the trailing timer eventually fires on its
+    /// own once ticks go quiet.
+    func test_longLineReflowsOnceDragPausesBeforeDragEnd() {
+        let string = String(repeating: "a", count: 400_000)
+        let (textView, scrollView) = makeResizableTextView(string: string)
+
+        let originalInterval = TextView.liveResizeReflowDebounceInterval
+        TextView.liveResizeReflowDebounceInterval = 0.02 // keep the test fast
+        defer { TextView.liveResizeReflowDebounceInterval = originalInterval }
+
+        textView.viewWillStartLiveResize()
+        simulateLiveResizeTicks(5, textView: textView, scrollView: scrollView)
+
+        // Immediately after the burst, coalescing should mean nothing has reflowed yet.
+        XCTAssertNotEqual(textView.frame.size.width, scrollView.contentSize.width)
+
+        // Ticks stop (the user pauses mid-drag, before releasing the mouse). After waiting out the
+        // debounce interval, the pending reflow should fire on its own, without viewDidEndLiveResize.
+        let expectation = expectation(description: "debounced reflow fires")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { expectation.fulfill() }
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertEqual(
+            textView.frame.size.width,
+            scrollView.contentSize.width,
+            "expected the debounced reflow to fire once the drag paused, before the drag ended"
+        )
+    }
 }
