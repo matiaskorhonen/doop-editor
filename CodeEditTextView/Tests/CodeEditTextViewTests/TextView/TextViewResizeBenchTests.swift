@@ -62,15 +62,17 @@ final class TextViewResizeBenchTests: XCTestCase {
         )
     }
 
-    // MARK: - Integration: long lines defer to drag-end
+    // MARK: - Integration: long lines throttle to a steady cadence, not per-tick
 
     /// Simulates dragging a window edge while viewing a document containing one huge, unbreakable line
     /// (e.g. base64-encoded content), with line wrapping on. Each tick of a live window resize used to be
     /// forwarded unconditionally into `updatedViewport` -> `updateFrameIfNeeded` -> a synchronous
-    /// `layoutManager.layoutLines()` call. `updatedViewport` now skips that work while `isInLiveResizeDrag`
-    /// is true *and* a visible line is over `TextView.liveResizeReflowLineLengthThreshold`, deferring the
-    /// rewrap to a single call once `viewDidEndLiveResize()` fires.
-    func test_liveResizeOfHugeSingleLineOnlyRetypesetsOnceAtDragEnd() {
+    /// `layoutManager.layoutLines()` call. `updatedViewport` now throttles that work while `isInLiveResizeDrag`
+    /// is true *and* a visible line is over `TextView.liveResizeReflowLineLengthThreshold`: the first tick of
+    /// the drag reflows immediately, but a tight burst of ticks arriving within one throttle window (as this
+    /// test fires, with no real elapsed time between them) coalesces into a single pending trailing reflow
+    /// rather than one per tick, keeping the burst itself cheap.
+    func test_liveResizeOfHugeSingleLineCoalescesBurstOfTicks() {
         let string = String(repeating: "a", count: 400_000)
         let (textView, scrollView) = makeResizableTextView(string: string)
 
@@ -84,16 +86,17 @@ final class TextViewResizeBenchTests: XCTestCase {
 
         // A single frame budget is ~16ms. Before this fix, each tick fully re-typeset the huge line
         // (~0.2-0.25s per TypesetterBenchTests), so a real drag (dozens of ticks) turned into seconds of
-        // blocked main thread. With the fix, ticks during the drag should be cheap no-ops.
+        // blocked main thread. With the fix, only the first tick of the burst pays that cost (the rest
+        // coalesce into one pending trailing reflow), so the average per tick should still be cheap.
         XCTAssertLessThan(
             perTick,
             0.05,
-            "expected resize ticks mid-drag to be cheap (deferred to drag-end); got \(perTick)s/tick over " +
-            "\(resizeTickCount) ticks (total \(dragElapsed)s)"
+            "expected resize ticks mid-drag to be cheap on average (only the leading tick reflows); got " +
+            "\(perTick)s/tick over \(resizeTickCount) ticks (total \(dragElapsed)s)"
         )
 
-        // Skipped ticks never called `updateFrameIfNeeded()`, so the frame is left at the last perturbed
-        // width rather than re-synced to the scroll view's actual content width.
+        // All ticks after the first were coalesced into a pending trailing reflow rather than reflowing
+        // individually, so the frame is left at the last perturbed width rather than re-synced.
         XCTAssertEqual(textView.frame.size.width, 800 - CGFloat(resizeTickCount - 1))
 
         // Ending the drag marks the layout stale and triggers the deferred rewrap on the next layout pass
@@ -107,37 +110,75 @@ final class TextViewResizeBenchTests: XCTestCase {
         XCTAssertEqual(textView.frame.size.width, scrollView.contentSize.width)
     }
 
-    // MARK: - Integration: long lines debounce during a paused-but-still-live drag
-
     /// If the user pauses mid-drag (ticks stop arriving, but the mouse hasn't been released yet), a huge
-    /// line should still catch up once the debounce interval elapses, rather than staying frozen until
-    /// `viewDidEndLiveResize()`. This proves both halves of the debounce: ticks arriving in a tight burst are
-    /// coalesced (no reflow yet immediately after the burst), and the trailing timer eventually fires on its
-    /// own once ticks go quiet.
+    /// line should still catch up once the throttle interval elapses, rather than staying frozen until
+    /// `viewDidEndLiveResize()`. This proves both halves of the throttle: ticks arriving in a tight burst are
+    /// coalesced (no reflow yet immediately after the burst, beyond the leading tick), and the trailing timer
+    /// eventually fires on its own once the interval elapses.
     func test_longLineReflowsOnceDragPausesBeforeDragEnd() {
         let string = String(repeating: "a", count: 400_000)
         let (textView, scrollView) = makeResizableTextView(string: string)
 
-        let originalInterval = TextView.liveResizeReflowDebounceInterval
-        TextView.liveResizeReflowDebounceInterval = 0.02 // keep the test fast
-        defer { TextView.liveResizeReflowDebounceInterval = originalInterval }
+        let originalInterval = TextView.liveResizeReflowThrottleInterval
+        TextView.liveResizeReflowThrottleInterval = 0.02 // keep the test fast
+        defer { TextView.liveResizeReflowThrottleInterval = originalInterval }
 
         textView.viewWillStartLiveResize()
         simulateLiveResizeTicks(5, textView: textView, scrollView: scrollView)
 
-        // Immediately after the burst, coalescing should mean nothing has reflowed yet.
+        // Immediately after the burst, only the leading tick reflowed; the rest coalesced into a pending
+        // trailing reflow, so the frame isn't re-synced yet.
         XCTAssertNotEqual(textView.frame.size.width, scrollView.contentSize.width)
 
         // Ticks stop (the user pauses mid-drag, before releasing the mouse). After waiting out the
-        // debounce interval, the pending reflow should fire on its own, without viewDidEndLiveResize.
-        let expectation = expectation(description: "debounced reflow fires")
+        // throttle interval, the pending reflow should fire on its own, without viewDidEndLiveResize.
+        let expectation = expectation(description: "throttled reflow fires")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { expectation.fulfill() }
         wait(for: [expectation], timeout: 1.0)
 
         XCTAssertEqual(
             textView.frame.size.width,
             scrollView.contentSize.width,
-            "expected the debounced reflow to fire once the drag paused, before the drag ended"
+            "expected the throttled reflow to fire once the drag paused, before the drag ended"
         )
+    }
+
+    /// The key difference from a plain debounce: even if ticks *never* go quiet (a real sustained drag),
+    /// reflow must still happen at a steady cadence rather than only once the drag ends. Keeps posting
+    /// ticks continuously for well over one throttle interval and checks that the throttle's last-reflow
+    /// timestamp advances on its own partway through, proving it isn't waiting for the ticking to stop.
+    func test_longLineReflowsPeriodicallyDuringContinuousTicking() throws {
+        let string = String(repeating: "a", count: 400_000)
+        let (textView, scrollView) = makeResizableTextView(string: string)
+
+        let originalInterval = TextView.liveResizeReflowThrottleInterval
+        TextView.liveResizeReflowThrottleInterval = 0.05 // keep the test fast
+        defer { TextView.liveResizeReflowThrottleInterval = originalInterval }
+
+        textView.viewWillStartLiveResize()
+
+        // First tick reflows immediately (the leading edge) and records the throttle's last-reflow time.
+        simulateLiveResizeTicks(1, textView: textView, scrollView: scrollView)
+        let firstReflowTime = try XCTUnwrap(textView.liveResizeLastReflowTime)
+
+        // Keep ticking continuously (never letting ticks go quiet) for well over one throttle interval, as
+        // a sustained live-resize drag would.
+        var tickCount = 0
+        let ticker = Timer.scheduledTimer(withTimeInterval: 0.005, repeats: true) { _ in
+            tickCount += 1
+            textView.frame.size.width = 800 - CGFloat(tickCount % 10)
+            NotificationCenter.default.post(name: NSView.frameDidChangeNotification, object: scrollView.contentView)
+        }
+        defer { ticker.invalidate() }
+
+        let waitedPastThrottleWindow = expectation(description: "wait past one throttle interval while still ticking")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { waitedPastThrottleWindow.fulfill() }
+        wait(for: [waitedPastThrottleWindow], timeout: 1.0)
+        ticker.invalidate()
+
+        // Even though ticks never stopped, the throttle should have let a later reflow through: proves the
+        // fix doesn't wait for the drag to go quiet like a plain debounce would.
+        let laterReflowTime = try XCTUnwrap(textView.liveResizeLastReflowTime)
+        XCTAssertGreaterThan(laterReflowTime, firstReflowTime)
     }
 }
