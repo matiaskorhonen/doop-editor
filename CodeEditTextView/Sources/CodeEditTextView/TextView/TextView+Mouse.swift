@@ -34,7 +34,7 @@ extension TextView {
             break
         }
 
-        setUpMouseAutoscrollTimer()
+        trackSelectionDrag(with: event)
     }
 
     /// Single click, if control-shift we add a cursor
@@ -113,15 +113,64 @@ extension TextView {
     }
 
     override public func mouseDragged(with event: NSEvent) {
+        processDragEvent(event)
+    }
+
+    /// Tracks a text-selection drag until the mouse button is released.
+    ///
+    /// AppKit stops delivering `mouseDragged`/`mouseUp` through the normal responder chain once the cursor
+    /// leaves the window, and a `Timer` scheduled on the default run loop mode doesn't fire while the mouse is
+    /// down (that tracking session runs the run loop in `.eventTracking` mode instead). Both would otherwise
+    /// cause the selection to silently stop expanding as soon as the mouse left the view during a drag.
+    ///
+    /// Pulling events directly from the window with `nextEvent(matching:until:inMode:dequeue:)` sidesteps both
+    /// problems: it keeps receiving drag events no matter where the cursor is on screen, and its bounded wait
+    /// lets us re-process the last known position on a timer-like cadence so the selection keeps
+    /// expanding/autoscrolling even while the mouse is held still outside the view. This mirrors how AppKit's
+    /// own text views implement drag-to-select.
+    private func trackSelectionDrag(with initialEvent: NSEvent) {
+        guard let window else { return }
+
+        let autoscrollInterval: TimeInterval = 0.022 // ~45Hz, matches AppKit's own autoscroll cadence.
+        var lastDragEvent: NSEvent?
+
+        while true {
+            let event = window.nextEvent(
+                matching: [.leftMouseDragged, .leftMouseUp],
+                until: Date().addingTimeInterval(autoscrollInterval),
+                inMode: .eventTracking,
+                dequeue: true
+            )
+
+            switch event?.type {
+            case .leftMouseUp:
+                mouseDragAnchor = nil
+                return
+            case .leftMouseDragged:
+                lastDragEvent = event
+                processDragEvent(event!)
+            default:
+                // Timed out waiting for a new event. Re-process the last known drag position so the selection
+                // keeps expanding/autoscrolling while the mouse is held outside the view.
+                if let lastDragEvent {
+                    processDragEvent(lastDragEvent)
+                }
+            }
+        }
+    }
+
+    private func processDragEvent(_ event: NSEvent) {
         guard !(inputContext?.handleEvent(event) ?? false) && isSelectable && !isDragging else {
             return
         }
 
         // We receive global events because our view received the drag event, but we need to clamp the potentially
-        // out-of-bounds positions to a position our layout manager can deal with.
+        // out-of-bounds positions to a position our layout manager can deal with. The layout manager measures x
+        // positions from inside its left edge inset, so the minimum x has to match that inset - clamping to 0
+        // produces a position to the left of the first character, which the layout manager can't resolve.
         let locationInWindow = convert(event.locationInWindow, from: nil)
         let locationInView = CGPoint(
-            x: max(0.0, min(locationInWindow.x, frame.width)),
+            x: max(layoutManager.edgeInsets.left, min(locationInWindow.x, frame.width)),
             y: max(0.0, min(locationInWindow.y, frame.height))
         )
 
