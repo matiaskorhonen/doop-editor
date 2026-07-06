@@ -64,54 +64,40 @@ extension TextViewController {
         guard !cursorPositions.isEmpty else { return }
 
         textView.undoManager?.beginUndoGrouping()
-        var selectionIndex = 0
         textView.editSelections { textView, selection in
             // get lineindex, i.e line-numbers+1
             guard let lineIndexes = getOverlappingLines(for: selection.range) else { return }
 
-            adjustIndentation(lineIndexes: lineIndexes, inwards: inwards)
-
-            updateSelection(
-                selection: selection,
-                textSelectionCount: textView.selectionManager.textSelections.count,
-                inwards: inwards,
-                lineCount: lineIndexes.count,
-                selectionIndex: selectionIndex
-            )
-
-            selectionIndex += 1
+            adjustIndentation(lineIndexes: lineIndexes, inwards: inwards, selection: selection)
         }
         textView.undoManager?.endUndoGrouping()
     }
 
-    private func updateSelection(
-        selection: TextSelectionManager.TextSelection,
-        textSelectionCount: Int,
-        inwards: Bool,
-        lineCount: Int,
-        selectionIndex: Int
+    /// Updates `selection` in place to reflect a single edit, mapping its endpoints the same way the document's
+    /// text shifts: points before the edit are untouched, points at or after it shift by the edit's length delta,
+    /// and points inside the edited range collapse to the end of the replacement.
+    ///
+    /// This is used instead of a formula based on the configured indent width because the number of characters
+    /// actually added or removed on a given line can differ from that width (e.g. a line with less leading
+    /// whitespace than the indent width, or no whitespace at all).
+    private func applyEdit(
+        to selection: TextSelectionManager.TextSelection, editRange: NSRange, replacementLength: Int
     ) {
-        let sectionModifier = calculateSelectionIndentationAdjustment(
-            textSelectionCount: textSelectionCount,
-            selectionIndex: selectionIndex,
-            lineCount: lineCount
-        )
+        let delta = replacementLength - editRange.length
 
-        let charCount = configuration.behavior.indentOption.charCount
-
-        selection.range.location += inwards ? -charCount * sectionModifier : charCount * sectionModifier
-        if lineCount > 1 {
-            let ammount = charCount * (lineCount - 1)
-            selection.range.length += inwards ? -ammount : ammount
+        func mapEndpoint(_ point: Int) -> Int {
+            if point <= editRange.location {
+                return point
+            } else if point >= editRange.upperBound {
+                return point + delta
+            } else {
+                return editRange.location + replacementLength
+            }
         }
-    }
 
-    private func calculateSelectionIndentationAdjustment(
-        textSelectionCount: Int,
-        selectionIndex: Int,
-        lineCount: Int
-    ) -> Int {
-        return 1 + ((textSelectionCount - selectionIndex) - 1) * lineCount
+        let newLocation = mapEndpoint(selection.range.location)
+        let newEnd = mapEndpoint(selection.range.location + selection.range.length)
+        selection.range = NSRange(location: newLocation, length: newEnd - newLocation)
     }
 
     /// This method is used to handle tabs appropriately when multiple lines are selected,
@@ -168,45 +154,57 @@ extension TextViewController {
         return startLineInfo.index...endLineIndex
     }
 
-    private func adjustIndentation(lineIndexes: ClosedRange<Int>, inwards: Bool) {
+    private func adjustIndentation(
+        lineIndexes: ClosedRange<Int>,
+        inwards: Bool,
+        selection: TextSelectionManager.TextSelection
+    ) {
         let indentationChars: String = configuration.behavior.indentOption.stringValue
         for lineIndex in lineIndexes {
             adjustIndentation(
                 lineIndex: lineIndex,
                 indentationChars: indentationChars,
-                inwards: inwards
+                inwards: inwards,
+                selection: selection
             )
         }
     }
 
-    private func adjustIndentation(lineIndex: Int, indentationChars: String, inwards: Bool) {
+    private func adjustIndentation(
+        lineIndex: Int,
+        indentationChars: String,
+        inwards: Bool,
+        selection: TextSelectionManager.TextSelection
+    ) {
         guard let lineInfo = textView.layoutManager.textLineForIndex(lineIndex) else { return }
 
         if inwards {
             if configuration.behavior.indentOption != .tab {
-                removeLeadingSpaces(lineInfo: lineInfo, spaceCount: indentationChars.count)
+                removeLeadingSpaces(
+                    lineInfo: lineInfo, spaceCount: indentationChars.count, selection: selection)
             } else {
-                removeLeadingTab(lineInfo: lineInfo)
+                removeLeadingTab(lineInfo: lineInfo, selection: selection)
             }
         } else {
-            addIndentation(lineInfo: lineInfo, indentationChars: indentationChars)
+            addIndentation(
+                lineInfo: lineInfo, indentationChars: indentationChars, selection: selection)
         }
     }
 
     private func addIndentation(
         lineInfo: TextLineStorage<TextLine>.TextLinePosition,
-        indentationChars: String
+        indentationChars: String,
+        selection: TextSelectionManager.TextSelection
     ) {
-        textView.replaceCharacters(
-            in: NSRange(location: lineInfo.range.lowerBound, length: 0),
-            with: indentationChars,
-            skipUpdateSelection: true
-        )
+        let editRange = NSRange(location: lineInfo.range.lowerBound, length: 0)
+        textView.replaceCharacters(in: editRange, with: indentationChars, skipUpdateSelection: true)
+        applyEdit(to: selection, editRange: editRange, replacementLength: indentationChars.count)
     }
 
     private func removeLeadingSpaces(
         lineInfo: TextLineStorage<TextLine>.TextLinePosition,
-        spaceCount: Int
+        spaceCount: Int,
+        selection: TextSelectionManager.TextSelection
     ) {
         guard let lineContent = textView.textStorage.substring(from: lineInfo.range) else { return }
 
@@ -214,24 +212,23 @@ extension TextViewController {
 
         guard removeSpacesCount > 0 else { return }
 
-        textView.replaceCharacters(
-            in: NSRange(location: lineInfo.range.lowerBound, length: removeSpacesCount),
-            with: "",
-            skipUpdateSelection: true
-        )
+        let editRange = NSRange(location: lineInfo.range.lowerBound, length: removeSpacesCount)
+        textView.replaceCharacters(in: editRange, with: "", skipUpdateSelection: true)
+        applyEdit(to: selection, editRange: editRange, replacementLength: 0)
     }
 
-    private func removeLeadingTab(lineInfo: TextLineStorage<TextLine>.TextLinePosition) {
+    private func removeLeadingTab(
+        lineInfo: TextLineStorage<TextLine>.TextLinePosition,
+        selection: TextSelectionManager.TextSelection
+    ) {
         guard let lineContent = textView.textStorage.substring(from: lineInfo.range) else {
             return
         }
 
         if lineContent.first == "\t" {
-            textView.replaceCharacters(
-                in: NSRange(location: lineInfo.range.lowerBound, length: 1),
-                with: "",
-                skipUpdateSelection: true
-            )
+            let editRange = NSRange(location: lineInfo.range.lowerBound, length: 1)
+            textView.replaceCharacters(in: editRange, with: "", skipUpdateSelection: true)
+            applyEdit(to: selection, editRange: editRange, replacementLength: 0)
         }
     }
 

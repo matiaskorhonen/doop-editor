@@ -121,6 +121,53 @@ final class TextViewControllerIndentTests: XCTestCase {
         expectNoDifference(controller.text, expectedString)
     }
 
+    /// Reproduces a bug where de-indenting a selection that starts at the very beginning of a line
+    /// (i.e. the selection includes the leading whitespace being removed) causes the selection to drift
+    /// upwards by one indent-width, "eating" part of the previous line. Selecting whole lines and pressing
+    /// shift-tab should keep the same lines selected — only their content should change.
+    func testHandleIndentInwardsKeepsSelectionAtLineStartAfterOnePress() {
+        controller.configuration.behavior.indentOption = .spaces(count: 2)
+        controller.setText("{\n  \"a\": {\n    \"b\": 1,\n    \"c\": 2\n  }\n}")
+
+        // Select from the start of line 1 (`  "a": {`) through the end of `}` on line 4 (`  }`),
+        // mirroring "select these whole lines, then shift-tab".
+        let selectionRange = NSRange(location: 2, length: 35)
+        controller.textView.selectionManager.textSelections = [.init(range: selectionRange)]
+        controller.cursorPositions = [CursorPosition(range: selectionRange)]
+
+        controller.handleIndent(inwards: true)
+
+        expectNoDifference(controller.text, "{\n\"a\": {\n  \"b\": 1,\n  \"c\": 2\n}\n}")
+
+        // The selection should still start exactly where line 1 now begins (nothing before that point
+        // was touched), and should still span the same four lines. Before the fix, the location is
+        // shifted two characters too far to the left, spilling into the previous line.
+        let newRange = controller.textView.selectionManager.textSelections[0].range
+        expectNoDifference(newRange, NSRange(location: 2, length: 27))
+    }
+
+    /// The same drift compounds with repeated presses: each additional de-indent shifts the selection
+    /// further out of alignment with the lines it started on.
+    func testHandleIndentInwardsRepeatedPressesKeepSelectionStable() {
+        controller.configuration.behavior.indentOption = .spaces(count: 2)
+        controller.setText("{\n  \"a\": {\n    \"b\": 1,\n    \"c\": 2\n  }\n}")
+
+        let selectionRange = NSRange(location: 2, length: 35)
+        controller.textView.selectionManager.textSelections = [.init(range: selectionRange)]
+        controller.cursorPositions = [CursorPosition(range: selectionRange)]
+
+        controller.handleIndent(inwards: true)
+        controller.handleIndent(inwards: true)
+
+        // Two presses can only remove up to 2 spaces per line (4 max on lines "b"/"c"), so the text
+        // should bottom out fully de-indented — it should never lose the closing braces or otherwise
+        // mangle content just because the selection drifted.
+        expectNoDifference(controller.text, "{\n\"a\": {\n\"b\": 1,\n\"c\": 2\n}\n}")
+
+        let newRange = controller.textView.selectionManager.textSelections[0].range
+        expectNoDifference(newRange, NSRange(location: 2, length: 23))
+    }
+
     func testMultipleLinesHighlighted() {
         controller.setText("\tThis is a test string\n\tWith multiple lines\n\tAnd some indentation")
         var cursorPositions = [CursorPosition(range: NSRange(location: 0, length: controller.text.count))]
