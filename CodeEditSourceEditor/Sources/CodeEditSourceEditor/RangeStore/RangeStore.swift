@@ -26,8 +26,14 @@ struct RangeStore<Element: RangeStoreElement>: Sendable {
     }
 
     /// A small performance improvement for multiple identical queries, as often happens when used
-    /// in ``StyledRangeContainer``
-    private var cache: (range: Range<Int>, runs: [Run])?
+    /// in ``StyledRangeContainer``: applying one provider's highlights re-queries *every* provider's store over
+    /// the same range, so the stores that didn't change answer the identical query once per provider.
+    ///
+    /// Invalidated by every mutation below. Populating it is why ``runs(in:)`` is `mutating`.
+    ///
+    /// Internal rather than private (like ``_guts``) so tests can assert it's actually being populated — it
+    /// previously couldn't be, and nothing observing only query *results* would have noticed.
+    var _cache: (range: Range<Int>, runs: [Run])? // swiftlint:disable:this identifier_name
 
     init(documentLength: Int) {
         self._guts = RopeType([StoredRun(length: documentLength, value: nil)])
@@ -38,12 +44,12 @@ struct RangeStore<Element: RangeStoreElement>: Sendable {
     /// Find all runs in a range.
     /// - Parameter range: The range to query.
     /// - Returns: A continuous array of runs representing the queried range.
-    func runs(in range: Range<Int>) -> [Run] {
+    mutating func runs(in range: Range<Int>) -> [Run] {
         let length = _guts.count(in: OffsetMetric())
         assert(range.lowerBound >= 0, "Negative lowerBound")
         assert(range.upperBound <= length, "upperBound outside valid range")
-        if let cache, cache.range == range {
-            return cache.runs
+        if let _cache, _cache.range == range {
+            return _cache.runs
         }
 
         var runs = [Run]()
@@ -65,6 +71,8 @@ struct RangeStore<Element: RangeStoreElement>: Sendable {
             index = _guts.index(after: index)
             offset = 0
         }
+
+        _cache = (range: range, runs: runs)
 
         return runs
     }
@@ -101,7 +109,7 @@ struct RangeStore<Element: RangeStoreElement>: Sendable {
         )
 
         coalesceNearby(range: range)
-        cache = nil
+        _cache = nil
     }
 }
 
@@ -143,6 +151,6 @@ extension RangeStore {
             coalesceNearby(range: Range(lowerBound: range.lowerBound, length: newLength))
         }
 
-        cache = nil
+        _cache = nil
     }
 }

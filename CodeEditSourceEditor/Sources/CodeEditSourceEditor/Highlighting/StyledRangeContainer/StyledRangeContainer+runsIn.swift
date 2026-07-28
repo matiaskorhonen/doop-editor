@@ -26,18 +26,39 @@ extension StyledRangeContainer {
         }
 
         // Ordered by priority, lower = higher priority.
-        var allRuns = _storage.values
-            .sorted(by: { $0.priority < $1.priority })
-            .map { $0.store.runs(in: range.intRange) }
+        let orderedIds = _storage.sorted(by: { $0.value.priority < $1.value.priority }).map(\.key)
+
+        var allRuns: [[RangeStoreRun<StyleElement>]] = []
+        allRuns.reserveCapacity(orderedIds.count)
+        for id in orderedIds {
+            guard var entry = _storage[id] else { continue }
+            allRuns.append(entry.store.runs(in: range.intRange))
+            // Write the store back so it keeps the query cache it just populated. Applying one provider's
+            // highlights re-runs this method, so the stores that didn't change get the identical query again.
+            _storage[id] = entry
+        }
+
+        /// The shortest run still pending at the end of any provider's array, paired with the index of the
+        /// provider it came from.
+        ///
+        /// That index has to be the provider's index in `allRuns`, because it's used both to address `allRuns`
+        /// and — via the `idx < minRunIdx` comparison below — to decide which side of the priority order the
+        /// other providers fall on. Enumerating *after* dropping the providers with nothing left would
+        /// renumber them, pointing the removal and the priority split at the wrong providers.
+        func shortestPendingRun() -> (provider: Int, run: RangeStoreRun<StyleElement>)? {
+            allRuns
+                .enumerated()
+                .compactMap { provider, providerRuns in providerRuns.last.map { (provider: provider, run: $0) } }
+                .min(by: { $0.run.length < $1.run.length })
+        }
 
         var runs: [RangeStoreRun<StyleElement>] = []
-        var minValue = allRuns.compactMap { $0.last }.enumerated().min(by: { $0.1.length < $1.1.length })
-        var counter = 0
+        var minValue = shortestPendingRun()
 
         while let value = minValue {
             // Get minimum length off the end of each array
-            let minRunIdx = value.offset
-            var minRun = value.element
+            let minRunIdx = value.provider
+            var minRun = value.run
 
             for idx in (0..<allRuns.count).reversed() where idx != minRunIdx {
                 guard let last = allRuns[idx].last else { continue }
@@ -56,15 +77,13 @@ extension StyledRangeContainer {
                 }
             }
 
-            if !allRuns[minRunIdx].isEmpty {
-                allRuns[minRunIdx].removeLast()
-            }
+            // Non-empty by construction: `minRunIdx` is the provider this run was taken from, and the loop
+            // above skips it.
+            allRuns[minRunIdx].removeLast()
 
             assert(minRun.length > 0, "Empty or negative runs are not allowed.")
             runs.append(minRun)
-            minValue = allRuns.compactMap { $0.last }.enumerated().min(by: { $0.1.length < $1.1.length })
-
-            counter += 1
+            minValue = shortestPendingRun()
         }
 
         return runs.reversed()

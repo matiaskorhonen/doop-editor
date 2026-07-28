@@ -122,4 +122,75 @@ final class StyledRangeContainerTests: XCTestCase {
         XCTAssertEqual(runs[9], Run(length: 5, value: .init(capture: .string, modifiers: [.modification])))
         XCTAssertEqual(runs[10], Run(length: 90, value: nil))
     }
+
+    /// Conflicting captures are resolved by each provider's *priority*, which `runsIn` tracks by the provider's
+    /// position in the priority-sorted list. Flipping the priorities has to flip the winner, so the ordering is
+    /// genuinely keyed on priority rather than on dictionary or insertion order.
+    @MainActor
+    func test_priorityDecidesConflictingCaptures() {
+        let providers = [0, 1]
+        let store = StyledRangeContainer(documentLength: 100, providers: providers)
+
+        for (provider, capture) in zip(providers, [CaptureName.comment, .string]) {
+            store.applyHighlightResult(
+                provider: provider,
+                highlights: [HighlightRange(range: NSRange(location: 0, length: 100), capture: capture)],
+                rangeToHighlight: NSRange(location: 0, length: 100)
+            )
+        }
+
+        // Providers default to a priority equal to their id, and lower wins.
+        XCTAssertEqual(
+            store.runsIn(range: NSRange(location: 0, length: 100)),
+            [Run(length: 100, value: .init(capture: .comment, modifiers: []))]
+        )
+
+        store.setPriority(providerId: providers[1], priority: -1)
+
+        XCTAssertEqual(
+            store.runsIn(range: NSRange(location: 0, length: 100)),
+            [Run(length: 100, value: .init(capture: .string, modifiers: []))],
+            "Expected the reprioritized provider's capture to win"
+        )
+    }
+
+    /// Providers contribute different numbers of runs over the same range, so the coalescing loop walks their
+    /// arrays at different rates. It addresses providers by index throughout — including to split them into
+    /// higher- and lower-priority halves — so those indices must keep pointing at the provider they started on.
+    @MainActor
+    func test_providersWithDifferingRunCountsStayAligned() {
+        let providers = [0, 1]
+        let store = StyledRangeContainer(documentLength: 60, providers: providers)
+
+        // One run for the low-priority provider...
+        store.applyHighlightResult(
+            provider: providers[1],
+            highlights: [HighlightRange(range: NSRange(location: 0, length: 60), capture: .string)],
+            rangeToHighlight: NSRange(location: 0, length: 60)
+        )
+
+        // ...against six for the high-priority one.
+        store.applyHighlightResult(
+            provider: providers[0],
+            highlights: (0..<3).map {
+                HighlightRange(range: NSRange(location: $0 * 20, length: 10), capture: .comment)
+            },
+            rangeToHighlight: NSRange(location: 0, length: 60)
+        )
+
+        let runs = store.runsIn(range: NSRange(location: 0, length: 60))
+
+        XCTAssertEqual(runs.reduce(0, { $0 + $1.length }), 60)
+        XCTAssertEqual(
+            runs,
+            [
+                Run(length: 10, value: .init(capture: .comment, modifiers: [])),
+                Run(length: 10, value: .init(capture: .string, modifiers: [])),
+                Run(length: 10, value: .init(capture: .comment, modifiers: [])),
+                Run(length: 10, value: .init(capture: .string, modifiers: [])),
+                Run(length: 10, value: .init(capture: .comment, modifiers: [])),
+                Run(length: 10, value: .init(capture: .string, modifiers: []))
+            ]
+        )
+    }
 }

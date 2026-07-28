@@ -279,6 +279,54 @@ struct RangeStoreTests {
         #expect(store.runs(in: range).allSatisfy({ $0.length > 0 }))
     }
 
+    // MARK: - Query cache
+
+    /// `runs(in:)` used to be non-mutating, so it could never write the cache it checked on the way in: the
+    /// field was only ever set to `nil`, and every repeated query re-walked the rope. Nothing that looks only at
+    /// query *results* can tell the difference, so assert the cache is actually populated.
+    @Test
+    func repeatedQueryIsCached() {
+        var store = Store(documentLength: 100)
+        store.set(value: .init(capture: .comment, modifiers: [.static]), for: 45..<50)
+        #expect(store._cache == nil)
+
+        let first = store.runs(in: 0..<100)
+
+        #expect(store._cache?.range == 0..<100, "Query did not populate the cache")
+        #expect(store.runs(in: 0..<100).map(\.length) == first.map(\.length))
+    }
+
+    @Test
+    func queryOfADifferentRangeReplacesTheCache() {
+        var store = Store(documentLength: 100)
+        store.set(value: .init(capture: .comment, modifiers: [.static]), for: 45..<50)
+
+        _ = store.runs(in: 0..<100)
+        let narrowed = store.runs(in: 47..<100)
+
+        #expect(store._cache?.range == 47..<100)
+        #expect(narrowed.map(\.length) == [3, 50])
+    }
+
+    /// The flip side of caching at all: a stale cache would serve highlights for text that has since changed.
+    @Test
+    func mutationsInvalidateTheCache() {
+        var store = Store(documentLength: 100)
+        store.set(value: .init(capture: .comment, modifiers: [.static]), for: 45..<50)
+
+        _ = store.runs(in: 0..<100)
+        #expect(store._cache != nil)
+
+        store.set(value: .init(capture: .keyword, modifiers: []), for: 0..<10)
+        #expect(store._cache == nil, "set(value:for:) left a stale cache behind")
+
+        #expect(store.runs(in: 0..<100)[0].value?.capture == .keyword, "Query served stale cached runs")
+
+        store.storageUpdated(replacedCharactersIn: 0..<5, withCount: 0)
+        #expect(store._cache == nil, "storageUpdated left a stale cache behind")
+        #expect(store.runs(in: 0..<95).reduce(0, { $0 + $1.length }) == 95)
+    }
+
     // Randomized version of the previous test
     @Test
     func runsAlwaysBoundedByRangeRandom() {
