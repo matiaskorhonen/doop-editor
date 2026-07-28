@@ -71,4 +71,63 @@ struct TextLayoutManagerFragmentViewBenchTests {
         // 400k-character line we've scrolled.
         #expect(textView.subviews.count < 200)
     }
+
+    /// Regression test: a line taller than the viewport is handled by a branch of `layoutLines(in:)` that used to
+    /// only *add* missing fragment views, never move existing ones. When a line above it changed height, the tall
+    /// line shifted down but its already-placed fragments stayed put, drawing on top of the content above them.
+    @Test
+    func fragmentsOfHugeLineFollowHeightChangeOfLineAbove() throws {
+        let textView = TextView(string: "A\n" + String(repeating: "a", count: 400_000), wrapLines: true)
+        textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        scrollView.documentView = textView
+
+        let layoutManager = try #require(textView.layoutManager)
+        layoutManager.setNeedsLayout()
+
+        let visibleRect = NSRect(x: 0, y: 0, width: 800, height: 600)
+        layoutManager.layoutLines(in: visibleRect)
+
+        let firstLine = try #require(layoutManager.textLineForIndex(0))
+        let tallLine = try #require(layoutManager.textLineForIndex(1))
+
+        // The branch under test only runs for lines taller than the whole layout window.
+        #expect(tallLine.height > visibleRect.height + (layoutManager.verticalLayoutPadding * 2))
+
+        var placedBefore = 0
+        for fragment in tallLine.data.lineFragments
+        where layoutManager.viewReuseQueue.getView(forKey: fragment.data.id) != nil {
+            placedBefore += 1
+        }
+        #expect(placedBefore > 0, "The tall line should already have fragment views placed.")
+
+        let firstLineHeightBefore = firstLine.height
+        let tallLineYPosBefore = tallLine.yPos
+
+        // Grow the *first* line so everything below it shifts down.
+        textView.textStorage.replaceCharacters(
+            in: NSRange(location: 0, length: 1),
+            with: String(repeating: "b", count: 3000)
+        )
+        layoutManager.layoutLines(in: visibleRect)
+
+        let firstLineAfter = try #require(layoutManager.textLineForIndex(0))
+        let tallLineAfter = try #require(layoutManager.textLineForIndex(1))
+        #expect(firstLineAfter.height > firstLineHeightBefore, "The first line should have grown taller.")
+        #expect(tallLineAfter.yPos > tallLineYPosBefore, "The tall line should have shifted down.")
+
+        for fragment in tallLineAfter.data.lineFragments {
+            guard let view = layoutManager.viewReuseQueue.getView(forKey: fragment.data.id) else { continue }
+            let expectedY = tallLineAfter.yPos + fragment.yPos
+            #expect(
+                abs(view.frame.origin.y - expectedY) < 0.5,
+                "Fragment view sits at \(view.frame.origin.y), expected \(expectedY)."
+            )
+            #expect(
+                fragment.data.documentRange == fragment.range.translate(location: tallLineAfter.range.location),
+                "Fragment's document range is stale after the edit above it."
+            )
+        }
+    }
 }

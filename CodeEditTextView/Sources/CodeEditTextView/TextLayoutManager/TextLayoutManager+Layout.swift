@@ -299,11 +299,17 @@ extension TextLayoutManager {
         return CGSize(width: width, height: height)
     }
 
-    /// Places views for any fragments of this line that intersect `layoutData`'s visible range but don't yet have
-    /// one, without re-typesetting the line. Used from ``layoutLines(in:)`` for lines taller than a single
-    /// viewport: `layoutLineViews` only placed fragments visible in whatever window was current when the line was
-    /// last typeset, so as the visible window moves within the same still-visible line, newly-revealed fragments
-    /// need to be placed here instead of being silently skipped.
+    /// Syncs fragment views for the fragments of this line that intersect `layoutData`'s visible range, without
+    /// re-typesetting the line. Used from ``layoutLines(in:)`` for lines taller than a single viewport:
+    /// `layoutLineViews` only placed fragments visible in whatever window was current when the line was last
+    /// typeset, so as the visible window moves within the same still-visible line, newly-revealed fragments need
+    /// to be placed here instead of being silently skipped.
+    ///
+    /// Fragments that already have a view are repositioned rather than skipped. This branch of `layoutLines(in:)`
+    /// is the only one that doesn't otherwise move a line's existing views, so skipping them left a line taller
+    /// than the viewport rendering at a stale `yPos` whenever a line above it changed height — drawing the old and
+    /// new positions on top of each other. `documentRange` is refreshed for the same reason: an edit above this
+    /// line shifts its `range.location`, and the renderer reads `documentRange` to place invisibles and selections.
     /// - Parameters:
     ///   - position: The line position to sync fragment views for.
     ///   - layoutData: The current visible range and layout width.
@@ -321,10 +327,13 @@ extension TextLayoutManager {
             guard fragmentMaxY >= layoutData.minY && fragmentMinY <= layoutData.maxY else { continue }
 
             laidOutFragmentIDs.insert(lineFragment.id)
-            guard viewReuseQueue.getView(forKey: lineFragment.id) == nil else { continue }
-
             lineFragment.documentRange = lineFragmentPosition.range.translate(location: position.range.location)
-            layoutFragmentView(inLine: position, for: lineFragmentPosition, at: fragmentMinY)
+
+            if let view = viewReuseQueue.getView(forKey: lineFragment.id) {
+                view.frame.origin = CGPoint(x: edgeInsets.left, y: fragmentMinY)
+            } else {
+                layoutFragmentView(inLine: position, for: lineFragmentPosition, at: fragmentMinY)
+            }
         }
     }
 
