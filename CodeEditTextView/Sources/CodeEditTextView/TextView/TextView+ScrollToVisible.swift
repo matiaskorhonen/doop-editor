@@ -14,17 +14,23 @@ extension TextView {
 
     /// Scrolls the upmost selection to the visible rect if `scrollView` is not `nil`.
     public func scrollSelectionToVisible() {
-        guard let scrollView else {
+        guard let scrollView, let selection = getSelection() else {
             return
         }
 
+        // Scroll to the moving end of the selection (the end that isn't the pivot) rather than the selection's full
+        // bounding rect. When a selection is taller than the viewport – for instance selecting to the end of the
+        // document with ⌘⇧↓ – scrolling to the bounding rect leaves the already-visible top edge in place and never
+        // follows the cursor to the bottom. Scrolling to the moving end keeps the cursor visible instead.
+        let offset = offsetNotPivot(selection)
+
         // There's a bit of a chicken-and-the-egg issue going on here. We need to know the rect to scroll to, but we
         // can't know the exact rect to make visible without laying out the text. Then, once text is laid out the
-        // selection rect may be different again. To solve this, we loop until the frame doesn't change after a layout
-        // pass and scroll to that rect.
+        // rect may be different again. To solve this, we loop until the frame doesn't change after a layout pass and
+        // scroll to that rect.
 
         var lastFrame: CGRect = .zero
-        while let boundingRect = getSelection()?.boundingRect, lastFrame != boundingRect {
+        while let boundingRect = layoutManager.rectForOffset(offset), lastFrame != boundingRect {
             lastFrame = boundingRect
             layoutManager.layoutLines()
             selectionManager.updateSelectionViews()
