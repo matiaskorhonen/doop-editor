@@ -34,7 +34,7 @@ extension TextView {
             break
         }
 
-        trackSelectionDrag(with: event)
+        trackSelectionDrag()
     }
 
     /// Single click, if control-shift we add a cursor
@@ -128,13 +128,25 @@ extension TextView {
     /// lets us re-process the last known position on a timer-like cadence so the selection keeps
     /// expanding/autoscrolling even while the mouse is held still outside the view. This mirrors how AppKit's
     /// own text views implement drag-to-select.
-    private func trackSelectionDrag(with initialEvent: NSEvent) {
+    private func trackSelectionDrag() {
         guard let window else { return }
 
         let autoscrollInterval: TimeInterval = 0.022 // ~45Hz, matches AppKit's own autoscroll cadence.
         var lastDragEvent: NSEvent?
 
         while true {
+            // Receiving the mouse up is not the only way this drag can end, and this loop has no other exit, so
+            // check the conditions that end it without one. A drag-and-drop session started by
+            // ``TextView/DragSelectionGesture`` runs its own event loop and consumes the mouse up, and
+            // `pressedMouseButtons` covers anything else that swallows it (a modal sheet, another tracking
+            // loop). Without these the loop spins at `autoscrollInterval` forever, reapplying `lastDragEvent`
+            // to the selection and hanging the editor. Note that bailing here leaves any not-yet-delivered
+            // mouse up in the queue, so the responder chain still gets it.
+            guard !isDragging, NSEvent.pressedMouseButtons & (1 << 0) != 0 else {
+                mouseDragAnchor = nil
+                return
+            }
+
             let event = window.nextEvent(
                 matching: [.leftMouseDragged, .leftMouseUp],
                 until: Date().addingTimeInterval(autoscrollInterval),
@@ -144,7 +156,10 @@ extension TextView {
 
             switch event?.type {
             case .leftMouseUp:
-                mouseDragAnchor = nil
+                // Dequeuing takes this event out of the responder chain, so hand it to `mouseUp(with:)`
+                // ourselves. Dropping it skipped the drag anchor reset, the autoscroll timer teardown, and
+                // `super.mouseUp(with:)` for every click, not just dragging ones.
+                mouseUp(with: event!)
                 return
             case .leftMouseDragged:
                 lastDragEvent = event
@@ -226,13 +241,16 @@ extension TextView {
     // MARK: - Mouse Autoscroll
 
     /// Sets up a timer that fires at a predetermined period to autoscroll the text view.
+    ///
+    /// This only runs for the duration of a drag-and-drop session (see ``TextView/draggingSession(_:willBeginAt:)``),
+    /// which is why it autoscrolls but doesn't update the selection: ``processDragEvent(_:)`` ignores events while
+    /// ``TextView/isDragging`` is set, so calling it from here was always a no-op.
     /// Ensure the timer is disabled using ``disableMouseAutoscrollTimer``.
     func setUpMouseAutoscrollTimer() {
         mouseDragTimer?.invalidate()
         // https://cocoadev.github.io/AutoScrolling/ (fired at ~45Hz)
         mouseDragTimer = Timer.scheduledTimer(withTimeInterval: 0.022, repeats: true) { [weak self] _ in
             if let event = self?.window?.currentEvent, event.type == .leftMouseDragged {
-                self?.mouseDragged(with: event)
                 self?.autoscroll(with: event)
             }
         }
