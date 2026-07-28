@@ -30,7 +30,16 @@ extension TextView {
         // scroll to that rect.
 
         var lastFrame: CGRect = .zero
-        while let boundingRect = layoutManager.rectForOffset(offset), lastFrame != boundingRect {
+
+        // Set a timeout to avoid an infinite loop, matching `scrollToRange` below. Convergence relies on layout
+        // settling on a stable rect; content that keeps reporting a new one (a fragment whose height depends on
+        // the scroll position it just caused) would otherwise spin here on the main thread forever.
+        let timeout: TimeInterval = 0.5
+        let startTime = Date()
+
+        while let boundingRect = layoutManager.rectForOffset(offset),
+              lastFrame != boundingRect,
+              Date().timeIntervalSince(startTime) < timeout {
             lastFrame = boundingRect
             layoutManager.layoutLines()
             selectionManager.updateSelectionViews()
