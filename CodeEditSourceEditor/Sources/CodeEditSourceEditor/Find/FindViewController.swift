@@ -56,8 +56,11 @@ final class FindViewController: NSViewController {
         // When visible, it's set to 0.
 
         view.clipsToBounds = false
-        view.addSubview(findPanel)
         view.addSubview(childView)
+        // Keep the find panel above the child view in subview order, not just visually:
+        // AppKit hit-tests subviews back-to-front, so the panel must come after the child
+        // view to receive clicks. `zPosition` alone only fixes drawing order.
+        view.addSubview(findPanel, positioned: .above, relativeTo: childView)
 
         // Ensure find panel is always on top
         findPanel.wantsLayer = true
