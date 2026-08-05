@@ -72,6 +72,63 @@ struct TextLayoutManagerFragmentViewBenchTests {
         #expect(textView.subviews.count < 200)
     }
 
+    /// Regression test: wrapped lines *shorter* than one layout window can be partially placed too. A line laid
+    /// out while its bottom half sat below the layout window only gets views for the fragments that were in range
+    /// at that moment. Scrolling down keeps the line continuously "visible" and fully typeset, so it used to fall
+    /// into the branch that only moves existing views — the never-placed fragments stayed blank, which reads as a
+    /// line with a far too large line height.
+    @Test
+    func scrollingRevealsUnplacedFragmentsOfNormalHeightWrappedLines() throws {
+        // Paragraphs long enough to wrap into many fragments, but short enough that no single line fills a whole
+        // layout window (that case is handled by the `placeVisibleFragments` branch tested above).
+        let paragraph = String(repeating: "lorem ipsum dolor sit amet ", count: 60)
+        let textView = TextView(
+            string: Array(repeating: paragraph, count: 20).joined(separator: "\n"),
+            wrapLines: true
+        )
+        textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        scrollView.documentView = textView
+
+        let layoutManager = try #require(textView.layoutManager)
+        layoutManager.setNeedsLayout()
+
+        var visibleRect = NSRect(x: 0, y: 0, width: 800, height: 600)
+        layoutManager.layoutLines(in: visibleRect)
+
+        let layoutWindowHeight = visibleRect.height + (layoutManager.verticalLayoutPadding * 2)
+        let firstLine = try #require(layoutManager.textLineForIndex(0))
+        #expect(firstLine.data.lineFragments.count > 1, "The test document should wrap into multiple fragments.")
+        #expect(firstLine.height < layoutWindowHeight, "Lines here must be shorter than one layout window.")
+
+        // Scroll down through the document the way a scroll view would, laying out at each step.
+        for offset in stride(from: CGFloat(0), through: layoutManager.lineStorage.height - 600, by: 100) {
+            visibleRect.origin.y = offset
+            layoutManager.layoutLines(in: visibleRect)
+
+            for linePosition in layoutManager.linesStartingAt(visibleRect.minY, until: visibleRect.maxY) {
+                for fragmentPosition in linePosition.data.lineFragments {
+                    let fragmentMinY = linePosition.yPos + fragmentPosition.yPos
+                    let fragmentMaxY = fragmentMinY + fragmentPosition.data.scaledHeight
+                    guard fragmentMaxY > visibleRect.minY, fragmentMinY < visibleRect.maxY else { continue }
+
+                    let view = layoutManager.viewReuseQueue.getView(forKey: fragmentPosition.data.id)
+                    #expect(
+                        view != nil,
+                        "Fragment at y \(fragmentMinY) has no view while scrolled to \(offset), leaving it blank."
+                    )
+                    if let view {
+                        #expect(
+                            abs(view.frame.origin.y - fragmentMinY) < 0.5,
+                            "Fragment view sits at \(view.frame.origin.y), expected \(fragmentMinY)."
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     /// Regression test: a line taller than the viewport is handled by a branch of `layoutLines(in:)` that used to
     /// only *add* missing fragment views, never move existing ones. When a line above it changed height, the tall
     /// line shifted down but its already-placed fragments stayed put, drawing on top of the content above them.

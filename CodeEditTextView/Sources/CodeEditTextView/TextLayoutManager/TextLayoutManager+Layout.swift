@@ -31,12 +31,16 @@ extension TextLayoutManager {
     ///   line wrapping is disabled. This will detect that, and cause the lines to be recalculated.
     /// - **2** Was the line previously not visible? This is determined by keeping a set of visible line IDs. If the
     ///   line does not appear in that set, we can assume it was previously off screen and may need layout.
-    /// - **3** Was the line entirely laid out? We break up lines into line fragments. When we do layout, we determine
-    ///   all line fragments but don't necessarily place them all in the view. This checks if all line fragments have
-    ///   been placed in the view. If not, we need to place them.
+    /// - **3** Is the line's cached height still the sum of its line fragments? If it isn't, the line's fragments
+    ///   were rebuilt by an edit (lines inserted or deleted) without the height in storage being updated yet.
     ///
     /// Once it has been determined that a line needs layout, we perform layout by recalculating it's line fragments,
     /// removing all old line fragment views, and creating new ones for the line.
+    ///
+    /// Lines that pass all three checks aren't skipped entirely, they get a cheap fragment-view re-sync instead.
+    /// Typesetting produces every fragment of a line, but only the fragments inside the layout window get views, so
+    /// which fragments need a view changes as the window scrolls or the line shifts, without the line itself ever
+    /// needing layout again.
     ///
     /// ## Laziness
     ///
@@ -80,7 +84,6 @@ extension TextLayoutManager {
         let originalHeight = lineStorage.height
         var usedFragmentIDs = Set<LineFragment.ID>()
         let forceLayout: Bool = needsLayout
-        var didLayoutChange = false
         var newVisibleLines: Set<TextLine.ID> = []
         var yContentAdjustment: CGFloat = 0
         var maxFoundLineWidth = maxLineWidth
@@ -99,7 +102,7 @@ extension TextLayoutManager {
             defer { newVisibleLines.insert(linePosition.data.id) }
 
             func fullLineLayout() {
-                let (yAdjustment, wasLineHeightChanged) = layoutLine(
+                let yAdjustment = layoutLine(
                     linePosition,
                     usedFragmentIDs: &usedFragmentIDs,
                     textStorage: textStorage,
@@ -110,42 +113,26 @@ extension TextLayoutManager {
 #if DEBUG
                 laidOutLines.insert(linePosition.data.id)
 #endif
-                // If we've updated a line's height, or a line position was newly laid out, force re-layout for the
-                // rest of the pass (going down the screen).
-                //
-                // These two signals identify:
-                // - New lines being inserted & Lines being deleted (lineNotEntirelyLaidOut)
-                // - Line updated for width change (wasLineHeightChanged)
-
-                didLayoutChange = didLayoutChange || wasLineHeightChanged || lineNotEntirelyLaidOut
             }
 
             if forceLayout || linePositionNeedsLayout || wasNotVisible || lineNotEntirelyLaidOut {
                 fullLineLayout()
-            } else if linePosition.height > (maxY - minY) {
-                // This line's fragments span more than one viewport (e.g. one long wrapped line of base64 or
-                // minified content). `layoutLineViews` only places fragments visible in the window it was given,
-                // so as the visible window moves within this same line, fragments that scroll into view for the
-                // first time need to be placed. Re-typesetting isn't needed here (the checks above already ruled
-                // that out), so this only re-syncs which fragments have views, which stays cheap since it's
-                // bounded by how many fragments fit in a viewport rather than the line's total fragment count.
+            } else {
+                // The line's typesetting is up to date, but its fragment *views* may not be. `layoutLineViews`
+                // only places fragments that intersected the layout window at the time the line was laid out, so
+                // a wrapped line can hold fragments that never got a view: a line first laid out with its lower
+                // half below the window keeps that hole for as long as it stays visible, and the checks above
+                // won't catch it (its typesetting and total height are both correct). The blank space that
+                // leaves reads as a line with a far too large line height.
+                //
+                // This re-syncs which fragments have views, and repositions the views that already exist for
+                // when a line above changed height. No re-typesetting: the checks above ruled that out, and the
+                // lazy line iteration means this line's `yPos` already accounts for any height change above it.
                 placeVisibleFragments(
                     linePosition,
                     layoutData: LineLayoutData(minY: minY, maxY: maxY, maxWidth: maxLineLayoutWidth),
                     laidOutFragmentIDs: &usedFragmentIDs
                 )
-            } else {
-                if didLayoutChange || yContentAdjustment > 0 {
-                    // Layout happened and this line needs to be moved but not necessarily re-added
-                    let needsFullLayout = updateLineViewPositions(linePosition)
-                    if needsFullLayout {
-                        fullLineLayout()
-                        continue
-                    }
-                }
-
-                // Make sure the used fragment views aren't dequeued.
-                usedFragmentIDs.formUnion(linePosition.data.lineFragments.map(\.data.id))
             }
         }
 
@@ -190,7 +177,7 @@ extension TextLayoutManager {
         textStorage: NSTextStorage,
         yRange: Range<CGFloat>,
         maxFoundLineWidth: inout CGFloat
-    ) -> (CGFloat, wasLineHeightChanged: Bool) {
+    ) -> CGFloat {
         let lineSize = layoutLineViews(
             linePosition,
             textStorage: textStorage,
@@ -217,7 +204,7 @@ extension TextLayoutManager {
             maxFoundLineWidth = lineSize.width
         }
 
-        return (yContentAdjustment, wasLineHeightChanged)
+        return yContentAdjustment
     }
 
     /// Lays out a single text line.
@@ -300,16 +287,16 @@ extension TextLayoutManager {
     }
 
     /// Syncs fragment views for the fragments of this line that intersect `layoutData`'s visible range, without
-    /// re-typesetting the line. Used from ``layoutLines(in:)`` for lines taller than a single viewport:
+    /// re-typesetting the line. Used from ``layoutLines(in:)`` for every line that doesn't need a full layout pass:
     /// `layoutLineViews` only placed fragments visible in whatever window was current when the line was last
     /// typeset, so as the visible window moves within the same still-visible line, newly-revealed fragments need
     /// to be placed here instead of being silently skipped.
     ///
-    /// Fragments that already have a view are repositioned rather than skipped. This branch of `layoutLines(in:)`
-    /// is the only one that doesn't otherwise move a line's existing views, so skipping them left a line taller
-    /// than the viewport rendering at a stale `yPos` whenever a line above it changed height — drawing the old and
-    /// new positions on top of each other. `documentRange` is refreshed for the same reason: an edit above this
-    /// line shifts its `range.location`, and the renderer reads `documentRange` to place invisibles and selections.
+    /// Fragments that already have a view are repositioned rather than skipped, since a line's `yPos` shifts
+    /// whenever a line above it changes height. Leaving them put drew the same line at two offsets at once, the
+    /// old fragments overlapping the content above. `documentRange` is refreshed for the same reason: an edit
+    /// above this line shifts its `range.location`, and the renderer reads `documentRange` to place invisibles
+    /// and selections.
     /// - Parameters:
     ///   - position: The line position to sync fragment views for.
     ///   - layoutData: The current visible range and layout width.
@@ -330,7 +317,12 @@ extension TextLayoutManager {
             lineFragment.documentRange = lineFragmentPosition.range.translate(location: position.range.location)
 
             if let view = viewReuseQueue.getView(forKey: lineFragment.id) {
-                view.frame.origin = CGPoint(x: edgeInsets.left, y: fragmentMinY)
+                // This runs for every visible line on every layout pass, and most passes don't move anything.
+                // Only touch the view's frame when it actually needs to move.
+                let origin = CGPoint(x: edgeInsets.left, y: fragmentMinY)
+                if view.frame.origin != origin {
+                    view.frame.origin = origin
+                }
             } else {
                 layoutFragmentView(inLine: position, for: lineFragmentPosition, at: fragmentMinY)
             }
@@ -357,19 +349,5 @@ extension TextLayoutManager {
         view.frame.origin = CGPoint(x: edgeInsets.left, y: yPos)
         layoutView?.addSubview(view, positioned: .below, relativeTo: nil)
         view.needsDisplay = true
-    }
-
-    private func updateLineViewPositions(_ position: TextLineStorage<TextLine>.TextLinePosition) -> Bool {
-        let line = position.data
-        for lineFragmentPosition in line.lineFragments {
-            guard let view = viewReuseQueue.getView(forKey: lineFragmentPosition.data.id) else {
-                return true
-            }
-            lineFragmentPosition.data.documentRange = lineFragmentPosition.range.translate(
-                location: position.range.location
-            )
-            view.frame.origin = CGPoint(x: edgeInsets.left, y: position.yPos + lineFragmentPosition.yPos)
-        }
-        return false
     }
 }
