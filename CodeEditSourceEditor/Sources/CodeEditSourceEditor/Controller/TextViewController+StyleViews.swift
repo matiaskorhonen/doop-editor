@@ -28,7 +28,8 @@ extension TextViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.contentView.postsFrameChangedNotifications = true
         scrollView.hasVerticalScroller = true
-        scrollView.scrollerStyle = .overlay
+        // Overlay scrollers are pinned by ``EditorScrollView`` itself — assigning `scrollerStyle` here
+        // wouldn't survive AppKit syncing it back to the system preference.
     }
 
     /// Updates all relevant content insets including the find panel, scroll view, and gutter position.
