@@ -106,6 +106,10 @@ public class TextViewController: NSViewController {
     /// Whether the code editor should use the theme background color or be transparent
     public var useThemeBackground: Bool { configuration.appearance.useThemeBackground }
 
+    /// Whether the gutter is drawn with the theme's gutter background color and a trailing divider, or blends into
+    /// the editor's background.
+    public var prominentGutter: Bool { configuration.appearance.prominentGutter }
+
     /// Optional insets to offset the text view and find panel in the scroll view by.
     public var contentInsets: NSEdgeInsets? { configuration.layout.contentInsets }
 

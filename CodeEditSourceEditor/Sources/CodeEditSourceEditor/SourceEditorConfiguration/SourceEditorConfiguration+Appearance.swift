@@ -16,6 +16,13 @@ extension SourceEditorConfiguration {
         /// Determines whether the editor uses the theme's background color, or a transparent background color.
         public var useThemeBackground: Bool = true
 
+        /// Determines whether the gutter is visually distinct from the text view.
+        ///
+        /// When `true`, the gutter is drawn with the theme's gutter background color and a divider along its
+        /// trailing edge. When `false` (the default), the gutter blends into the editor: it uses the editor's
+        /// background color and draws no divider.
+        public var prominentGutter: Bool = false
+
         /// The default font.
         public var font: NSFont
 
@@ -44,6 +51,8 @@ extension SourceEditorConfiguration {
         ///   - theme: The theme for syntax highlighting.
         ///   - useThemeBackground: Determines whether the editor uses the theme's background color, or a transparent
         ///                         background color.
+        ///   - prominentGutter: Determines whether the gutter is drawn with the theme's gutter background color and a
+        ///                      trailing divider, or blends into the editor's background. Defaults to `false`.
         ///   - font: The default font.
         ///   - lineHeightMultiple: The line height multiplier (e.g. `1.2`).
         ///   - letterSpacing: The amount of space to use between letters, as a percent. Eg: `1.0` = no space, `1.5`
@@ -56,6 +65,7 @@ extension SourceEditorConfiguration {
         public init(
             theme: EditorTheme,
             useThemeBackground: Bool = true,
+            prominentGutter: Bool = false,
             font: NSFont,
             lineHeightMultiple: Double = 1.2,
             letterSpacing: Double = 1.0,
@@ -66,6 +76,7 @@ extension SourceEditorConfiguration {
         ) {
             self.theme = theme
             self.useThemeBackground = useThemeBackground
+            self.prominentGutter = prominentGutter
             self.font = font
             self.lineHeightMultiple = lineHeightMultiple
             self.letterSpacing = letterSpacing
@@ -90,10 +101,10 @@ extension SourceEditorConfiguration {
                 needsHighlighterInvalidation = true
             }
 
-            if oldConfig?.theme != theme || oldConfig?.useThemeBackground != useThemeBackground {
-                updateControllerNewTheme(controller: controller)
-                needsHighlighterInvalidation = true
-            }
+            needsHighlighterInvalidation = updateColorsIfNeeded(
+                controller: controller,
+                oldConfig: oldConfig
+            ) || needsHighlighterInvalidation
 
             if oldConfig?.tabWidth != tabWidth {
                 controller.paragraphStyle = controller.generateParagraphStyle()
@@ -134,6 +145,23 @@ extension SourceEditorConfiguration {
             }
         }
 
+        /// Applies any color changes the new appearance requires.
+        /// - Returns: Whether the highlighter needs to be invalidated for the new colors.
+        @MainActor
+        private func updateColorsIfNeeded(controller: TextViewController, oldConfig: Appearance?) -> Bool {
+            if oldConfig?.theme != theme || oldConfig?.useThemeBackground != useThemeBackground {
+                updateControllerNewTheme(controller: controller)
+                return true
+            }
+
+            if oldConfig?.prominentGutter != prominentGutter {
+                // Only the gutter's colors depend on this, and the theme update above already applies them.
+                applyGutterColors(controller: controller)
+            }
+
+            return false
+        }
+
         private func updateControllerNewTheme(controller: TextViewController) {
             controller.textView.layoutManager.setNeedsLayout()
             controller.textView.textStorage.setAttributes(
@@ -154,20 +182,39 @@ extension SourceEditorConfiguration {
 
             controller.gutterView.textColor = theme.text.color.withAlphaComponent(0.35)
             applySelectedLineColors(controller: controller)
-            controller.gutterView.backgroundColor = if useThemeBackground {
-                theme.gutterBackground ?? theme.background
-            } else {
-                .windowBackgroundColor
-            }
-            controller.gutterView.dividerColor = theme.gutterDividerColor
 
             // Keeps the elastic/rubber-band overscroll area's two-tone fill in sync with the colors above.
             if let backgroundClipView = controller.scrollView.contentView as? GutterBackgroundClipView {
                 backgroundClipView.editorBackgroundColor = editorBackgroundColor
-                backgroundClipView.needsDisplay = true
             }
+            applyGutterColors(controller: controller)
 
             controller.textView.typingAttributes = controller.attributesFor(nil)
+        }
+
+        /// Applies the gutter's background and divider colors.
+        ///
+        /// A prominent gutter is filled with the theme's gutter background and separated from the text view by a
+        /// divider. Otherwise the gutter uses the editor's own background color and draws no divider, so it reads as
+        /// part of the text view. When the editor background is transparent, a non-prominent gutter is transparent
+        /// too — the gutter gets no fill of its own.
+        private func applyGutterColors(controller: TextViewController) {
+            if prominentGutter {
+                controller.gutterView.backgroundColor = if useThemeBackground {
+                    theme.gutterBackground ?? theme.background
+                } else {
+                    .windowBackgroundColor
+                }
+                controller.gutterView.dividerColor = theme.gutterDividerColor
+            } else {
+                controller.gutterView.backgroundColor = useThemeBackground ? theme.background : nil
+                controller.gutterView.dividerColor = nil
+            }
+
+            // The overscroll area draws the gutter's column itself, so it has to follow the colors above.
+            if let backgroundClipView = controller.scrollView.contentView as? GutterBackgroundClipView {
+                backgroundClipView.needsDisplay = true
+            }
         }
 
         /// Applies the theme/appearance-derived colors for the selected line highlight to the gutter.
