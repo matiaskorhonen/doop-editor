@@ -6,12 +6,12 @@
 //
 
 import AppKit
-import DequeModule
+internal import DequeModule
 
 /// Maintains a queue of views available for reuse.
 public class ViewReuseQueue<View: NSView, Key: Hashable> {
     /// A stack of views that are not currently in use
-    public var queuedViews: Deque<View> = []
+    internal var queuedViews: Deque<View> = []
 
     /// Maps views that are no longer queued to the keys they're queued with.
     public var usedViews: [Key: View] = [:]

@@ -5,7 +5,7 @@
 //  Created by Khan Winter on 10/24/24
 //
 
-import _RopeModule
+internal import _RopeModule
 import Foundation
 
 /// RangeStore is a container type that allows for setting and querying values for relative ranges in text. The

@@ -6,46 +6,46 @@
 //
 
 import Foundation
-import TreeSitter
+internal import TreeSitter
 import SwiftTreeSitter
-import TreeSitterAgda
-import TreeSitterBash
-import TreeSitterC
-import TreeSitterCPP
-import TreeSitterCSharp
-import TreeSitterCSS
-import TreeSitterDockerfile
-import TreeSitterElixir
-import TreeSitterGeneric
-import TreeSitterGo
-import TreeSitterGoMod
-import TreeSitterHaskell
-import TreeSitterHTML
-import TreeSitterJava
-import TreeSitterJavaScript
-import TreeSitterJSDoc
-import TreeSitterJSON
-import TreeSitterJulia
-import TreeSitterKotlin
-import TreeSitterLua
-import TreeSitterMarkdown
-import TreeSitterMarkdownInline
-import TreeSitterObjc
-import TreeSitterOCaml
-import TreeSitterPerl
-import TreeSitterPHP
-import TreeSitterPython
-import TreeSitterRegex
-import TreeSitterRuby
-import TreeSitterRust
-import TreeSitterScala
-import TreeSitterSql
-import TreeSitterSwift
-import TreeSitterTOML
-import TreeSitterTypeScript
-import TreeSitterTSX
-import TreeSitterYAML
-import TreeSitterZig
+internal import TreeSitterAgda
+internal import TreeSitterBash
+internal import TreeSitterC
+internal import TreeSitterCPP
+internal import TreeSitterCSharp
+internal import TreeSitterCSS
+internal import TreeSitterDockerfile
+internal import TreeSitterElixir
+internal import TreeSitterGeneric
+internal import TreeSitterGo
+internal import TreeSitterGoMod
+internal import TreeSitterHaskell
+internal import TreeSitterHTML
+internal import TreeSitterJava
+internal import TreeSitterJavaScript
+internal import TreeSitterJSDoc
+internal import TreeSitterJSON
+internal import TreeSitterJulia
+internal import TreeSitterKotlin
+internal import TreeSitterLua
+internal import TreeSitterMarkdown
+internal import TreeSitterMarkdownInline
+internal import TreeSitterObjc
+internal import TreeSitterOCaml
+internal import TreeSitterPerl
+internal import TreeSitterPHP
+internal import TreeSitterPython
+internal import TreeSitterRegex
+internal import TreeSitterRuby
+internal import TreeSitterRust
+internal import TreeSitterScala
+internal import TreeSitterSql
+internal import TreeSitterSwift
+internal import TreeSitterTOML
+internal import TreeSitterTypeScript
+internal import TreeSitterTSX
+internal import TreeSitterYAML
+internal import TreeSitterZig
 import RegexBuilder
 
 /// A structure holding metadata for code languages
@@ -105,7 +105,7 @@ public struct CodeLanguage {
     }
 
     /// The bundle's resource URL
-    internal var resourceURL: URL? = Bundle.module.resourceURL
+    internal var resourceURL: URL? = Bundle.codeEditLanguages.resourceURL
 
     /// A set of additional identifiers to use for things like shebang matching.
     public let additionalIdentifiers: Set<String>

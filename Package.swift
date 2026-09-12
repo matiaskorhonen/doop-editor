@@ -1,6 +1,13 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
+// Settings shared by the three library targets. `AccessLevelOnImport` lets the modules mark
+// implementation-detail imports (e.g. the tree-sitter grammars) `internal import`, which keeps them
+// out of the generated `.swiftinterface` when the targets are built for binary distribution.
+let resilientSettings: [SwiftSetting] = [
+    .enableExperimentalFeature("AccessLevelOnImport")
+]
+
 let package = Package(
     name: "DoopEditor",
     platforms: [.macOS(.v13)],
@@ -69,7 +76,8 @@ let package = Package(
                 .product(name: "Collections", package: "swift-collections"),
                 "CodeEditTextViewObjC",
             ],
-            path: "CodeEditTextView/Sources/CodeEditTextView"
+            path: "CodeEditTextView/Sources/CodeEditTextView",
+            swiftSettings: resilientSettings
         ),
         .testTarget(
             name: "CodeEditTextViewTests",
@@ -159,6 +167,7 @@ let package = Package(
                 .copy("Resources/tree-sitter-yaml"),
                 .copy("Resources/tree-sitter-zig"),
             ],
+            swiftSettings: resilientSettings,
             linkerSettings: [.linkedLibrary("c++")]
         ),
         .testTarget(
@@ -175,7 +184,8 @@ let package = Package(
                 "CodeEditLanguages",
                 "TextFormation",
             ],
-            path: "CodeEditSourceEditor/Sources/CodeEditSourceEditor"
+            path: "CodeEditSourceEditor/Sources/CodeEditSourceEditor",
+            swiftSettings: resilientSettings
         ),
         .testTarget(
             name: "CodeEditSourceEditorTests",

@@ -5,7 +5,7 @@
 //  Created by Khan Winter on 10/25/24
 //
 
-import _RopeModule
+internal import _RopeModule
 
 extension RangeStore {
     struct OffsetMetric: RopeMetric {

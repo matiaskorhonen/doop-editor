@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import CodeEditTextViewObjC
+internal import CodeEditTextViewObjC
 
 /// A ``LineFragment`` represents a subrange of characters in a line. Every text line contains at least one line
 /// fragments, and any lines that need to be broken due to width constraints will contain more than one fragment.
