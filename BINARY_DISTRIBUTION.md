@@ -100,6 +100,11 @@ Xcode to emit a module map.
 
 Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
+The release is about 48 MB of zips, 18 MB of it `CodeEditLanguages` (the grammars). The builds
+are **not** bit-reproducible -- two runs of the same commit produce different checksums, since
+timestamps and dSYM UUIDs end up in the archives -- so the checksums in the manifest always
+come from the same build that produced the uploaded zips. Don't hand-edit one.
+
 ## Releasing
 
 Push a `vX.Y.Z` tag on `main`. `.github/workflows/release-binary.yml` then builds the
