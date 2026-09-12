@@ -43,6 +43,25 @@ swift test --filter CodeEditLanguagesTests   # run one test target
 
 The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
 
+## Binary distribution
+
+`Scripts/build-xcframeworks.sh` builds the three modules (plus the dependencies whose types
+appear in their public API) as universal macOS XCFrameworks for release, statically absorbing
+the 40 tree-sitter grammars. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md).
+
+Three things in the sources exist for that pipeline and are easy to break by accident:
+
+- **`internal import`** on implementation-detail imports (the grammars, `TreeSitter`,
+  `_RopeModule`, `DequeModule`, `CodeEditTextViewObjC`). A plain `import` puts the module into
+  the public `.swiftinterface` and forces consumers of the binaries to resolve it, so adding a
+  grammar means adding an `internal import` in `CodeLanguage.swift`.
+  `Scripts/check-interface-imports.sh` gates this. The `AccessLevelOnImport` feature it needs
+  is enabled by `resilientSettings` in `Package.swift`.
+- **`Bundle.codeEditLanguages`**, not `Bundle.module`, for the `.scm` query lookup —
+  `Bundle.module` doesn't exist in a framework build.
+- New public API that exposes a *new* third-party type adds a framework to the distribution.
+  Prefer keeping such types internal.
+
 ## Architecture
 
 The three packages form a layered stack: `CodeEditTextView` (generic text rendering/editing) → `CodeEditLanguages` (tree-sitter grammar/query lookup) → `CodeEditSourceEditor` (SwiftUI/AppKit code editor that wires the two together with syntax highlighting).

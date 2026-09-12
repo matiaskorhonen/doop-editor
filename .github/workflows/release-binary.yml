@@ -1,0 +1,94 @@
+name: Release binary frameworks
+
+# Builds the distributable XCFrameworks for a version tag pushed on `main`, attaches them to
+# the GitHub release, and regenerates the `binary` branch's manifest. Git tags are branch
+# independent, so the tag ends up pointing at the binary manifest -- which is what consumers
+# resolve -- while `main` stays source-only.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the `binary` branch commit can be built with plumbing below.
+          # The nvim-treesitter submodule is a query reference, not a build input, so it is
+          # deliberately not checked out.
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: echo "version=${{ github.event.inputs.version || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Verify the source package still builds
+        run: swift build && swift test
+
+      - name: Build XCFrameworks
+        run: Scripts/build-xcframeworks.sh "${{ steps.version.outputs.version }}"
+
+      - name: Generate the binary manifest
+        run: |
+          Scripts/generate-binary-manifest.py "${{ steps.version.outputs.version }}" \
+            --repo "${{ github.repository }}"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --title "${{ steps.version.outputs.version }}" \
+            --notes "Prebuilt DoopEditor XCFrameworks. Add the package with \`from: \"${{ steps.version.outputs.version }}\"\` -- see the \`binary\` branch." \
+            build/xcframeworks/*.xcframework.zip
+
+      - name: Update the binary branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          # The release tag on `main` is `vX.Y.Z`; the binary manifest gets the bare `X.Y.Z`,
+          # so both live in the same repo without either tag having to be moved.
+          binary_tag="${version#v}"
+
+          # Build the commit with plumbing rather than a checkout, so nothing touches the
+          # working tree that still holds the freshly built frameworks.
+          package_blob=$(git hash-object -w build/binary-branch/Package.swift)
+          readme_blob=$(git hash-object -w build/binary-branch/README.md)
+
+          index=$(mktemp)
+          GIT_INDEX_FILE="$index" git update-index --add \
+            --cacheinfo "100644,$package_blob,Package.swift"
+          GIT_INDEX_FILE="$index" git update-index --add \
+            --cacheinfo "100644,$readme_blob,README.md"
+          tree=$(GIT_INDEX_FILE="$index" git write-tree)
+
+          git fetch origin binary || true
+          parent=$(git rev-parse --verify --quiet FETCH_HEAD || true)
+
+          message="DoopEditor $version (prebuilt)"
+          if [ -n "$parent" ]; then
+            commit=$(git commit-tree "$tree" -p "$parent" -m "$message")
+          else
+            commit=$(git commit-tree "$tree" -m "$message")
+          fi
+
+          git push origin "$commit:refs/heads/binary"
+          git tag "$binary_tag" "$commit"
+          git push origin "$binary_tag"
+
+          echo "Consumers resolve: .package(url: \"https://github.com/${{ github.repository }}.git\", from: \"$binary_tag\")"
