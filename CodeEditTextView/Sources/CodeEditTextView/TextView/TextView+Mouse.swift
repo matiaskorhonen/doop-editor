@@ -34,6 +34,12 @@ extension TextView {
             break
         }
 
+        // Anchor any drag that follows to where the mouse actually went down. AppKit only starts sending
+        // `mouseDragged` once the pointer has moved, and coalesces those events while the app is busy, so the
+        // first one can arrive a long way from the press - anchoring on it silently drops the beginning of the
+        // drag, which for a column selection means whole lines the user dragged over get no cursor.
+        mouseDragAnchor = layoutLocation(for: event)
+
         trackSelectionDrag()
     }
 
@@ -174,20 +180,26 @@ extension TextView {
         }
     }
 
+    /// The event's location in this view, clamped to a position the layout manager can resolve.
+    ///
+    /// We receive global events because our view received the drag event, but we need to clamp the potentially
+    /// out-of-bounds positions to a position our layout manager can deal with. The layout manager measures x
+    /// positions from inside its left edge inset, so the minimum x has to match that inset - clamping to 0
+    /// produces a position to the left of the first character, which the layout manager can't resolve.
+    private func layoutLocation(for event: NSEvent) -> CGPoint {
+        let locationInView = convert(event.locationInWindow, from: nil)
+        return CGPoint(
+            x: max(layoutManager.edgeInsets.left, min(locationInView.x, frame.width)),
+            y: max(0.0, min(locationInView.y, frame.height))
+        )
+    }
+
     private func processDragEvent(_ event: NSEvent) {
         guard !(inputContext?.handleEvent(event) ?? false) && isSelectable && !isDragging else {
             return
         }
 
-        // We receive global events because our view received the drag event, but we need to clamp the potentially
-        // out-of-bounds positions to a position our layout manager can deal with. The layout manager measures x
-        // positions from inside its left edge inset, so the minimum x has to match that inset - clamping to 0
-        // produces a position to the left of the first character, which the layout manager can't resolve.
-        let locationInWindow = convert(event.locationInWindow, from: nil)
-        let locationInView = CGPoint(
-            x: max(layoutManager.edgeInsets.left, min(locationInWindow.x, frame.width)),
-            y: max(0.0, min(locationInWindow.y, frame.height))
-        )
+        let locationInView = layoutLocation(for: event)
 
         if mouseDragAnchor == nil {
             mouseDragAnchor = locationInView
