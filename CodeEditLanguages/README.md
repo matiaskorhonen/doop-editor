@@ -68,5 +68,5 @@ Newer versions (≥ 0.25.0 for most) use `FileManager.default.fileExists(atPath:
 
 ### Other blockers
 
-- **[tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash) (0.23.3):** `master` declares a dependency on `SwiftTreeSitter` with `from: "0.25.0"`, incompatible with this package's `exact: "0.10.0"` pin of `tree-sitter/swift-tree-sitter`.
-- **[tree-sitter-json](https://github.com/tree-sitter/tree-sitter-json) (0.24.8):** `master` still references the old `ChimeHQ/SwiftTreeSitter` URL instead of `tree-sitter/swift-tree-sitter`.
+- **[tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash) (0.23.3):** 0.25.1 hardcodes `src/scanner.c` (no `FileManager` bug), but declares `SwiftTreeSitter` `from: "0.25.0"`, incompatible with this package's `exact: "0.10.0"` pin of `tree-sitter/swift-tree-sitter`. `swift-tree-sitter` 0.25.0 now exists, so bumping that pin would unblock this — untested, and it changes the bundled tree-sitter runtime for every grammar.
+- **[tree-sitter-json](https://github.com/tree-sitter/tree-sitter-json) (0.24.8):** `master` still references the old `ChimeHQ/SwiftTreeSitter` URL instead of `tree-sitter/swift-tree-sitter`. (0.24.8 is the latest tag, so there is nothing to upgrade to today. Note that the old URL is harmless when it is only used by the grammar's test target — SwiftPM prunes test-only dependencies of non-root packages — which is why the current 0.24.8 pin resolves fine.)
