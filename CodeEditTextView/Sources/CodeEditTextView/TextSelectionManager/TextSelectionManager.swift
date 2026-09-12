@@ -46,6 +46,9 @@ public class TextSelectionManager: NSObject {
     }
 
     internal(set) public var textSelections: [TextSelection] = []
+    /// The selection a keyboard-created column of cursors grew from, kept so collapsing the column can return to
+    /// it. Weak, so setting the selected ranges anywhere else clears it along with the selection it points at.
+    weak var columnAnchor: TextSelection?
     weak var layoutManager: TextLayoutManager?
     weak var textStorage: NSTextStorage?
     weak var textView: TextView?
