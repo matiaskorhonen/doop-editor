@@ -30,7 +30,12 @@ jobs:
 
       - name: Resolve version
         id: version
-        run: echo "version=${{ github.event.inputs.version || github.ref_name }}" >> "$GITHUB_OUTPUT"
+        run: |
+          version="${{ github.event.inputs.version || github.ref_name }}"
+          # The release tag on `main` is `vX.Y.Z`; the binary manifest gets the bare `X.Y.Z`,
+          # so both tags coexist in the repo without either having to be moved.
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "binary_tag=${version#v}" >> "$GITHUB_OUTPUT"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -52,7 +57,7 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.version }}" \
             --title "${{ steps.version.outputs.version }}" \
-            --notes "Prebuilt DoopEditor XCFrameworks. Add the package with \`from: \"${{ steps.version.outputs.version }}\"\` -- see the \`binary\` branch." \
+            --notes "Prebuilt DoopEditor XCFrameworks. Add the package with \`from: \"${{ steps.version.outputs.binary_tag }}\"\` -- see the \`binary\` branch." \
             build/xcframeworks/*.xcframework.zip
 
       - name: Update the binary branch
@@ -61,24 +66,33 @@ jobs:
         run: |
           set -euo pipefail
           version="${{ steps.version.outputs.version }}"
-          # The release tag on `main` is `vX.Y.Z`; the binary manifest gets the bare `X.Y.Z`,
-          # so both live in the same repo without either tag having to be moved.
-          binary_tag="${version#v}"
+          binary_tag="${{ steps.version.outputs.binary_tag }}"
+
+          # git commit-tree needs a committer identity; runners have none configured.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           # Build the commit with plumbing rather than a checkout, so nothing touches the
           # working tree that still holds the freshly built frameworks.
           package_blob=$(git hash-object -w build/binary-branch/Package.swift)
           readme_blob=$(git hash-object -w build/binary-branch/README.md)
 
-          index=$(mktemp)
-          GIT_INDEX_FILE="$index" git update-index --add \
-            --cacheinfo "100644,$package_blob,Package.swift"
-          GIT_INDEX_FILE="$index" git update-index --add \
-            --cacheinfo "100644,$readme_blob,README.md"
-          tree=$(GIT_INDEX_FILE="$index" git write-tree)
+          # -u so the file does not exist yet: an empty file is not a valid git index.
+          index=$(mktemp -u)
+          export GIT_INDEX_FILE="$index"
+          git update-index --add --cacheinfo "100644,$package_blob,Package.swift"
+          git update-index --add --cacheinfo "100644,$readme_blob,README.md"
+          tree=$(git write-tree)
+          unset GIT_INDEX_FILE
 
-          git fetch origin binary || true
-          parent=$(git rev-parse --verify --quiet FETCH_HEAD || true)
+          # Check for the branch explicitly: a plain `git fetch || true` would leave a stale
+          # FETCH_HEAD from the checkout above and parent the commit onto main.
+          if git ls-remote --exit-code --heads origin binary > /dev/null 2>&1; then
+            git fetch origin "binary:refs/remotes/origin/binary"
+            parent=$(git rev-parse refs/remotes/origin/binary)
+          else
+            parent=""
+          fi
 
           message="DoopEditor $version (prebuilt)"
           if [ -n "$parent" ]; then
