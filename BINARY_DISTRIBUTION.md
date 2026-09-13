@@ -176,14 +176,33 @@ Releases are only created from version tags. Push an annotated `vX.Y.Z` tag; its
 the release notes:
 
 ```bash
-git tag -a --cleanup=verbatim v0.9.0 -m "v0.9.0" -m "## Changes" -m "- What changed"
+git tag -a v0.9.0 -m "v0.9.0" -m "- What changed"
 git push origin v0.9.0
 ```
 
-Keep `--cleanup=verbatim` if the notes use Markdown headings. By default git deletes every line of a
-tag message that starts with `#`, even one given with `-m`, and the heading is lost before the
-workflow ever sees it. (Don't combine it with an editor-written message: verbatim also keeps git's
-own `#` instruction lines. Use `-m` or `-F notes.md`.)
+**Markdown headings** need more care. By default git deletes every line of a tag message that
+starts with `#`, even one given with `-m`, so a heading is lost before the workflow ever sees it.
+Keep them with `--cleanup=verbatim`, and write the message to a file:
+
+```bash
+cat > notes.md <<'EOF'
+v0.9.0
+
+## Changes
+
+- What changed
+EOF
+git tag -a --cleanup=verbatim -F notes.md v0.9.0
+```
+
+Don't use `--cleanup=verbatim` with `-m`, or with a message written in the editor:
+
+- **With `-m`**, the message doesn't end with a newline. On a signed tag the signature is then
+  glued onto the message's last line, and git no longer recognises it as a signature.
+  (`Scripts/tag-release-notes.sh` strips it anyway, but other tools show it as part of the message.)
+- **In the editor**, verbatim also keeps git's own `#` instruction lines.
+
+A file ending with a newline, as the heredoc above gives, avoids both.
 
 Don't create the release by hand. This repository has **immutable releases** enabled: once a
 release is published its assets can't be added or changed, so the workflow assembles the release
@@ -231,7 +250,7 @@ anonymously.
     fixes its tag, so the draft doesn't stand in the way:
 
     ```bash
-    git tag -f -a --cleanup=verbatim v0.9.0 -m "v0.9.0" -m "- What changed"
+    git tag -f -a v0.9.0 -m "v0.9.0" -m "- What changed"
     git push --force origin v0.9.0
     ```
 
