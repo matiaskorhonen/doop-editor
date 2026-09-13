@@ -58,18 +58,19 @@ Resolving the source package clones and compiles 40+ tree-sitter grammar reposit
 dominates a clean build. Prebuilt XCFrameworks avoid that: the grammars are statically linked
 into `CodeEditLanguages`, so consumers resolve a handful of artifacts instead.
 
-The prebuilt manifest lives on the [`binary`](https://github.com/matiaskorhonen/doop-editor/tree/binary)
-branch and is what version tags point at:
+The prebuilt package lives in its own repository,
+[doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary), with a tag for every
+release of this one:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/matiaskorhonen/doop-editor.git", from: "0.1.0"),
+    .package(url: "https://github.com/matiaskorhonen/doop-editor-binary.git", from: "0.9.0"),
 ],
 ```
 
-Product names are identical to the source package, so switching between the two needs no other
-changes. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md) for how the frameworks are built
-and released.
+The products are the same, but SwiftPM names a package after its repository, so product
+references use `package: "doop-editor-binary"` instead of `package: "doop-editor"`. See
+[BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md) for how the frameworks are built and released.
 
 ## Example app
 

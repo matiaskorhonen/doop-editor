@@ -107,7 +107,40 @@ come from the same build that produced the uploaded zips. Don't hand-edit one.
 
 ## Releasing
 
-Push a `vX.Y.Z` tag on `main`. `.github/workflows/release-binary.yml` then builds the
-frameworks, attaches the zips to the release, and commits a generated manifest to the `binary`
-branch tagged `X.Y.Z` (no `v`). Consumers resolve that bare tag, so the source and binary tags
-coexist without either being moved.
+Create the release as usual -- for example `gh release create v0.9.0 --notes "..."`, or push a
+`vX.Y.Z` tag. `.github/workflows/release-binary.yml` then:
+
+1. refuses to continue if that version is already published to `doop-editor-binary`;
+2. verifies the source package, builds the frameworks and runs the consumer check;
+3. attaches the zips to the release in this repository -- into your existing release if there
+   is one, leaving its notes alone, otherwise creating it with generated notes;
+4. commits the generated `Package.swift` and README to
+   [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with
+   the same version, pushing the commit and tag atomically
+   (`Scripts/publish-binary-package.sh`).
+
+The prebuilt package lives in a separate repository rather than on a branch here, so each
+repository has exactly one tag per version. SwiftPM strips a leading `v` when it reads tags, so
+a `v0.9.0` and a `0.9.0` in the same repository are two tags for one version -- and it silently
+resolves whichever it prefers rather than reporting the ambiguity.
+
+The zips are uploaded before the tag is published because the manifest's download URLs have
+to resolve by the time a consumer can see the version. A published version is never rebuilt:
+its manifest pins the checksums of zips consumers have already resolved, and rebuilds don't
+reproduce them. If a run fails after the upload but before publishing, re-running it is safe --
+it replaces the zips and publishes a manifest matching the new ones.
+
+Pushing to `doop-editor-binary` needs the `BINARY_REPO_TOKEN` secret: a fine-grained token with
+**Contents: Read and write** on that repository alone, since the workflow's own `GITHUB_TOKEN`
+can only write to this one. When it expires, the source release still goes out but the publish
+step fails -- renew it and re-run the workflow for that version.
+
+To rehearse a release locally without pushing anywhere:
+
+```bash
+Scripts/build-xcframeworks.sh v0.9.0
+Scripts/verify-binary-consumption.sh
+Scripts/generate-binary-manifest.py v0.9.0
+git init --bare /tmp/doop-editor-binary.git
+Scripts/publish-binary-package.sh v0.9.0 /tmp/doop-editor-binary.git
+```

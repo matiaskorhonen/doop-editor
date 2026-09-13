@@ -4,7 +4,7 @@
 #
 # Produces one universal (arm64 + x86_64) macOS XCFramework per shipped module under
 # `build/xcframeworks`, plus a zip and SwiftPM checksum for each, and the dependency graph
-# that Scripts/generate-binary-manifest.py turns into the `binary` branch's Package.swift.
+# that Scripts/generate-binary-manifest.py turns into the doop-editor-binary Package.swift.
 #
 # Usage: Scripts/build-xcframeworks.sh [version]
 set -euo pipefail

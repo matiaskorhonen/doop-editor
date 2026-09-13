@@ -1,9 +1,8 @@
 name: Release binary frameworks
 
-# Builds the distributable XCFrameworks for a version tag pushed on `main`, attaches them to
-# the GitHub release, and regenerates the `binary` branch's manifest. Git tags are branch
-# independent, so the tag ends up pointing at the binary manifest -- which is what consumers
-# resolve -- while `main` stays source-only.
+# For a `vX.Y.Z` tag: build the XCFrameworks, attach them to that version's release in this
+# repository, then publish a Package.swift pointing at them to doop-editor-binary under the same
+# tag. Consumers choose source or binary by package URL; each repository has one tag per version.
 on:
   push:
     tags:
@@ -11,98 +10,102 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build (e.g. v0.1.0)"
+        description: "Existing tag to build, e.g. v0.9.0"
         required: true
 
 permissions:
   contents: write
 
+# Two runs for one version would race to publish it.
+concurrency:
+  group: release-binary-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
+  BINARY_REPO: matiaskorhonen/doop-editor-binary
+
 jobs:
-  build:
+  release:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full history so the `binary` branch commit can be built with plumbing below.
-          # The nvim-treesitter submodule is a query reference, not a build input, so it is
-          # deliberately not checked out.
-          fetch-depth: 0
+          # A manual run starts from the branch it was dispatched on; build the tag instead.
+          ref: refs/tags/${{ env.VERSION }}
+          # The nvim-treesitter submodule is a query reference, not a build input.
+          submodules: false
 
-      - name: Resolve version
-        id: version
+      - name: Check the version
         run: |
-          version="${{ github.event.inputs.version || github.ref_name }}"
-          # The release tag on `main` is `vX.Y.Z`; the binary manifest gets the bare `X.Y.Z`,
-          # so both tags coexist in the repo without either having to be moved.
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "binary_tag=${version#v}" >> "$GITHUB_OUTPUT"
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::$VERSION is not a vX.Y.Z tag"
+            exit 1
+          fi
+          # Fail before a long build rather than after it. Once a version is published, its
+          # manifest pins the checksums of the uploaded zips, and rebuilds are not
+          # reproducible -- so re-uploading would break every consumer of that version.
+          if git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
+               "refs/tags/$VERSION" > /dev/null; then
+            echo "::error::$VERSION is already published to $BINARY_REPO"
+            exit 1
+          fi
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Verify the source package still builds
+      - name: Verify the source package
         run: swift build && swift test
 
       - name: Build XCFrameworks
-        run: Scripts/build-xcframeworks.sh "${{ steps.version.outputs.version }}"
+        run: Scripts/build-xcframeworks.sh "$VERSION"
 
-      - name: Generate the binary manifest
+      - name: Verify the frameworks from a consumer's side
+        run: Scripts/verify-binary-consumption.sh
+
+      - name: Generate the binary package
         run: |
-          Scripts/generate-binary-manifest.py "${{ steps.version.outputs.version }}" \
-            --repo "${{ github.repository }}"
+          Scripts/generate-binary-manifest.py "$VERSION" \
+            --source-repo "$GITHUB_REPOSITORY" \
+            --binary-repo "$BINARY_REPO"
 
-      - name: Publish the release
+      # Upload before publishing the tag: the manifest's download URLs have to resolve by the
+      # time a consumer can see that version.
+      - name: Attach the frameworks to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ steps.version.outputs.version }}" \
-            --title "${{ steps.version.outputs.version }}" \
-            --notes "Prebuilt DoopEditor XCFrameworks. Add the package with \`from: \"${{ steps.version.outputs.binary_tag }}\"\` -- see the \`binary\` branch." \
-            build/xcframeworks/*.xcframework.zip
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            # Releases are usually written by hand; add the assets, leave the notes alone.
+            # --clobber only replaces zips from an earlier failed run of this version, which
+            # the check above guarantees nothing has published yet.
+            gh release upload "$VERSION" build/xcframeworks/*.xcframework.zip --clobber
+          else
+            gh release create "$VERSION" --verify-tag --title "$VERSION" --generate-notes \
+              build/xcframeworks/*.xcframework.zip
+          fi
 
-      - name: Update the binary branch
+      - name: Publish to ${{ env.BINARY_REPO }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          # GITHUB_TOKEN can only write to this repository; this fine-grained token has
+          # Contents: read and write on doop-editor-binary only.
+          BINARY_REPO_TOKEN: ${{ secrets.BINARY_REPO_TOKEN }}
         run: |
-          set -euo pipefail
-          version="${{ steps.version.outputs.version }}"
-          binary_tag="${{ steps.version.outputs.binary_tag }}"
-
-          # git commit-tree needs a committer identity; runners have none configured.
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Build the commit with plumbing rather than a checkout, so nothing touches the
-          # working tree that still holds the freshly built frameworks.
-          package_blob=$(git hash-object -w build/binary-branch/Package.swift)
-          readme_blob=$(git hash-object -w build/binary-branch/README.md)
-
-          # -u so the file does not exist yet: an empty file is not a valid git index.
-          index=$(mktemp -u)
-          export GIT_INDEX_FILE="$index"
-          git update-index --add --cacheinfo "100644,$package_blob,Package.swift"
-          git update-index --add --cacheinfo "100644,$readme_blob,README.md"
-          tree=$(git write-tree)
-          unset GIT_INDEX_FILE
-
-          # Check for the branch explicitly: a plain `git fetch || true` would leave a stale
-          # FETCH_HEAD from the checkout above and parent the commit onto main.
-          if git ls-remote --exit-code --heads origin binary > /dev/null 2>&1; then
-            git fetch origin "binary:refs/remotes/origin/binary"
-            parent=$(git rev-parse refs/remotes/origin/binary)
-          else
-            parent=""
+          if [ -z "$BINARY_REPO_TOKEN" ]; then
+            echo "::error::The BINARY_REPO_TOKEN secret is not set"
+            exit 1
           fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          Scripts/publish-binary-package.sh "$VERSION" \
+            "https://x-access-token:${BINARY_REPO_TOKEN}@github.com/${BINARY_REPO}.git"
 
-          message="DoopEditor $version (prebuilt)"
-          if [ -n "$parent" ]; then
-            commit=$(git commit-tree "$tree" -p "$parent" -m "$message")
-          else
-            commit=$(git commit-tree "$tree" -m "$message")
-          fi
-
-          git push origin "$commit:refs/heads/binary"
-          git tag "$binary_tag" "$commit"
-          git push origin "$binary_tag"
-
-          echo "Consumers resolve: .package(url: \"https://github.com/${{ github.repository }}.git\", from: \"$binary_tag\")"
+      - name: Summary
+        run: |
+          {
+            echo "### DoopEditor $VERSION (prebuilt)"
+            echo
+            echo '```swift'
+            echo ".package(url: \"https://github.com/$BINARY_REPO.git\", from: \"${VERSION#v}\")"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
