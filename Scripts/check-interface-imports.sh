@@ -13,7 +13,12 @@
 # ones that ship. A hand-written list goes stale as soon as a dependency grows a new module:
 # swift-collections' DequeModule, for one, pulls in ContainersPreview.
 #
+# Every shipped Swift framework is checked, the third-party ones as well as our three: a
+# TextFormation or SwiftTreeSitter update whose interface picks up an absorbed module leaks just
+# the same. C and Obj-C frameworks have no Swift interface and are skipped.
+#
 # Usage: check-interface-imports.sh <frameworks-dir> <generated-module-maps-dir> <shipped-module>...
+# The shipped modules are the importable ones -- those whose frameworks ship with a module.
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
@@ -57,13 +62,19 @@ imported_modules() {
 }
 
 status=0
-for module in CodeEditTextView CodeEditLanguages CodeEditSourceEditor; do
+checked=0
+for module in "$@"; do
     framework="$FRAMEWORKS/$module.framework"
     if [ ! -d "$framework" ]; then
         echo "error: $module.framework not found in $FRAMEWORKS" >&2
         status=1
         continue
     fi
+    # Not a Swift framework: nothing to check.
+    if [ -z "$(find "$framework/" -name '*.swiftmodule' -print -quit)" ]; then
+        continue
+    fi
+    checked=$((checked + 1))
 
     found=0
     while IFS= read -r interface; do
@@ -77,7 +88,8 @@ for module in CodeEditTextView CodeEditLanguages CodeEditSourceEditor; do
         if [ -n "$leaked" ]; then
             echo "error: $module's public interface imports modules that don't ship:" >&2
             printf '%s' "$leaked" >&2
-            echo "  (mark the offending import \`internal import\` in the module's sources)" >&2
+            echo "  (mark the offending import \`internal import\` in the module's sources; for a" >&2
+            echo "  third-party module, keep its types out of our public API or ship the module)" >&2
             status=1
         fi
     done < <(find "$framework" -name '*.swiftinterface' ! -name '*.private.swiftinterface' \
@@ -90,6 +102,6 @@ for module in CodeEditTextView CodeEditLanguages CodeEditSourceEditor; do
 done
 
 if [ "$status" -eq 0 ]; then
-    echo "interface check passed: no public interface imports a module that doesn't ship"
+    echo "interface check passed: none of $checked Swift frameworks' public interfaces imports a module that doesn't ship"
 fi
 exit $status

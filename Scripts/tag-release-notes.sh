@@ -2,9 +2,14 @@
 #
 # Print the release notes for a version tag: the body of its annotated tag message.
 #
-# Tags here are written as `git tag -a v0.9.0 -m "v0.9.0" -m "- What changed"`, so the subject line
-# is usually just the version and the notes are the body. If the subject says something more than
-# the tag name, it is used as the first line of the notes. Signatures on signed tags are left out.
+# Tags here are written as `git tag -a --cleanup=verbatim v0.9.0 -m "v0.9.0" -m "- What changed"`,
+# so the subject line is usually just the version and the notes are the body. If the subject says
+# something more than the tag name, it is used as the first line of the notes. Signatures on signed
+# tags are left out.
+#
+# `--cleanup=verbatim` matters for Markdown: git's default cleanup deletes every line starting with
+# `#` -- `-m` messages included -- so a `## Changes` heading would never reach the tag, and nothing
+# here can bring it back.
 #
 # Prints nothing -- and exits 0 -- when there are no notes to take from the tag: a lightweight tag,
 # or an annotated one whose message is only the version. The caller decides on a fallback.

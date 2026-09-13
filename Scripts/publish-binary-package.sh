@@ -19,6 +19,7 @@ REMOTE="${2:?usage: publish-binary-package.sh <vX.Y.Z> <remote-url>}"
 
 cd "$(dirname "$0")/.."
 PACKAGE="$PWD/build/binary-package"
+SCRIPTS="$PWD/Scripts"
 
 for file in Package.swift README.md; do
     if [ ! -f "$PACKAGE/$file" ]; then
@@ -43,8 +44,16 @@ cd "$WORK"
 
 # Refuse to move an existing release. Its manifest pins checksums of zips that consumers have
 # already resolved, and the builds aren't reproducible, so a rebuild can never match them.
+#
+# The one exception is the tag already holding this very manifest: a re-run of a publish whose push
+# landed but whose job failed afterwards. The checksums in it are this build's, so the version is
+# published exactly as intended and there is nothing left to do.
 if git rev-parse --verify --quiet "refs/tags/$VERSION" > /dev/null; then
-    echo "error: $VERSION is already published to the binary package repository" >&2
+    if git show "refs/tags/$VERSION:Package.swift" 2>/dev/null | cmp -s - "$PACKAGE/Package.swift"; then
+        echo "$VERSION is already published to the binary package repository with this manifest; nothing to do"
+        exit 0
+    fi
+    echo "error: $VERSION is already published to the binary package repository from a different build" >&2
     exit 1
 fi
 
@@ -68,7 +77,7 @@ git commit --quiet -m "DoopEditor $VERSION"
 git tag -a "$VERSION" -m "DoopEditor $VERSION"
 
 # The newest stable version, now that this one is tagged locally. Prereleases never move `main`.
-newest_stable="$(git tag -l 'v*' --sort=-v:refname | grep -v -- '-' | head -n 1 || true)"
+newest_stable="$(git tag -l | "$SCRIPTS/newest-stable-version.sh")"
 
 if [ "$VERSION" = "$newest_stable" ]; then
     git push --quiet --atomic origin main "refs/tags/$VERSION"

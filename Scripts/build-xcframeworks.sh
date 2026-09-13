@@ -41,7 +41,10 @@ echo "==> Generating $PROJECT"
 Scripts/generate-binary-project.swift
 (cd BinaryDistribution && xcodegen generate --spec project.json)
 
-rm -rf "$ARCHIVE" "$OUTPUT"
+# DerivedData's Build directory goes too, so every build -- local rehearsals included -- compiles from
+# scratch and can't pick up products left behind by an earlier one. Its SourcePackages, Xcode's
+# checkouts of the grammar packages, are the slow part to recreate and are only ever read, so they stay.
+rm -rf "$ARCHIVE" "$OUTPUT" "$DERIVED/Build"
 mkdir -p "$OUTPUT"
 
 echo "==> Archiving $TOP_SCHEME"
@@ -56,13 +59,26 @@ xcodebuild archive \
     -archivePath "$ARCHIVE" \
     -derivedDataPath "$DERIVED" \
     > "$BUILD/archive.log" 2>&1 || {
-        echo "error: archiving failed; errors from $BUILD/archive.log:" >&2
-        grep -E "error:" "$BUILD/archive.log" | sort -u | head -20 >&2
+        echo "error: archiving failed; the full log is $BUILD/archive.log" >&2
+        errors="$(grep -E "error:" "$BUILD/archive.log" | sort -u | head -20 || true)"
+        if [ -n "$errors" ]; then
+            printf '%s\n' "$errors" >&2
+        else
+            # Not every failure prints an `error:` line (resolution, signing, a crashed tool).
+            tail -n 40 "$BUILD/archive.log" >&2
+        fi
         exit 1
     }
 
 INSTALLED="$ARCHIVE/Products/Library/Frameworks"
 DSYMS="$ARCHIVE/dSYMs"
+# This scheme's own intermediates. Everything below looks only in here, never across all of
+# DerivedData, so nothing from a different scheme's archive can be mistaken for part of this one.
+INTERMEDIATES="$DERIVED/Build/Intermediates.noindex/ArchiveIntermediates/$TOP_SCHEME"
+if [ ! -d "$INTERMEDIATES" ]; then
+    echo "error: $INTERMEDIATES not found -- has Xcode's DerivedData layout changed?" >&2
+    exit 1
+fi
 
 for module in "${EXPECTED[@]}"; do
     if [ ! -d "$INSTALLED/$module.framework" ]; then
@@ -75,7 +91,8 @@ echo "==> Resolving the framework closure"
 # The shipped set is discovered from the link graph, not hand-written -- see
 # Scripts/framework-closure.sh for why that matters.
 CLOSURE="$BUILD/closure.tsv"
-Scripts/framework-closure.sh "$INSTALLED" "$DERIVED/Build" "${EXPECTED[@]}" > "$CLOSURE"
+Scripts/framework-closure.sh "$INSTALLED" "$INTERMEDIATES/BuildProductsPath/Release" "${EXPECTED[@]}" \
+    > "$CLOSURE"
 printf '    %d frameworks: %s\n' \
     "$(wc -l < "$CLOSURE" | tr -d ' ')" \
     "$(cut -f1 "$CLOSURE" | tr '\n' ' ')"
@@ -94,22 +111,23 @@ is_binary_only() {
 # A shipped module's interface importing a module consumers can't import would force them to
 # resolve the grammar packages again, so this is a hard gate rather than a warning. Binary-only
 # frameworks ship, but without a module, so an interface may not import them either.
+#
+# The loops over $CLOSURE read it on fd 3 rather than stdin: xcodebuild, ditto and swift run inside
+# them, and any tool that reads stdin would swallow the remaining lines and silently ship fewer
+# frameworks.
 IMPORTABLE=()
-while IFS=$'\t' read -r module path deps; do
+while IFS=$'\t' read -r module path deps <&3; do
     is_binary_only "$path" || IMPORTABLE+=("$module")
-done < "$CLOSURE"
+done 3< "$CLOSURE"
 
 echo "==> Checking interface hygiene"
-MODULE_MAPS="$(find "$DERIVED/Build" -type d \
-    -path "*/ArchiveIntermediates/$TOP_SCHEME/IntermediateBuildFilesPath/GeneratedModuleMaps" \
-    -print -quit)"
-Scripts/check-interface-imports.sh "$INSTALLED" "${MODULE_MAPS:?no GeneratedModuleMaps in $DERIVED}" \
-    "${IMPORTABLE[@]}"
+Scripts/check-interface-imports.sh "$INSTALLED" \
+    "$INTERMEDIATES/IntermediateBuildFilesPath/GeneratedModuleMaps" "${IMPORTABLE[@]}"
 
 STAGED="$BUILD/staged"
 rm -rf "$STAGED"
 
-while IFS=$'\t' read -r module path deps; do
+while IFS=$'\t' read -r module path deps <&3; do
     echo "==> Packaging $module.xcframework"
 
     if is_binary_only "$path"; then
@@ -129,19 +147,19 @@ while IFS=$'\t' read -r module path deps; do
 
     (cd "$OUTPUT" && ditto -c -k --sequesterRsrc --keepParent \
         "$module.xcframework" "$module.xcframework.zip")
-done < "$CLOSURE"
+done 3< "$CLOSURE"
 
 echo "==> Checksums"
 TARGETS="$OUTPUT/binary-targets.txt"
 : > "$TARGETS"
-while IFS=$'\t' read -r module path deps; do
+while IFS=$'\t' read -r module path deps <&3; do
     checksum=$(swift package compute-checksum "$OUTPUT/$module.xcframework.zip")
     # module <checksum> <comma-separated direct dependencies>
     printf '%s %s %s\n' "$module" "$checksum" "$deps" >> "$TARGETS"
     printf '  %-30s %s\n' "$module" "$checksum"
-done < "$CLOSURE"
+done 3< "$CLOSURE"
 
 echo
 echo "XCFrameworks:  $OUTPUT"
 echo "Checksums:     $TARGETS"
-echo "Next:          Scripts/generate-binary-manifest.swift $VERSION"
+echo "Next:          Scripts/generate-binary-manifest.swift $VERSION && Scripts/verify-binary-consumption.sh"

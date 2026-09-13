@@ -50,7 +50,8 @@ Three properties of the sources make this work, and all three are easy to break 
    `import` for *every* module a source file imports, so a plain `import TreeSitterSwift` in
    `CodeLanguage.swift` would put all 40 grammar modules into the public
    `.swiftinterface` — consumers would then need every grammar package, defeating the point.
-   `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing.
+   `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing. It
+   checks every shipped Swift framework's interface, the third-party ones included.
    It doesn't keep a list of forbidden modules: it forbids every module the build compiled from
    a SwiftPM package (Xcode writes a module map for each into `GeneratedModuleMaps`) that doesn't
    ship with an importable module, and it recognises `@preconcurrency`, `@_exported`,
@@ -71,24 +72,32 @@ ship rather than being absorbed. None of them needed source changes.
 ## Building locally
 
 ```bash
-Scripts/build-xcframeworks.sh            # -> build/xcframeworks/*.xcframework{,.zip}
-Scripts/verify-binary-consumption.sh     # builds and runs a throwaway consumer package
+Scripts/build-xcframeworks.sh                  # -> build/xcframeworks/*.xcframework{,.zip}
+Scripts/generate-binary-manifest.swift v0.9.0  # -> build/binary-package/Package.swift
+Scripts/verify-binary-consumption.sh           # builds and runs each product as a consumer would
 ```
 
 `build-xcframeworks.sh` resolves the package, regenerates the XcodeGen spec from
 `Package.swift` and the committed `Package.resolved` -- resolving with
 `--force-resolved-versions`, so the binaries are built from exactly the versions pinned there, on
-any machine -- archives the whole graph in one pass, checks interface hygiene,
-resolves the framework closure, then packages and checksums everything. It records each
+any machine -- archives the whole graph in one pass from a clean build directory, checks interface
+hygiene, resolves the framework closure, then packages and checksums everything. It records each
 framework's direct dependencies next to its checksum, and
 `Scripts/generate-binary-manifest.swift` expands those into each product's target list — a
 `.binaryTarget` can't declare dependencies, so a product has to name every framework it needs,
 and a hand-maintained list would go stale.
 
-`verify-binary-consumption.sh` is the check that matters: it builds a throwaway package
-depending *only* on the XCFrameworks and runs it, which catches both a leaked interface import
-(the grammar modules aren't there, so resolution fails) and a missing runtime dependency or
-resource (it compiles a tree-sitter `Query` from a `.scm` file inside the framework bundle).
+Each build starts from an empty `build/DerivedData/Build`, so a local build is as clean as CI's.
+Only `build/DerivedData/SourcePackages`, Xcode's checkouts of the dependencies, is kept between
+runs.
+
+`verify-binary-consumption.sh` is the check that matters. It loads the generated `Package.swift`
+exactly as it will be published, then builds and runs a throwaway executable per product against
+a copy whose binary targets point at the local frameworks, each product on its own. That catches a
+broken manifest, a product that doesn't list every framework it needs (a missing module fails the
+build, a missing dylib fails the launch), a leaked interface import (the grammar modules aren't
+there, so the build fails), and a missing resource (it compiles a tree-sitter `Query` from a `.scm`
+file inside the framework bundle).
 
 One setting deserves care: `SKIP_INSTALL` and `BUILD_LIBRARY_FOR_DISTRIBUTION` are set **per
 target** in the generated spec, never on the `xcodebuild` command line. Command-line settings
@@ -116,11 +125,13 @@ come from the same build that produced the uploaded zips. Don't hand-edit one.
 
 - **Prepare release** runs only for a version tag push. It creates the draft release; see below.
 - **Build** runs on `macos-26` with read-only permissions. It verifies the source package, builds
-  the frameworks, runs the consumer check, generates the binary package, and uploads the zips and
-  generated package as an expiring workflow artifact.
+  the frameworks, generates the binary package, runs the consumer check against both, and uploads
+  the zips and generated package as an expiring workflow artifact. If it fails, `archive.log` is
+  kept as an artifact for 7 days.
 - **Publish** runs only for a release. It uploads exactly the artifact Build verified, publishes the
   release, and publishes the binary package. It has the write permissions and the
-  `BINARY_REPO_TOKEN` secret that Build never sees.
+  `BINARY_REPO_TOKEN` secret that Build never sees. Only one Publish runs at a time, across all
+  versions, so two releases can't race each other to "Latest" or to doop-editor-binary's `main`.
 
 Runs that only build:
 
@@ -165,16 +176,24 @@ Releases are only created from version tags. Push an annotated `vX.Y.Z` tag; its
 the release notes:
 
 ```bash
-git tag -a v0.9.0 -m "v0.9.0" -m "- What changed"
+git tag -a --cleanup=verbatim v0.9.0 -m "v0.9.0" -m "## Changes" -m "- What changed"
 git push origin v0.9.0
 ```
+
+Keep `--cleanup=verbatim` if the notes use Markdown headings. By default git deletes every line of a
+tag message that starts with `#`, even one given with `-m`, and the heading is lost before the
+workflow ever sees it. (Don't combine it with an editor-written message: verbatim also keeps git's
+own `#` instruction lines. Use `-m` or `-F notes.md`.)
 
 Don't create the release by hand. This repository has **immutable releases** enabled: once a
 release is published its assets can't be added or changed, so the workflow assembles the release
 as a draft and publishes it only when it's complete.
 
 1. **Prepare release**: if the tag already has a *published* release, the run stops and does
-   nothing further. Otherwise it creates a draft titled with the tag, with the tag message's body
+   nothing further -- with a warning if that release has XCFrameworks but doop-editor-binary has no
+   tag for it, since that version is half-published. If doop-editor-binary already has the tag
+   while this repository has no published release, it fails: that's out of step and needs a person
+   to look. Otherwise it creates a draft titled with the tag, with the tag message's body
    as notes (`Scripts/tag-release-notes.sh`). If the tag has no usable message -- a lightweight tag,
    or a message that's only the version -- it uses GitHub's generated notes instead. `-rc.1` style
    tags become prereleases. A draft left behind by an earlier attempt is reused as-is, including
@@ -187,7 +206,8 @@ as a draft and publishes it only when it's complete.
 4. **Publish** then commits the generated `Package.swift` and README to
    [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with the
    same version (`Scripts/publish-binary-package.sh`). That repository's `main` only moves to the
-   newest stable version; an older patch or a prerelease gets just its tag.
+   newest stable version; an older patch or a prerelease gets just its tag. "Newest stable" means
+   the same thing in both places: `Scripts/newest-stable-version.sh`.
 
 The release notes can be edited on the draft while the build runs, or on the published release
 afterwards -- notes stay editable on an immutable release; only its assets and tag are fixed.
@@ -203,14 +223,31 @@ anonymously.
 
 ### When something fails
 
-- **Build fails**: the draft stays. Fix the problem and use "Re-run all jobs" -- Prepare finds the
-  draft and reuses it.
+- **Build fails** and the draft stays. How to retry depends on the cause:
+  - *Something transient* (a network error, a flaky runner): use "Re-run all jobs". Prepare finds
+    the draft and reuses it.
+  - *A problem in the source or the scripts*: a re-run won't help, since re-runs always build the
+    commit the run started with. Commit the fix, then move the tag to it -- only a published release
+    fixes its tag, so the draft doesn't stand in the way:
+
+    ```bash
+    git tag -f -a --cleanup=verbatim v0.9.0 -m "v0.9.0" -m "- What changed"
+    git push --force origin v0.9.0
+    ```
+
+    The new run reuses the draft, *including its notes*, which still come from the first tag's
+    message. Edit them on the draft if they changed, or delete the draft before pushing the tag
+    again to have them taken from the new message.
 - **Publish fails**: use "Re-run failed jobs". It reuses the same artifact, kept 30 days for this,
   so nothing is rebuilt. If the release was already published by the failed attempt, the re-run
-  checks that its assets match the artifact and carries on to doop-editor-binary. The usual cause is
+  checks that its assets match the artifact and carries on to doop-editor-binary. If even the push
+  to doop-editor-binary had landed, the re-run finds the same manifest there and finishes. The usual cause is
   an expired `BINARY_REPO_TOKEN` -- a fine-grained token with **Contents: Read and write** on
   `doop-editor-binary` alone, since the workflow's own `GITHUB_TOKEN` can only write to this
   repository. Renew it, then re-run.
+- **Publish is cancelled** while waiting: GitHub keeps only one Publish waiting at a time, so a
+  third release pushed at the same moment cancels the waiting one. "Re-run failed jobs" on that run
+  publishes it.
 - Don't use "Re-run all jobs" once the release is published: Prepare sees the published release and
   stops, as it does for any published release, so the binary package would never be pushed.
 
@@ -220,8 +257,8 @@ To rehearse a release without pushing anywhere:
 
 ```bash
 Scripts/build-xcframeworks.sh v0.9.0
-Scripts/verify-binary-consumption.sh
 Scripts/generate-binary-manifest.swift v0.9.0
+Scripts/verify-binary-consumption.sh
 git init --bare /tmp/doop-editor-binary.git
 Scripts/publish-binary-package.sh v0.9.0 /tmp/doop-editor-binary.git
 ```

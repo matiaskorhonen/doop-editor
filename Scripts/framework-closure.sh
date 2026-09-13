@@ -8,7 +8,8 @@
 # `CodeEditTextView` needs it and promoted once `CodeEditSourceEditor` needs it as well.
 # Discovering the set here means such a change breaks the build rather than the consumer.
 #
-# Usage: framework-closure.sh <installed-dir> <derived-build-dir> <root-module>...
+# Usage: framework-closure.sh <installed-dir> <build-products-dir> <root-module>...
+# <build-products-dir> is the archive's own BuildProductsPath/Release directory.
 # Prints one tab-separated `name<TAB>path<TAB>comma,separated,deps` line per framework, with
 # `-` for no dependencies.
 #
@@ -16,12 +17,12 @@
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
-    echo "usage: framework-closure.sh <installed-dir> <derived-build-dir> <root-module>..." >&2
+    echo "usage: framework-closure.sh <installed-dir> <build-products-dir> <root-module>..." >&2
     exit 2
 fi
 
 INSTALLED="$1"
-DERIVED="$2"
+PRODUCTS="$2"
 shift 2
 
 # Resolve symlinks throughout: Xcode's build products directory is full of symlinks into
@@ -38,10 +39,8 @@ locate() {
     fi
     # SwiftPM package products keep SKIP_INSTALL=YES, so a promoted one never reaches the
     # archive and has to be picked out of the build products instead.
-    local candidate
-    candidate="$(find "$DERIVED" -path "*/BuildProductsPath/Release/$name.framework" -print -quit 2>/dev/null)"
-    if [ -n "$candidate" ] && [ -d "$candidate" ]; then
-        realpath_dir "$candidate"
+    if [ -d "$PRODUCTS/$name.framework" ]; then
+        realpath_dir "$PRODUCTS/$name.framework"
     fi
 }
 

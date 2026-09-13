@@ -35,6 +35,12 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    # An explicit `bash` runs steps with `-eo pipefail`; the implicit default has no pipefail, so a
+    # failing command at the start of a pipeline would go unnoticed.
+    shell: bash
+
 concurrency:
   # One group per release tag, never cancelled, so two runs for the same tag can't race. Build-only
   # runs are grouped per ref and superseded by newer ones.
@@ -72,30 +78,56 @@ jobs:
             exit 0
           fi
 
+          # Whether doop-editor-binary has the tag: 0 if it does, 2 if it doesn't (`--exit-code`),
+          # anything else if the check itself failed.
+          binary_tag() {
+            local status=0
+            git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
+              "refs/tags/$TAG" > /dev/null || status=$?
+            return "$status"
+          }
+
+          draft=false
           if state="$(gh release view "$TAG" --json isDraft --jq .isDraft 2> gh-error.txt)"; then
             if [ "$state" = "false" ]; then
               echo "::notice::$TAG already has a published release; nothing to do"
+              # Nothing is done either way, but a release that got its XCFrameworks and never
+              # reached doop-editor-binary is half-published, and shouldn't pass as a green run.
+              zips="$(gh release view "$TAG" --json assets \
+                        --jq '[.assets[].name | select(endswith(".xcframework.zip"))] | length')"
+              status=0
+              binary_tag || status=$?
+              if [ "$zips" -gt 0 ] && [ "$status" -eq 2 ]; then
+                echo "::warning::$TAG's release has XCFrameworks, but $BINARY_REPO has no $TAG tag, so its binary package was never published. Use \"Re-run failed jobs\" on the run that published the release."
+              fi
               echo "release=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
+            draft=true
+          elif ! grep -qi "release not found" gh-error.txt; then
+            cat gh-error.txt >&2
+            exit 1
+          fi
+
+          # Publish always publishes the release before doop-editor-binary, so a version without a
+          # published release here can't have reached doop-editor-binary. If it did -- say a
+          # published release was deleted and a draft made in its place -- this build's checksums
+          # would never match the manifest consumers already have, so it needs a person to look.
+          status=0
+          binary_tag || status=$?
+          case "$status" in
+            0) echo "::error::$TAG is already published to $BINARY_REPO, but has no published release here"
+               exit 1 ;;
+            2) ;;
+            *) echo "::error::Could not check $BINARY_REPO for $TAG (git ls-remote exited $status)"
+               exit 1 ;;
+          esac
+
+          if [ "$draft" = "true" ]; then
             # A draft left behind by an earlier attempt, e.g. one whose build failed. Reuse it
             # as-is, including any notes edited on it since.
             echo "Reusing the existing draft release for $TAG"
-          elif grep -qi "release not found" gh-error.txt; then
-            # A release that was never published can't have been published to doop-editor-binary
-            # either; if it was, something is out of step and needs a person to look. `--exit-code`
-            # exits 2 when the tag isn't there; anything else means the check itself failed.
-            binary_tag=0
-            git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
-              "refs/tags/$TAG" > /dev/null || binary_tag=$?
-            case "$binary_tag" in
-              0) echo "::error::$TAG is already published to $BINARY_REPO, but has no release here"
-                 exit 1 ;;
-              2) ;;
-              *) echo "::error::Could not check $BINARY_REPO for $TAG (git ls-remote exited $binary_tag)"
-                 exit 1 ;;
-            esac
-
+          else
             # Fetch the tag object itself: the checkout's tag ref isn't reliably the annotated tag,
             # and its message is what the notes come from.
             git fetch --no-tags --depth=1 origin "+refs/tags/$TAG:refs/tags/$TAG"
@@ -113,9 +145,6 @@ jobs:
               args+=(--generate-notes)
             fi
             gh release create "$TAG" "${args[@]}"
-          else
-            cat gh-error.txt >&2
-            exit 1
           fi
 
           echo "release=true" >> "$GITHUB_OUTPUT"
@@ -198,14 +227,16 @@ jobs:
       - name: Build XCFrameworks
         run: Scripts/build-xcframeworks.sh "${{ steps.mode.outputs.version }}"
 
-      - name: Verify XCFrameworks as a consumer
-        run: Scripts/verify-binary-consumption.sh
-
       - name: Generate binary package
         run: |
           Scripts/generate-binary-manifest.swift "${{ steps.mode.outputs.version }}" \
             --source-repo "$GITHUB_REPOSITORY" \
             --binary-repo "$BINARY_REPO"
+
+      # Builds and runs each product of the generated package against these frameworks, so a
+      # broken manifest fails here rather than after it is published.
+      - name: Verify binary package as a consumer
+        run: Scripts/verify-binary-consumption.sh
 
       # The zips rather than the .xcframework directories: artifact uploads don't keep file
       # permissions, while ditto's zips carry the framework binaries' executable bits and
@@ -227,11 +258,30 @@ jobs:
           # after renewing BINARY_REPO_TOKEN -- without rebuilding.
           retention-days: ${{ steps.mode.outputs.release == 'true' && 30 || 7 }}
 
+      # The archive log is the only record of a failed xcodebuild, and the runner is gone afterwards.
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          # Per attempt, so a re-run's log doesn't collide with an earlier attempt's.
+          name: xcframeworks-build-log-${{ github.run_attempt }}
+          path: build/archive.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   publish:
     name: Publish
     needs: [prepare, build]
     if: needs.prepare.outputs.release == 'true'
     runs-on: ubuntu-latest
+    # One Publish at a time across all versions. Releases of different tags otherwise run in
+    # parallel, and two of them would race: each works out "Latest" without seeing the other, and
+    # each builds doop-editor-binary's main on the clone it made, so one push is rejected.
+    # GitHub keeps only one waiting job per group, so a third release published at the same moment
+    # cancels the waiting one; "Re-run failed jobs" on that run publishes it.
+    concurrency:
+      group: xcframeworks-publish
+      cancel-in-progress: false
     permissions:
       contents: write
     env:
@@ -262,13 +312,15 @@ jobs:
             gh release view "$VERSION" --json assets | Scripts/verify-release-assets.sh
 
             # Publishing a draft marks it "Latest" by default, which would be wrong for a patch to
-            # an older version or a prerelease. Only the newest stable version is the latest.
+            # an older version or a prerelease. Only the newest stable version is the latest. The
+            # list is fetched on its own so that a failure to get it fails the step, rather than
+            # leaving this version as the only candidate.
+            published="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1000 \
+                           --json tagName --jq '.[].tagName')"
+            newest="$(printf '%s\n%s\n' "$published" "$VERSION" | Scripts/newest-stable-version.sh)"
             latest=false
-            if [[ "$VERSION" != *-* ]]; then
-              newest="$({ gh release list --exclude-drafts --exclude-pre-releases --limit 1000 \
-                            --json tagName --jq '.[].tagName'; echo "$VERSION"; } \
-                        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
-              [ "$newest" = "$VERSION" ] && latest=true
+            if [ "$newest" = "$VERSION" ]; then
+              latest=true
             fi
             gh release edit "$VERSION" --draft=false --latest="$latest"
           else
@@ -289,8 +341,7 @@ jobs:
             echo "::error::The BINARY_REPO_TOKEN secret is not set"
             exit 1
           fi
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The script commits as github-actions[bot] when no git identity is configured.
           Scripts/publish-binary-package.sh "$VERSION" \
             "https://x-access-token:${BINARY_REPO_TOKEN}@github.com/${BINARY_REPO}.git"
 
