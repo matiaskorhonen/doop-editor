@@ -90,8 +90,36 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # SwiftPM's shared mirrors of the dependency repositories. Nearly all of a cold build's
+      # dependency time is fetching the tree-sitter grammar repos; with these restored and
+      # versions pinned by Package.resolved, SwiftPM takes every package from the mirrors
+      # without contacting the remote (measured: ~1100s of fetching down to ~2s).
+      # Creating the working copies still takes a while, and no cache helps with that.
+      #
+      # Safe to restore for a release: SwiftPM checks out the exact revisions Package.resolved
+      # pins. The key hashes that file, so it has to be committed; restore-keys fall back to
+      # an older set of mirrors, which SwiftPM then tops up with only what's missing.
+      - name: Restore SwiftPM repository cache
+        id: swiftpm-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm/repositories
+          key: swiftpm-repositories-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            swiftpm-repositories-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Build and test source package
-        run: swift build && swift test
+        run: swift build --force-resolved-versions && swift test --force-resolved-versions
+
+      # Saved as soon as the mirrors are complete, so a later failure doesn't lose them. Not
+      # from release runs: a cache saved on a tag is only visible to that tag, so it would take
+      # up quota without ever being restored.
+      - name: Save SwiftPM repository cache
+        if: steps.swiftpm-cache.outputs.cache-hit != 'true' && steps.mode.outputs.publish != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm/repositories
+          key: ${{ steps.swiftpm-cache.outputs.cache-primary-key }}
 
       - name: Build XCFrameworks
         run: Scripts/build-xcframeworks.sh "${{ steps.mode.outputs.version }}"

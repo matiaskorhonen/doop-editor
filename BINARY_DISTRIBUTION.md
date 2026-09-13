@@ -72,8 +72,9 @@ Scripts/verify-binary-consumption.sh     # builds and runs a throwaway consumer 
 ```
 
 `build-xcframeworks.sh` resolves the package, regenerates the XcodeGen spec from
-`Package.swift` and `Package.resolved` (so the binaries are pinned to the same grammar
-revisions as the source build), archives the whole graph in one pass, checks interface hygiene,
+`Package.swift` and the committed `Package.resolved` -- resolving with
+`--force-resolved-versions`, so the binaries are built from exactly the versions pinned there, on
+any machine -- archives the whole graph in one pass, checks interface hygiene,
 resolves the framework closure, then packages and checksums everything. It records each
 framework's direct dependencies next to its checksum, and
 `Scripts/generate-binary-manifest.py` expands those into each product's target list — a
@@ -121,6 +122,33 @@ Runs that don't publish:
 
 Their artifact, `doop-editor-xcframeworks-<short sha>`, expires after 7 days, and its manifest
 uses a placeholder `v0.0.0-ci.<run>` version.
+
+### Where the time goes, and the cache
+
+A cold build takes about 45 minutes, and almost none of it is compiling. Measured on
+`macos-26`: roughly 19 minutes fetching the 44 dependency repositories -- the tree-sitter
+grammars carry large generated parsers, so their git histories are big -- about 10 minutes
+creating SwiftPM's 6.7 GB of working copies, and most of the 13-minute `xcodebuild archive`
+creating Xcode's own copy of the grammar checkouts. `swift build`, `swift test` and the archive's
+actual compilation are a few minutes between them.
+
+The build job caches SwiftPM's repository mirrors (`~/Library/Caches/org.swift.swiftpm`,
+~2.7 GB), keyed on `Package.resolved`. The cache only removes the fetch, and only because
+`Package.resolved` is committed and the build uses `--force-resolved-versions`. Without pinned
+versions SwiftPM updates every mirror from its remote during resolution: a fully warm cache still
+took 25 minutes locally, against 7.7 minutes with pinned versions, where all 44 packages came
+from the mirrors in 2 seconds. The working copies are unavoidable.
+
+`.build` and Xcode's `DerivedData` are deliberately not cached. Released frameworks should come
+from a clean build rather than whatever a previous run left behind, and at 6.7 GB of checkouts
+each they would take most of the repository's 10 GB cache allowance.
+
+What a run can restore is limited by GitHub's cache scoping: a run sees caches from its own
+branch or tag and from the default branch. Repeated pushes to a branch reuse that branch's cache.
+A release tag can only use one saved on `main` -- which happens when a run of this workflow on
+`main` misses the cache -- and entries unused for 7 days are evicted, so a release after a quiet
+spell builds cold. That's slower, not wrong. Release runs don't save the cache, since a cache
+saved on a tag is visible to that tag alone.
 
 ## Releasing
 

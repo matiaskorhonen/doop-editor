@@ -32,7 +32,10 @@ EXPECTED=(CodeEditTextView CodeEditLanguages CodeEditSourceEditor)
 echo "==> Resolving package dependencies"
 # The third-party framework targets build straight out of .build/checkouts, and the grammar
 # packages are pinned to the revisions in Package.resolved, so resolve before generating.
-swift package resolve
+# --force-resolved-versions builds exactly what Package.resolved pins, and fails rather than
+# silently picking newer versions when it's out of date with Package.swift -- run
+# `swift package update` (or `resolve`) and commit the result.
+swift package --force-resolved-versions resolve
 
 echo "==> Generating $PROJECT"
 python3 Scripts/generate-binary-project.py

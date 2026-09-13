@@ -41,6 +41,11 @@ swift test                # run all tests
 swift test --filter CodeEditLanguagesTests   # run one test target
 ```
 
+`Package.resolved` is committed. The XCFramework build and its CI resolve with
+`--force-resolved-versions`, so after changing a dependency in `Package.swift`, run
+`swift package resolve` (or `swift package update`) and commit the updated `Package.resolved`
+alongside it.
+
 The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
 
 ## Binary distribution
