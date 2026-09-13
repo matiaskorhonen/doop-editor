@@ -105,16 +105,33 @@ are **not** bit-reproducible -- two runs of the same commit produce different ch
 timestamps and dSYM UUIDs end up in the archives -- so the checksums in the manifest always
 come from the same build that produced the uploaded zips. Don't hand-edit one.
 
+## CI
+
+`.github/workflows/release-binary.yml` has two jobs. **build** runs on `macos-26` with read-only
+permissions: it verifies the source package, builds the frameworks, runs the consumer check,
+generates the binary package, and uploads the zips and generated package as an expiring workflow
+artifact. **publish** runs only for a release, with the write permissions and the
+`BINARY_REPO_TOKEN` secret the build job never sees, and publishes exactly the artifact that
+build verified.
+
+Runs that don't publish:
+
+- a push to any branch that changes the workflow file;
+- a manual run ("Run workflow") with the version left empty, which builds the chosen branch.
+
+Their artifact, `doop-editor-xcframeworks-<short sha>`, expires after 7 days, and its manifest
+uses a placeholder `v0.0.0-ci.<run>` version.
+
 ## Releasing
 
 Create the release as usual -- for example `gh release create v0.9.0 --notes "..."`, or push a
-`vX.Y.Z` tag. `.github/workflows/release-binary.yml` then:
+`vX.Y.Z` tag. A manual run with the version filled in does the same for an existing tag. Then:
 
-1. refuses to continue if that version is already published to `doop-editor-binary`;
-2. verifies the source package, builds the frameworks and runs the consumer check;
-3. attaches the zips to the release in this repository -- into your existing release if there
-   is one, leaving its notes alone, otherwise creating it with generated notes;
-4. commits the generated `Package.swift` and README to
+1. **build** refuses to start if that version is already published to `doop-editor-binary`,
+   then builds and verifies as above;
+2. **publish** attaches the zips to the release in this repository -- into your existing release
+   if there is one, leaving its notes alone, otherwise creating it with generated notes;
+3. **publish** commits the generated `Package.swift` and README to
    [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with
    the same version, pushing the commit and tag atomically
    (`Scripts/publish-binary-package.sh`).
@@ -127,13 +144,13 @@ resolves whichever it prefers rather than reporting the ambiguity.
 The zips are uploaded before the tag is published because the manifest's download URLs have
 to resolve by the time a consumer can see the version. A published version is never rebuilt:
 its manifest pins the checksums of zips consumers have already resolved, and rebuilds don't
-reproduce them. If a run fails after the upload but before publishing, re-running it is safe --
-it replaces the zips and publishes a manifest matching the new ones.
+reproduce them.
 
-Pushing to `doop-editor-binary` needs the `BINARY_REPO_TOKEN` secret: a fine-grained token with
-**Contents: Read and write** on that repository alone, since the workflow's own `GITHUB_TOKEN`
-can only write to this one. When it expires, the source release still goes out but the publish
-step fails -- renew it and re-run the workflow for that version.
+If **publish** fails, use "Re-run failed jobs": it republishes the same artifact without
+rebuilding, so the checksums still match. A release run's artifact is kept for 30 days for this.
+The usual cause is an expired `BINARY_REPO_TOKEN` -- a fine-grained token with **Contents: Read
+and write** on `doop-editor-binary` alone, since the workflow's own `GITHUB_TOKEN` can only write
+to this repository. Renew it, then re-run.
 
 To rehearse a release locally without pushing anywhere:
 

@@ -1,55 +1,89 @@
 name: Release binary frameworks
 
-# For a `vX.Y.Z` tag: build the XCFrameworks, attach them to that version's release in this
-# repository, then publish a Package.swift pointing at them to doop-editor-binary under the same
-# tag. Consumers choose source or binary by package URL; each repository has one tag per version.
+# Builds the XCFrameworks and keeps them as an expiring workflow artifact. For a `vX.Y.Z` tag it
+# then also publishes them: the zips go on that version's release in this repository, and a
+# Package.swift pointing at them goes to doop-editor-binary under the same tag.
+#
+# Changes to this workflow build without publishing, so it can be exercised safely. A manual run
+# with no version does the same for whatever ref it is dispatched on.
 on:
   push:
     tags:
       - "v*"
+    branches:
+      - "**"
+    # Only applies to the branch pushes: GitHub doesn't evaluate path filters for tag pushes,
+    # so every release tag still builds.
+    paths:
+      - ".github/workflows/release-binary.yml"
   workflow_dispatch:
     inputs:
       version:
-        description: "Existing tag to build, e.g. v0.9.0"
-        required: true
+        description: "Existing tag to build and publish, e.g. v0.9.0. Leave empty to build without publishing."
+        required: false
 
+# Jobs opt into more below; building never needs to write anything.
 permissions:
-  contents: write
+  contents: read
 
-# Two runs for one version would race to publish it.
 concurrency:
-  group: release-binary-${{ inputs.version || github.ref_name }}
-  cancel-in-progress: false
+  # A tag push and a manual run for the same version share a group, so they can't race to
+  # publish it. Build-only runs are superseded by newer pushes; releases are never cancelled.
+  group: release-binary-${{ inputs.version && format('refs/tags/{0}', inputs.version) || github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.version }}
 
 env:
-  VERSION: ${{ inputs.version || github.ref_name }}
+  # Empty unless this run publishes.
+  RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.version }}
   BINARY_REPO: matiaskorhonen/doop-editor-binary
 
 jobs:
-  release:
-    runs-on: macos-15
+  build:
+    runs-on: macos-26
+    outputs:
+      publish: ${{ steps.mode.outputs.publish }}
+      version: ${{ steps.mode.outputs.version }}
+      artifact: ${{ steps.mode.outputs.artifact }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          # A manual run starts from the branch it was dispatched on; build the tag instead.
-          ref: refs/tags/${{ env.VERSION }}
+          # A manual release run starts from the branch it was dispatched on; build the tag.
+          ref: ${{ env.RELEASE_VERSION && format('refs/tags/{0}', env.RELEASE_VERSION) || '' }}
           # The nvim-treesitter submodule is a query reference, not a build input.
           submodules: false
 
-      - name: Check the version
+      - name: Determine what this run does
+        id: mode
         run: |
-          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::$VERSION is not a vX.Y.Z tag"
-            exit 1
+          if [ -n "$RELEASE_VERSION" ]; then
+            if ! [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::$RELEASE_VERSION is not a vX.Y.Z tag"
+              exit 1
+            fi
+            # Fail before a long build rather than after it. Once a version is published, its
+            # manifest pins the checksums of the uploaded zips, and rebuilds are not
+            # reproducible -- so re-uploading would break every consumer of that version.
+            if git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
+                 "refs/tags/$RELEASE_VERSION" > /dev/null; then
+              echo "::error::$RELEASE_VERSION is already published to $BINARY_REPO"
+              exit 1
+            fi
+            version="$RELEASE_VERSION"
+            publish=true
+          else
+            # Not a real version: only used to exercise the manifest generator.
+            version="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
+            publish=false
           fi
-          # Fail before a long build rather than after it. Once a version is published, its
-          # manifest pins the checksums of the uploaded zips, and rebuilds are not
-          # reproducible -- so re-uploading would break every consumer of that version.
-          if git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
-               "refs/tags/$VERSION" > /dev/null; then
-            echo "::error::$VERSION is already published to $BINARY_REPO"
-            exit 1
-          fi
+          {
+            echo "version=$version"
+            echo "publish=$publish"
+            echo "artifact=doop-editor-xcframeworks-${RELEASE_VERSION:-${GITHUB_SHA:0:7}}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $version (publish: $publish)"
+
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -58,27 +92,67 @@ jobs:
         run: swift build && swift test
 
       - name: Build XCFrameworks
-        run: Scripts/build-xcframeworks.sh "$VERSION"
+        run: Scripts/build-xcframeworks.sh "${{ steps.mode.outputs.version }}"
 
       - name: Verify the frameworks from a consumer's side
         run: Scripts/verify-binary-consumption.sh
 
       - name: Generate the binary package
         run: |
-          Scripts/generate-binary-manifest.py "$VERSION" \
+          Scripts/generate-binary-manifest.py "${{ steps.mode.outputs.version }}" \
             --source-repo "$GITHUB_REPOSITORY" \
             --binary-repo "$BINARY_REPO"
+
+      # The zips rather than the .xcframework directories: artifact uploads don't keep file
+      # permissions, while ditto's zips carry the framework binaries' executable bits and
+      # symlinks intact -- and they are exactly the files the manifest's checksums cover.
+      # The artifact's root is `build/`, the common ancestor of these paths, which is what
+      # the publish job downloads back into.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.mode.outputs.artifact }}
+          path: |
+            build/xcframeworks/*.xcframework.zip
+            build/xcframeworks/binary-targets.txt
+            build/binary-package/
+          if-no-files-found: error
+          # Already compressed.
+          compression-level: 0
+          # A release run keeps its artifact long enough to re-run a failed publish job -- say
+          # after renewing BINARY_REPO_TOKEN -- without rebuilding.
+          retention-days: ${{ steps.mode.outputs.publish == 'true' && 30 || 7 }}
+
+  publish:
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.build.outputs.version }}
+          submodules: false
+
+      # Publish exactly what the build job verified, rather than rebuilding here.
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: build
 
       # Upload before publishing the tag: the manifest's download URLs have to resolve by the
       # time a consumer can see that version.
       - name: Attach the frameworks to the release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           if gh release view "$VERSION" > /dev/null 2>&1; then
             # Releases are usually written by hand; add the assets, leave the notes alone.
-            # --clobber only replaces zips from an earlier failed run of this version, which
-            # the check above guarantees nothing has published yet.
+            # --clobber only replaces zips from an earlier attempt of this same run, which the
+            # build job's check guarantees nothing has published yet.
             gh release upload "$VERSION" build/xcframeworks/*.xcframework.zip --clobber
           else
             gh release create "$VERSION" --verify-tag --title "$VERSION" --generate-notes \
