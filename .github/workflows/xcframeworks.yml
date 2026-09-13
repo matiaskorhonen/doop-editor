@@ -4,8 +4,9 @@ name: XCFrameworks
 # then also publishes them: the zips go on that version's release in this repository, and a
 # Package.swift pointing at them goes to doop-editor-binary under the same tag.
 #
-# Changes to this workflow build without publishing, so it can be exercised safely. A manual run
-# with no version does the same for whatever ref it is dispatched on.
+# Changes to what the build is made from -- this workflow, the build scripts, or the pinned
+# dependency versions -- build without publishing, so they're exercised before the next release
+# relies on them. A manual run with no version does the same for whatever ref it is dispatched on.
 on:
   push:
     tags:
@@ -16,6 +17,10 @@ on:
     # so every release tag still builds.
     paths:
       - ".github/workflows/xcframeworks.yml"
+      - "Scripts/**"
+      # Also saves the SwiftPM cache under the new key when this lands on main, which is where
+      # release tags can restore it from.
+      - "Package.resolved"
   workflow_dispatch:
     inputs:
       version:

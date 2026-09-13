@@ -117,7 +117,8 @@ build verified.
 
 Runs that don't publish:
 
-- a push to any branch that changes the workflow file;
+- a push to any branch that changes the workflow file, anything under `Scripts/`, or
+  `Package.resolved`;
 - a manual run ("Run workflow") with the version left empty, which builds the chosen branch or
   tag. Only a tag *push*, or a manual run naming a version, publishes -- starting a manual run
   from a tag doesn't.
@@ -147,9 +148,10 @@ each they would take most of the repository's 10 GB cache allowance.
 
 What a run can restore is limited by GitHub's cache scoping: a run sees caches from its own
 branch or tag and from the default branch. Repeated pushes to a branch reuse that branch's cache.
-A release tag can only use one saved on `main` -- which happens when a run of this workflow on
-`main` misses the cache -- and entries unused for 7 days are evicted, so a release after a quiet
-spell builds cold. That's slower, not wrong. Release runs don't save the cache, since a cache
+A release tag can only use one saved on `main`. That happens when a build on `main` misses the
+cache -- including every push to `main` that changes `Package.resolved`, which saves the cache under
+the new key before a release needs it. Entries unused for 7 days are evicted, though, so a release
+after a quiet spell builds cold. That's slower, not wrong. Release runs don't save the cache, since a cache
 saved on a tag is visible to that tag alone.
 
 ## Releasing
