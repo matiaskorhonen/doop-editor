@@ -129,7 +129,7 @@ jobs:
 
       - name: Generate binary package
         run: |
-          Scripts/generate-binary-manifest.py "${{ steps.mode.outputs.version }}" \
+          Scripts/generate-binary-manifest.swift "${{ steps.mode.outputs.version }}" \
             --source-repo "$GITHUB_REPOSITORY" \
             --binary-repo "$BINARY_REPO"
 

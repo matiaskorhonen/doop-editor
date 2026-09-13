@@ -4,7 +4,7 @@
 #
 # Produces one universal (arm64 + x86_64) macOS XCFramework per shipped module under
 # `build/xcframeworks`, plus a zip and SwiftPM checksum for each, and the dependency graph
-# that Scripts/generate-binary-manifest.py turns into the doop-editor-binary Package.swift.
+# that Scripts/generate-binary-manifest.swift turns into the doop-editor-binary Package.swift.
 #
 # Usage: Scripts/build-xcframeworks.sh [version]
 set -euo pipefail
@@ -38,7 +38,7 @@ echo "==> Resolving package dependencies"
 swift package --force-resolved-versions resolve
 
 echo "==> Generating $PROJECT"
-python3 Scripts/generate-binary-project.py
+Scripts/generate-binary-project.swift
 (cd BinaryDistribution && xcodegen generate --spec project.yml)
 
 rm -rf "$ARCHIVE" "$OUTPUT"
@@ -78,9 +78,9 @@ Scripts/check-interface-imports.sh "$INSTALLED"
 
 echo "==> Resolving the framework closure"
 # The shipped set is discovered from the link graph, not hand-written -- see
-# Scripts/framework-closure.py for why that matters.
+# Scripts/framework-closure.sh for why that matters.
 CLOSURE="$BUILD/closure.tsv"
-python3 Scripts/framework-closure.py "$INSTALLED" "$DERIVED/Build" "${EXPECTED[@]}" > "$CLOSURE"
+Scripts/framework-closure.sh "$INSTALLED" "$DERIVED/Build" "${EXPECTED[@]}" > "$CLOSURE"
 printf '    %d frameworks: %s\n' \
     "$(wc -l < "$CLOSURE" | tr -d ' ')" \
     "$(cut -f1 "$CLOSURE" | tr '\n' ' ')"
@@ -130,4 +130,4 @@ done < "$CLOSURE"
 echo
 echo "XCFrameworks:  $OUTPUT"
 echo "Checksums:     $TARGETS"
-echo "Next:          Scripts/generate-binary-manifest.py $VERSION"
+echo "Next:          Scripts/generate-binary-manifest.swift $VERSION"

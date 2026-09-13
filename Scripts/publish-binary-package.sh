@@ -20,7 +20,7 @@ PACKAGE="$PWD/build/binary-package"
 
 for file in Package.swift README.md; do
     if [ ! -f "$PACKAGE/$file" ]; then
-        echo "error: $PACKAGE/$file not found -- run Scripts/generate-binary-manifest.py" >&2
+        echo "error: $PACKAGE/$file not found -- run Scripts/generate-binary-manifest.swift" >&2
         exit 1
     fi
 done

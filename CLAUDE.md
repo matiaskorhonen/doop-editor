@@ -46,6 +46,8 @@ swift test --filter CodeEditLanguagesTests   # run one test target
 `swift package resolve` (or `swift package update`) and commit the updated `Package.resolved`
 alongside it.
 
+Scripts in this repo are shell scripts or Swift scripts (`#!/usr/bin/env swift`) -- never Python or other languages. Keep shell scripts compatible with macOS's bash 3.2 (no associative arrays).
+
 The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
 
 ## Binary distribution

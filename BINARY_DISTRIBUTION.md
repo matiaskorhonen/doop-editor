@@ -10,7 +10,7 @@ The source package on `main` stays the source of truth; everything here is addit
 ## What ships
 
 Eleven universal (arm64 + x86_64) dynamic frameworks. The set is **discovered from the link
-graph**, not hand-written: `Scripts/framework-closure.py` walks `otool -L` out from the three
+graph**, not hand-written: `Scripts/framework-closure.sh` walks `otool -L` out from the three
 products and fails the build if anything they load at runtime wasn't built. That matters
 because Xcode decides on its own whether a SwiftPM dependency is absorbed into the framework
 using it or promoted to a shared dynamic framework, and that decision is not stable — see
@@ -77,7 +77,7 @@ Scripts/verify-binary-consumption.sh     # builds and runs a throwaway consumer 
 any machine -- archives the whole graph in one pass, checks interface hygiene,
 resolves the framework closure, then packages and checksums everything. It records each
 framework's direct dependencies next to its checksum, and
-`Scripts/generate-binary-manifest.py` expands those into each product's target list — a
+`Scripts/generate-binary-manifest.swift` expands those into each product's target list — a
 `.binaryTarget` can't declare dependencies, so a product has to name every framework it needs,
 and a hand-maintained list would go stale.
 
@@ -185,7 +185,7 @@ To rehearse a release locally without pushing anywhere:
 ```bash
 Scripts/build-xcframeworks.sh v0.9.0
 Scripts/verify-binary-consumption.sh
-Scripts/generate-binary-manifest.py v0.9.0
+Scripts/generate-binary-manifest.swift v0.9.0
 git init --bare /tmp/doop-editor-binary.git
 Scripts/publish-binary-package.sh v0.9.0 /tmp/doop-editor-binary.git
 ```
