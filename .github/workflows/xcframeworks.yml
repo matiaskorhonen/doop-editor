@@ -1,0 +1,358 @@
+name: XCFrameworks
+
+# Builds the XCFrameworks and keeps them as an expiring workflow artifact.
+#
+# Pushing a `vX.Y.Z` tag also releases them, and releases are only ever created from a tag push.
+# This repository has immutable releases enabled, so a published release's assets can't be added
+# or changed. The release is therefore assembled as a draft and only published once complete:
+#
+#   Prepare  create a draft release for the tag, with the tag message as its notes
+#   Build    build and verify the frameworks
+#   Publish  upload them to the draft, publish it, then publish the binary package that points at
+#            them to doop-editor-binary under the same tag
+#
+# If the tag already has a published release, the run stops at Prepare and does nothing further.
+#
+# Pushes that change what the build is made from -- this workflow, the build scripts, or the pinned
+# dependency versions -- build without releasing, as does a manual run on any branch or tag.
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - "**"
+    # Only applies to the branch pushes: GitHub doesn't evaluate path filters for tag pushes, so
+    # every version tag still builds.
+    paths:
+      - ".github/workflows/xcframeworks.yml"
+      - "Scripts/**"
+      # Also saves the SwiftPM cache under the new key when this lands on main, which is where
+      # release tags can restore it from.
+      - "Package.resolved"
+  workflow_dispatch:
+
+# Jobs opt into more below; building never needs to write anything.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # An explicit `bash` runs steps with `-eo pipefail`; the implicit default has no pipefail, so a
+    # failing command at the start of a pipeline would go unnoticed.
+    shell: bash
+
+concurrency:
+  # One group per release tag, never cancelled, so two runs for the same tag can't race. Build-only
+  # runs are grouped per ref and superseded by newer ones.
+  group: xcframeworks-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && format('release-{0}', github.ref_name) || format('build-{0}', github.ref) }}
+  cancel-in-progress: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
+
+env:
+  BINARY_REPO: matiaskorhonen/doop-editor-binary
+
+jobs:
+  prepare:
+    name: Prepare release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release: ${{ steps.draft.outputs.release }}
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - name: Create draft release
+        id: draft
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::notice::$TAG isn't a vX.Y.Z version tag; not releasing it"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Whether doop-editor-binary has the tag: 0 if it does, 2 if it doesn't (`--exit-code`),
+          # anything else if the check itself failed.
+          binary_tag() {
+            local status=0
+            git ls-remote --exit-code --tags "https://github.com/$BINARY_REPO.git" \
+              "refs/tags/$TAG" > /dev/null || status=$?
+            return "$status"
+          }
+
+          draft=false
+          if state="$(gh release view "$TAG" --json isDraft --jq .isDraft 2> gh-error.txt)"; then
+            if [ "$state" = "false" ]; then
+              echo "::notice::$TAG already has a published release; nothing to do"
+              # Nothing is done either way, but a release that got its XCFrameworks and never
+              # reached doop-editor-binary is half-published, and shouldn't pass as a green run.
+              zips="$(gh release view "$TAG" --json assets \
+                        --jq '[.assets[].name | select(endswith(".xcframework.zip"))] | length')"
+              status=0
+              binary_tag || status=$?
+              if [ "$zips" -gt 0 ] && [ "$status" -eq 2 ]; then
+                echo "::warning::$TAG's release has XCFrameworks, but $BINARY_REPO has no $TAG tag, so its binary package was never published. Use \"Re-run failed jobs\" on the run that published the release."
+              fi
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            draft=true
+          elif ! grep -qi "release not found" gh-error.txt; then
+            cat gh-error.txt >&2
+            exit 1
+          fi
+
+          # Publish always publishes the release before doop-editor-binary, so a version without a
+          # published release here can't have reached doop-editor-binary. If it did -- say a
+          # published release was deleted and a draft made in its place -- this build's checksums
+          # would never match the manifest consumers already have, so it needs a person to look.
+          status=0
+          binary_tag || status=$?
+          case "$status" in
+            0) echo "::error::$TAG is already published to $BINARY_REPO, but has no published release here"
+               exit 1 ;;
+            2) ;;
+            *) echo "::error::Could not check $BINARY_REPO for $TAG (git ls-remote exited $status)"
+               exit 1 ;;
+          esac
+
+          if [ "$draft" = "true" ]; then
+            # A draft left behind by an earlier attempt, e.g. one whose build failed. Reuse it
+            # as-is, including any notes edited on it since.
+            echo "Reusing the existing draft release for $TAG"
+          else
+            # Fetch the tag object itself: the checkout's tag ref isn't reliably the annotated tag,
+            # and its message is what the notes come from.
+            git fetch --no-tags --depth=1 origin "+refs/tags/$TAG:refs/tags/$TAG"
+
+            args=(--draft --verify-tag --title "$TAG")
+            # `v1.0.0-rc.1` and the like are prereleases.
+            [[ "$TAG" == *-* ]] && args+=(--prerelease)
+
+            Scripts/tag-release-notes.sh "$TAG" > notes.md
+            if [ -s notes.md ]; then
+              args+=(--notes-file notes.md)
+            else
+              # A lightweight tag, or a message that is only the version: fall back to GitHub's
+              # generated notes. They can be edited on the draft or after publishing.
+              args+=(--generate-notes)
+            fi
+            gh release create "$TAG" "${args[@]}"
+          fi
+
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: prepare
+    # Runs for branch pushes and manual runs, where Prepare is skipped, and for tag pushes that
+    # Prepare cleared for release. `!cancelled()` because otherwise a skipped Prepare would skip
+    # this job too.
+    if: ${{ !cancelled() && (needs.prepare.result == 'skipped' || needs.prepare.outputs.release == 'true') }}
+    runs-on: macos-26
+    outputs:
+      artifact: ${{ steps.mode.outputs.artifact }}
+      version: ${{ steps.mode.outputs.version }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          # The nvim-treesitter submodule is a query reference, not a build input.
+          submodules: false
+
+      - name: Resolve version
+        id: mode
+        env:
+          RELEASE: ${{ needs.prepare.outputs.release == 'true' }}
+        run: |
+          if [ "$RELEASE" = "true" ]; then
+            version="$GITHUB_REF_NAME"
+            artifact="doop-editor-xcframeworks-$version"
+          else
+            # Not a real version: only used to exercise the manifest generator.
+            version="v0.0.0-ci.${GITHUB_RUN_NUMBER}"
+            artifact="doop-editor-xcframeworks-${GITHUB_SHA:0:7}"
+          fi
+          {
+            echo "version=$version"
+            echo "release=$RELEASE"
+            echo "artifact=$artifact"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $version (release: $RELEASE)"
+
+      - name: Show toolchain versions
+        run: xcodebuild -version && swift --version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # SwiftPM's shared mirrors of the dependency repositories. Nearly all of a cold build's
+      # dependency time is fetching the tree-sitter grammar repos; with these restored and
+      # versions pinned by Package.resolved, SwiftPM takes every package from the mirrors
+      # without contacting the remote (measured: ~1100s of fetching down to ~2s).
+      # Creating the working copies still takes a while, and no cache helps with that.
+      #
+      # Safe to restore for a release: SwiftPM checks out the exact revisions Package.resolved
+      # pins. The key hashes that file, so it has to be committed; restore-keys fall back to
+      # an older set of mirrors, which SwiftPM then tops up with only what's missing.
+      - name: Restore SwiftPM repository cache
+        id: swiftpm-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm/repositories
+          key: swiftpm-repositories-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            swiftpm-repositories-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build and test source package
+        run: swift build --force-resolved-versions && swift test --force-resolved-versions
+
+      # Saved as soon as the mirrors are complete, so a later failure doesn't lose them. Not
+      # from release runs: a cache saved on a tag is only visible to that tag, so it would take
+      # up quota without ever being restored.
+      - name: Save SwiftPM repository cache
+        if: steps.swiftpm-cache.outputs.cache-hit != 'true' && steps.mode.outputs.release != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm/repositories
+          key: ${{ steps.swiftpm-cache.outputs.cache-primary-key }}
+
+      - name: Build XCFrameworks
+        run: Scripts/build-xcframeworks.sh "${{ steps.mode.outputs.version }}"
+
+      - name: Generate binary package
+        run: |
+          Scripts/generate-binary-manifest.swift "${{ steps.mode.outputs.version }}" \
+            --source-repo "$GITHUB_REPOSITORY" \
+            --binary-repo "$BINARY_REPO"
+
+      # Builds and runs each product of the generated package against these frameworks, so a
+      # broken manifest fails here rather than after it is published.
+      - name: Verify binary package as a consumer
+        run: Scripts/verify-binary-consumption.sh
+
+      # The zips rather than the .xcframework directories: artifact uploads don't keep file
+      # permissions, while ditto's zips carry the framework binaries' executable bits and
+      # symlinks intact -- and they are exactly the files the manifest's checksums cover.
+      # The artifact's root is `build/`, the common ancestor of these paths, which is what
+      # the publish job downloads back into.
+      - name: Upload XCFrameworks artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.mode.outputs.artifact }}
+          path: |
+            build/xcframeworks/*.xcframework.zip
+            build/xcframeworks/binary-targets.txt
+            build/binary-package/
+          if-no-files-found: error
+          # Already compressed.
+          compression-level: 0
+          # A release run keeps its artifact long enough to re-run a failed publish job -- say
+          # after renewing BINARY_REPO_TOKEN -- without rebuilding.
+          retention-days: ${{ steps.mode.outputs.release == 'true' && 30 || 7 }}
+
+      # The archive log is the only record of a failed xcodebuild, and the runner is gone afterwards.
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          # Per attempt, so a re-run's log doesn't collide with an earlier attempt's.
+          name: xcframeworks-build-log-${{ github.run_attempt }}
+          path: build/archive.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    name: Publish
+    needs: [prepare, build]
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    # One Publish at a time across all versions. Releases of different tags otherwise run in
+    # parallel, and two of them would race: each works out "Latest" without seeing the other, and
+    # each builds doop-editor-binary's main on the clone it made, so one push is rejected.
+    # GitHub keeps only one waiting job per group, so a third release published at the same moment
+    # cancels the waiting one; "Re-run failed jobs" on that run publishes it.
+    concurrency:
+      group: xcframeworks-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      # Publish exactly what the build job verified, rather than rebuilding here.
+      - name: Download XCFrameworks artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: build
+
+      # The manifest's download URLs have to resolve by the time a consumer can see the version,
+      # so the release is complete and published before anything goes to doop-editor-binary.
+      - name: Upload XCFrameworks and publish release
+        run: |
+          state="$(gh release view "$VERSION" --json isDraft --jq .isDraft)"
+          if [ "$state" = "true" ]; then
+            # Drafts are still mutable, so --clobber can replace zips from an earlier attempt.
+            gh release upload "$VERSION" build/xcframeworks/*.xcframework.zip --clobber
+            gh release view "$VERSION" --json assets | Scripts/verify-release-assets.sh
+
+            # Publishing a draft marks it "Latest" by default, which would be wrong for a patch to
+            # an older version or a prerelease. Only the newest stable version is the latest. The
+            # list is fetched on its own so that a failure to get it fails the step, rather than
+            # leaving this version as the only candidate.
+            published="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1000 \
+                           --json tagName --jq '.[].tagName')"
+            newest="$(printf '%s\n%s\n' "$published" "$VERSION" | Scripts/newest-stable-version.sh)"
+            latest=false
+            if [ "$newest" = "$VERSION" ]; then
+              latest=true
+            fi
+            gh release edit "$VERSION" --draft=false --latest="$latest"
+          else
+            # Already published by an earlier attempt of this same run -- this job is being re-run,
+            # say after a failed push to doop-editor-binary. Its immutable assets must be this
+            # artifact's, or the manifest about to be published would fail every checksum.
+            echo "$VERSION is already published; checking its assets"
+            gh release view "$VERSION" --json assets | Scripts/verify-release-assets.sh
+          fi
+
+      - name: Publish to doop-editor-binary
+        env:
+          # GITHUB_TOKEN can only write to this repository; this fine-grained token has
+          # Contents: read and write on doop-editor-binary only.
+          BINARY_REPO_TOKEN: ${{ secrets.BINARY_REPO_TOKEN }}
+        run: |
+          if [ -z "$BINARY_REPO_TOKEN" ]; then
+            echo "::error::The BINARY_REPO_TOKEN secret is not set"
+            exit 1
+          fi
+          # The script commits as github-actions[bot] when no git identity is configured.
+          Scripts/publish-binary-package.sh "$VERSION" \
+            "https://x-access-token:${BINARY_REPO_TOKEN}@github.com/${BINARY_REPO}.git"
+
+      - name: Write job summary
+        run: |
+          {
+            echo "### DoopEditor $VERSION"
+            echo
+            echo "Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/$VERSION"
+            echo
+            echo '```swift'
+            echo ".package(url: \"https://github.com/$BINARY_REPO.git\", from: \"${VERSION#v}\")"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

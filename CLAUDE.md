@@ -41,7 +41,33 @@ swift test                # run all tests
 swift test --filter CodeEditLanguagesTests   # run one test target
 ```
 
+`Package.resolved` is committed. The XCFramework build and its CI resolve with
+`--force-resolved-versions`, so after changing a dependency in `Package.swift`, run
+`swift package resolve` (or `swift package update`) and commit the updated `Package.resolved`
+alongside it.
+
+Scripts in this repo are shell scripts or Swift scripts (`#!/usr/bin/env swift`) -- never Python or other languages. Keep shell scripts compatible with macOS's bash 3.2 (no associative arrays).
+
 The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
+
+## Binary distribution
+
+`Scripts/build-xcframeworks.sh` builds the three modules (plus the dependencies whose types
+appear in their public API) as universal macOS XCFrameworks for release, statically absorbing
+the 40 tree-sitter grammars. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md).
+
+Three things in the sources exist for that pipeline and are easy to break by accident:
+
+- **`internal import`** on implementation-detail imports (the grammars, `TreeSitter`,
+  `_RopeModule`, `DequeModule`, `CodeEditTextViewObjC`). A plain `import` puts the module into
+  the public `.swiftinterface` and forces consumers of the binaries to resolve it, so adding a
+  grammar means adding an `internal import` in `CodeLanguage.swift`.
+  `Scripts/check-interface-imports.sh` gates this. The `AccessLevelOnImport` feature it needs
+  is enabled by `resilientSettings` in `Package.swift`.
+- **`Bundle.codeEditLanguages`**, not `Bundle.module`, for the `.scm` query lookup —
+  `Bundle.module` doesn't exist in a framework build.
+- New public API that exposes a *new* third-party type adds a framework to the distribution.
+  Prefer keeping such types internal.
 
 ## Architecture
 

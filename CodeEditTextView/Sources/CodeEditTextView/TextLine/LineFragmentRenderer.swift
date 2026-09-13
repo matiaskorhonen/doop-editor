@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import CodeEditTextViewObjC
+internal import CodeEditTextViewObjC
 
 /// Manages drawing line fragments into a drawing context.
 public final class LineFragmentRenderer {

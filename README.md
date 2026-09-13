@@ -52,6 +52,26 @@ Then add the products you need to your target:
 
 `CodeEditSourceEditor` is the top-level component and pulls in `CodeEditTextView` and `CodeEditLanguages` transitively. Depend on the lower-level libraries directly only if you need them without the editor.
 
+### Prebuilt binaries
+
+Resolving the source package clones and compiles 40+ tree-sitter grammar repositories, which
+dominates a clean build. Prebuilt XCFrameworks avoid that: the grammars are statically linked
+into `CodeEditLanguages`, so consumers resolve a handful of artifacts instead.
+
+The prebuilt package lives in its own repository,
+[doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary), with a tag for every
+release of this one:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/matiaskorhonen/doop-editor-binary.git", from: "0.9.0"),
+],
+```
+
+The products are the same, but SwiftPM names a package after its repository, so product
+references use `package: "doop-editor-binary"` instead of `package: "doop-editor"`. See
+[BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md) for how the frameworks are built and released.
+
 ## Example app
 
 The `Example/` directory contains a standalone Xcode project (`DoopEditorExample`) that exercises `CodeEditSourceEditor` directly, useful for manually testing changes without pulling them into Doop first.
