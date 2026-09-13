@@ -107,10 +107,10 @@ come from the same build that produced the uploaded zips. Don't hand-edit one.
 
 ## CI
 
-`.github/workflows/release-binary.yml` has two jobs. **build** runs on `macos-26` with read-only
+`.github/workflows/xcframeworks.yml` has two jobs. **Build** runs on `macos-26` with read-only
 permissions: it verifies the source package, builds the frameworks, runs the consumer check,
 generates the binary package, and uploads the zips and generated package as an expiring workflow
-artifact. **publish** runs only for a release, with the write permissions and the
+artifact. **Publish** runs only for a release, with the write permissions and the
 `BINARY_REPO_TOKEN` secret the build job never sees, and publishes exactly the artifact that
 build verified.
 
@@ -127,11 +127,11 @@ uses a placeholder `v0.0.0-ci.<run>` version.
 Create the release as usual -- for example `gh release create v0.9.0 --notes "..."`, or push a
 `vX.Y.Z` tag. A manual run with the version filled in does the same for an existing tag. Then:
 
-1. **build** refuses to start if that version is already published to `doop-editor-binary`,
+1. **Build** refuses to start if that version is already published to `doop-editor-binary`,
    then builds and verifies as above;
-2. **publish** attaches the zips to the release in this repository -- into your existing release
+2. **Publish** attaches the zips to the release in this repository -- into your existing release
    if there is one, leaving its notes alone, otherwise creating it with generated notes;
-3. **publish** commits the generated `Package.swift` and README to
+3. **Publish** commits the generated `Package.swift` and README to
    [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with
    the same version, pushing the commit and tag atomically
    (`Scripts/publish-binary-package.sh`).
@@ -146,7 +146,7 @@ to resolve by the time a consumer can see the version. A published version is ne
 its manifest pins the checksums of zips consumers have already resolved, and rebuilds don't
 reproduce them.
 
-If **publish** fails, use "Re-run failed jobs": it republishes the same artifact without
+If **Publish** fails, use "Re-run failed jobs": it republishes the same artifact without
 rebuilding, so the checksums still match. A release run's artifact is kept for 30 days for this.
 The usual cause is an expired `BINARY_REPO_TOKEN` -- a fine-grained token with **Contents: Read
 and write** on `doop-editor-binary` alone, since the workflow's own `GITHUB_TOKEN` can only write

@@ -1,4 +1,4 @@
-name: Release binary frameworks
+name: XCFrameworks
 
 # Builds the XCFrameworks and keeps them as an expiring workflow artifact. For a `vX.Y.Z` tag it
 # then also publishes them: the zips go on that version's release in this repository, and a
@@ -15,7 +15,7 @@ on:
     # Only applies to the branch pushes: GitHub doesn't evaluate path filters for tag pushes,
     # so every release tag still builds.
     paths:
-      - ".github/workflows/release-binary.yml"
+      - ".github/workflows/xcframeworks.yml"
   workflow_dispatch:
     inputs:
       version:
@@ -29,7 +29,7 @@ permissions:
 concurrency:
   # A tag push and a manual run for the same version share a group, so they can't race to
   # publish it. Build-only runs are superseded by newer pushes; releases are never cancelled.
-  group: release-binary-${{ inputs.version && format('refs/tags/{0}', inputs.version) || github.ref }}
+  group: xcframeworks-${{ inputs.version && format('refs/tags/{0}', inputs.version) || github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.version }}
 
 env:
@@ -39,20 +39,22 @@ env:
 
 jobs:
   build:
+    name: Build
     runs-on: macos-26
     outputs:
       publish: ${{ steps.mode.outputs.publish }}
       version: ${{ steps.mode.outputs.version }}
       artifact: ${{ steps.mode.outputs.artifact }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out
+        uses: actions/checkout@v7
         with:
           # A manual release run starts from the branch it was dispatched on; build the tag.
           ref: ${{ env.RELEASE_VERSION && format('refs/tags/{0}', env.RELEASE_VERSION) || '' }}
           # The nvim-treesitter submodule is a query reference, not a build input.
           submodules: false
 
-      - name: Determine what this run does
+      - name: Resolve version
         id: mode
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
@@ -82,22 +84,22 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Building $version (publish: $publish)"
 
-      - name: Toolchain
+      - name: Show toolchain versions
         run: xcodebuild -version && swift --version
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Verify the source package
+      - name: Build and test source package
         run: swift build && swift test
 
       - name: Build XCFrameworks
         run: Scripts/build-xcframeworks.sh "${{ steps.mode.outputs.version }}"
 
-      - name: Verify the frameworks from a consumer's side
+      - name: Verify XCFrameworks as a consumer
         run: Scripts/verify-binary-consumption.sh
 
-      - name: Generate the binary package
+      - name: Generate binary package
         run: |
           Scripts/generate-binary-manifest.py "${{ steps.mode.outputs.version }}" \
             --source-repo "$GITHUB_REPOSITORY" \
@@ -108,7 +110,8 @@ jobs:
       # symlinks intact -- and they are exactly the files the manifest's checksums cover.
       # The artifact's root is `build/`, the common ancestor of these paths, which is what
       # the publish job downloads back into.
-      - uses: actions/upload-artifact@v7
+      - name: Upload XCFrameworks artifact
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.mode.outputs.artifact }}
           path: |
@@ -123,6 +126,7 @@ jobs:
           retention-days: ${{ steps.mode.outputs.publish == 'true' && 30 || 7 }}
 
   publish:
+    name: Publish
     needs: build
     if: needs.build.outputs.publish == 'true'
     runs-on: ubuntu-latest
@@ -131,20 +135,22 @@ jobs:
     env:
       VERSION: ${{ needs.build.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out
+        uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.build.outputs.version }}
           submodules: false
 
       # Publish exactly what the build job verified, rather than rebuilding here.
-      - uses: actions/download-artifact@v8
+      - name: Download XCFrameworks artifact
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.artifact }}
           path: build
 
       # Upload before publishing the tag: the manifest's download URLs have to resolve by the
       # time a consumer can see that version.
-      - name: Attach the frameworks to the release
+      - name: Attach XCFrameworks to release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -159,7 +165,7 @@ jobs:
               build/xcframeworks/*.xcframework.zip
           fi
 
-      - name: Publish to ${{ env.BINARY_REPO }}
+      - name: Publish to doop-editor-binary
         env:
           # GITHUB_TOKEN can only write to this repository; this fine-grained token has
           # Contents: read and write on doop-editor-binary only.
@@ -174,7 +180,7 @@ jobs:
           Scripts/publish-binary-package.sh "$VERSION" \
             "https://x-access-token:${BINARY_REPO_TOKEN}@github.com/${BINARY_REPO}.git"
 
-      - name: Summary
+      - name: Write job summary
         run: |
           {
             echo "### DoopEditor $VERSION (prebuilt)"
