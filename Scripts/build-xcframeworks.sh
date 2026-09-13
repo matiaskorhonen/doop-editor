@@ -71,11 +71,6 @@ for module in "${EXPECTED[@]}"; do
     fi
 done
 
-# One shipped module's interface referencing an absorbed module would force consumers to
-# resolve the grammar packages again, so this is a hard gate rather than a warning.
-echo "==> Checking interface hygiene"
-Scripts/check-interface-imports.sh "$INSTALLED"
-
 echo "==> Resolving the framework closure"
 # The shipped set is discovered from the link graph, not hand-written -- see
 # Scripts/framework-closure.sh for why that matters.
@@ -85,20 +80,39 @@ printf '    %d frameworks: %s\n' \
     "$(wc -l < "$CLOSURE" | tr -d ' ')" \
     "$(cut -f1 "$CLOSURE" | tr '\n' ' ')"
 
+# A framework promoted from a SwiftPM package target is built without library evolution, so it
+# carries a .swiftmodule with no .swiftinterface -- which -create-xcframework refuses. Consumers
+# never import these (they are `internal import`ed by code already absorbed into our frameworks);
+# only the dylib has to be present at load time, so they ship binary-only. Obj-C and C frameworks
+# have no .swiftmodule and must be left alone -- stripping their module map would make them
+# unusable.
+is_binary_only() {
+    [ -n "$(find "$1/Versions/A/Modules" -name '*.swiftmodule' -print -quit 2>/dev/null)" ] \
+        && [ -z "$(find "$1/Versions/A/Modules" -name '*.swiftinterface' -print -quit)" ]
+}
+
+# A shipped module's interface importing a module consumers can't import would force them to
+# resolve the grammar packages again, so this is a hard gate rather than a warning. Binary-only
+# frameworks ship, but without a module, so an interface may not import them either.
+IMPORTABLE=()
+while IFS=$'\t' read -r module path deps; do
+    is_binary_only "$path" || IMPORTABLE+=("$module")
+done < "$CLOSURE"
+
+echo "==> Checking interface hygiene"
+MODULE_MAPS="$(find "$DERIVED/Build" -type d \
+    -path "*/ArchiveIntermediates/$TOP_SCHEME/IntermediateBuildFilesPath/GeneratedModuleMaps" \
+    -print -quit)"
+Scripts/check-interface-imports.sh "$INSTALLED" "${MODULE_MAPS:?no GeneratedModuleMaps in $DERIVED}" \
+    "${IMPORTABLE[@]}"
+
 STAGED="$BUILD/staged"
 rm -rf "$STAGED"
 
 while IFS=$'\t' read -r module path deps; do
     echo "==> Packaging $module.xcframework"
 
-    # A framework promoted from a SwiftPM package target is built without library evolution,
-    # so it carries a .swiftmodule with no .swiftinterface -- which -create-xcframework
-    # refuses. Consumers never import these (they are `internal import`ed by code already
-    # absorbed into our frameworks); only the dylib has to be present at load time, so ship
-    # it binary-only. Obj-C and C frameworks have no .swiftmodule and must be left alone --
-    # stripping their module map would make them unusable.
-    if [ -n "$(find "$path/Versions/A/Modules" -name '*.swiftmodule' -print -quit 2>/dev/null)" ] \
-       && [ -z "$(find "$path/Versions/A/Modules" -name '*.swiftinterface' -print -quit)" ]; then
+    if is_binary_only "$path"; then
         echo "    (binary-only: no .swiftinterface, stripping the unusable module)"
         mkdir -p "$STAGED"
         cp -Rc "$path" "$STAGED/" 2>/dev/null || cp -R "$path" "$STAGED/"

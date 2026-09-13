@@ -2,9 +2,11 @@
 #
 # Publish the generated binary package to the doop-editor-binary repository.
 #
-# Commits build/binary-package/{Package.swift,README.md} to that repository's main branch and
-# tags the commit with the release version, pushing both atomically so the tag can never point
-# at a manifest that didn't land (or the branch move without its tag).
+# Commits build/binary-package/{Package.swift,README.md} on top of that repository's main branch
+# and tags the commit with the release version. `main` itself only moves to the newest stable
+# version: publishing an older patch release or a prerelease pushes just its tag, so `main` -- and
+# the README on the repository's front page -- keep describing the latest release. When `main`
+# does move, the branch and the tag are pushed atomically.
 #
 # Usage: Scripts/publish-binary-package.sh <vX.Y.Z> <remote-url>
 #
@@ -64,6 +66,15 @@ fi
 git commit --quiet -m "DoopEditor $VERSION"
 # Annotated, like the tags in the source repository.
 git tag -a "$VERSION" -m "DoopEditor $VERSION"
-git push --quiet --atomic origin main "refs/tags/$VERSION"
 
-echo "Published $VERSION ($(git rev-parse --short HEAD))"
+# The newest stable version, now that this one is tagged locally. Prereleases never move `main`.
+newest_stable="$(git tag -l 'v*' --sort=-v:refname | grep -v -- '-' | head -n 1 || true)"
+
+if [ "$VERSION" = "$newest_stable" ]; then
+    git push --quiet --atomic origin main "refs/tags/$VERSION"
+    echo "Published $VERSION ($(git rev-parse --short HEAD)); main updated"
+else
+    # The commit still sits on top of main's history, but main stays where it is.
+    git push --quiet origin "refs/tags/$VERSION"
+    echo "Published $VERSION ($(git rev-parse --short HEAD)); main left at ${newest_stable:-<none>}"
+fi

@@ -29,7 +29,7 @@ using it or promoted to a shared dynamic framework, and that decision is not sta
 | `InternalCollectionsUtilities` | promoted to a shared dynamic framework by Xcode (below) |
 
 **Absorbed** into the framework that uses them, and not shipped: the 40 tree-sitter grammars,
-`DequeModule` and `_RopeModule`.
+`DequeModule`, `ContainersPreview` (which `DequeModule` depends on) and `_RopeModule`.
 
 `InternalCollectionsUtilities` is the awkward one. `CodeEditTextView` uses `DequeModule` and
 `CodeEditSourceEditor` uses `_RopeModule`, and both of those depend on it — so Xcode absorbs it
@@ -51,6 +51,10 @@ Three properties of the sources make this work, and all three are easy to break 
    `CodeLanguage.swift` would put all 40 grammar modules into the public
    `.swiftinterface` — consumers would then need every grammar package, defeating the point.
    `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing.
+   It doesn't keep a list of forbidden modules: it forbids every module the build compiled from
+   a SwiftPM package (Xcode writes a module map for each into `GeneratedModuleMaps`) that doesn't
+   ship with an importable module, and it recognises `@preconcurrency`, `@_exported`,
+   `public import` and `import struct X.Y` forms as well as plain imports.
    It needs the `AccessLevelOnImport` feature, enabled in `Package.swift` via
    `resilientSettings`.
 2. **`SWIFT_PACKAGE_NAME = DoopEditor`.** The three modules share `package`-access
@@ -108,20 +112,21 @@ come from the same build that produced the uploaded zips. Don't hand-edit one.
 
 ## CI
 
-`.github/workflows/xcframeworks.yml` has two jobs. **Build** runs on `macos-26` with read-only
-permissions: it verifies the source package, builds the frameworks, runs the consumer check,
-generates the binary package, and uploads the zips and generated package as an expiring workflow
-artifact. **Publish** runs only for a release, with the write permissions and the
-`BINARY_REPO_TOKEN` secret the build job never sees, and publishes exactly the artifact that
-build verified.
+`.github/workflows/xcframeworks.yml` has three jobs:
 
-Runs that don't publish:
+- **Prepare release** runs only for a version tag push. It creates the draft release; see below.
+- **Build** runs on `macos-26` with read-only permissions. It verifies the source package, builds
+  the frameworks, runs the consumer check, generates the binary package, and uploads the zips and
+  generated package as an expiring workflow artifact.
+- **Publish** runs only for a release. It uploads exactly the artifact Build verified, publishes the
+  release, and publishes the binary package. It has the write permissions and the
+  `BINARY_REPO_TOKEN` secret that Build never sees.
+
+Runs that only build:
 
 - a push to any branch that changes the workflow file, anything under `Scripts/`, or
   `Package.resolved`;
-- a manual run ("Run workflow") with the version left empty, which builds the chosen branch or
-  tag. Only a tag *push*, or a manual run naming a version, publishes -- starting a manual run
-  from a tag doesn't.
+- a manual run ("Run workflow") on any branch or tag.
 
 Their artifact, `doop-editor-xcframeworks-<short sha>`, expires after 7 days, and its manifest
 uses a placeholder `v0.0.0-ci.<run>` version.
@@ -156,39 +161,62 @@ saved on a tag is visible to that tag alone.
 
 ## Releasing
 
-Create the release as usual -- for example `gh release create v0.9.0 --notes "..."`, or push a
-`vX.Y.Z` tag. A manual run with the version filled in does the same for an existing tag. Then:
+Releases are only created from version tags. Push an annotated `vX.Y.Z` tag; its message becomes
+the release notes:
 
-1. **Build** refuses to start if that version is already published to `doop-editor-binary`,
-   then builds and verifies as above;
-2. **Publish** attaches the zips to the release in this repository -- into your existing release
-   if there is one, leaving its notes alone, otherwise creating it with generated notes;
-3. **Publish** commits the generated `Package.swift` and README to
-   [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with
-   the same version, pushing the commit and tag atomically
-   (`Scripts/publish-binary-package.sh`).
+```bash
+git tag -a v0.9.0 -m "v0.9.0" -m "- What changed"
+git push origin v0.9.0
+```
+
+Don't create the release by hand. This repository has **immutable releases** enabled: once a
+release is published its assets can't be added or changed, so the workflow assembles the release
+as a draft and publishes it only when it's complete.
+
+1. **Prepare release**: if the tag already has a *published* release, the run stops and does
+   nothing further. Otherwise it creates a draft titled with the tag, with the tag message's body
+   as notes (`Scripts/tag-release-notes.sh`). If the tag has no usable message -- a lightweight tag,
+   or a message that's only the version -- it uses GitHub's generated notes instead. `-rc.1` style
+   tags become prereleases. A draft left behind by an earlier attempt is reused as-is, including
+   any notes edited on it.
+2. **Build** builds and verifies the frameworks.
+3. **Publish** uploads the zips to the draft, checks that the release's assets are exactly the
+   build's (`Scripts/verify-release-assets.sh` compares GitHub's SHA-256 digests with the
+   checksums), and publishes it. Only the newest stable version is marked "Latest", so a patch to
+   an older version or a prerelease doesn't take that from the current release.
+4. **Publish** then commits the generated `Package.swift` and README to
+   [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with the
+   same version (`Scripts/publish-binary-package.sh`). That repository's `main` only moves to the
+   newest stable version; an older patch or a prerelease gets just its tag.
+
+The release notes can be edited on the draft while the build runs, or on the published release
+afterwards -- notes stay editable on an immutable release; only its assets and tag are fixed.
 
 The prebuilt package lives in a separate repository rather than on a branch here, so each
 repository has exactly one tag per version. SwiftPM strips a leading `v` when it reads tags, so
 a `v0.9.0` and a `0.9.0` in the same repository are two tags for one version -- and it silently
 resolves whichever it prefers rather than reporting the ambiguity.
 
-The zips are uploaded before the tag is published because the manifest's download URLs have
-to resolve by the time a consumer can see the version. A published version is never rebuilt:
-its manifest pins the checksums of zips consumers have already resolved, and rebuilds don't
-reproduce them.
+The release is published before the binary package because the manifest's download URLs have to
+resolve by the time a consumer can see the version, and a draft's assets can't be downloaded
+anonymously.
 
-If the version's release is still a **draft**, **Publish** stops before uploading anything: a
-draft's assets can't be downloaded anonymously, so publishing the binary package would give
-consumers 404s. Publish the release, then re-run as below.
+### When something fails
 
-If **Publish** fails, use "Re-run failed jobs": it republishes the same artifact without
-rebuilding, so the checksums still match. A release run's artifact is kept for 30 days for this.
-The usual cause is an expired `BINARY_REPO_TOKEN` -- a fine-grained token with **Contents: Read
-and write** on `doop-editor-binary` alone, since the workflow's own `GITHUB_TOKEN` can only write
-to this repository. Renew it, then re-run.
+- **Build fails**: the draft stays. Fix the problem and use "Re-run all jobs" -- Prepare finds the
+  draft and reuses it.
+- **Publish fails**: use "Re-run failed jobs". It reuses the same artifact, kept 30 days for this,
+  so nothing is rebuilt. If the release was already published by the failed attempt, the re-run
+  checks that its assets match the artifact and carries on to doop-editor-binary. The usual cause is
+  an expired `BINARY_REPO_TOKEN` -- a fine-grained token with **Contents: Read and write** on
+  `doop-editor-binary` alone, since the workflow's own `GITHUB_TOKEN` can only write to this
+  repository. Renew it, then re-run.
+- Don't use "Re-run all jobs" once the release is published: Prepare sees the published release and
+  stops, as it does for any published release, so the binary package would never be pushed.
 
-To rehearse a release locally without pushing anywhere:
+### Rehearsing locally
+
+To rehearse a release without pushing anywhere:
 
 ```bash
 Scripts/build-xcframeworks.sh v0.9.0
