@@ -27,14 +27,20 @@ permissions:
   contents: read
 
 concurrency:
-  # A tag push and a manual run for the same version share a group, so they can't race to
-  # publish it. Build-only runs are superseded by newer pushes; releases are never cancelled.
-  group: xcframeworks-${{ inputs.version && format('refs/tags/{0}', inputs.version) || github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.version }}
+  # Releases and build-only runs use separate groups. A tag push and a manual run for the same
+  # version share `release-<version>`, so they can't race to publish it, and releases are never
+  # cancelled. Build-only runs share `build-<ref>` and are superseded by newer ones -- kept apart
+  # from releases so a manual build of a tag can never cancel that tag's release.
+  #
+  # Only a tag *push* is a release: a manual run started from a tag with no version is a
+  # build-only run of that tag, as the input's description says. (`env` isn't available here, so
+  # this repeats the RELEASE_VERSION logic below.)
+  group: xcframeworks-${{ (inputs.version || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))) && format('release-{0}', inputs.version || github.ref_name) || format('build-{0}', github.ref) }}
+  cancel-in-progress: ${{ !inputs.version && !(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
 
 env:
-  # Empty unless this run publishes.
-  RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.version }}
+  # Empty unless this run publishes: a `v*` tag push, or a manual run naming a version.
+  RELEASE_VERSION: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.version }}
   BINARY_REPO: matiaskorhonen/doop-editor-binary
 
 jobs:
@@ -183,7 +189,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view "$VERSION" > /dev/null 2>&1; then
+          if draft="$(gh release view "$VERSION" --json isDraft --jq .isDraft 2> /dev/null)"; then
+            # A draft's assets can't be downloaded anonymously, so publishing the binary package
+            # now would give every consumer 404s until someone published the draft. Checked here
+            # rather than in the build job, whose read-only token can't see drafts at all.
+            if [ "$draft" = "true" ]; then
+              echo "::error::The $VERSION release is still a draft. Publish it, then use \"Re-run failed jobs\" -- the same artifact is reused."
+              exit 1
+            fi
             # Releases are usually written by hand; add the assets, leave the notes alone.
             # --clobber only replaces zips from an earlier attempt of this same run, which the
             # build job's check guarantees nothing has published yet.

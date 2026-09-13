@@ -3,8 +3,12 @@
 // Generate the XcodeGen spec used to build DoopEditor's distributable XCFrameworks.
 //
 // The spec is derived from the package itself so it cannot drift from the source build: the
-// grammar products come from SwiftPM's parsed manifest (`swift package dump-package`), and
-// every package is pinned to the exact revision in Package.resolved.
+// grammar products come from SwiftPM's parsed manifest (`swift package dump-package`), and every
+// package is pinned to the exact revision in Package.resolved.
+//
+// It is written as JSON through Encodable types rather than templated text, so values are always
+// escaped correctly. XcodeGen reads JSON specs as well as YAML; see
+// https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
 //
 // Run via Scripts/build-xcframeworks.sh, which resolves the package first: the third-party
 // framework targets build straight out of .build/checkouts.
@@ -18,11 +22,79 @@ let root = URL(fileURLWithPath: #filePath, relativeTo: URL(fileURLWithPath: File
     .deletingLastPathComponent()   // Scripts/
     .deletingLastPathComponent()   // repository root
 let outputDirectory = root.appendingPathComponent("BinaryDistribution")
-let output = outputDirectory.appendingPathComponent("project.yml")
+let output = outputDirectory.appendingPathComponent("project.json")
 
 func fail(_ message: String) -> Never {
     FileHandle.standardError.write(Data("error: \(message)\n".utf8))
     exit(1)
+}
+
+// MARK: - XcodeGen spec
+
+struct Spec: Encodable {
+    struct Options: Encodable {
+        let deploymentTarget: [String: String]
+        let createIntermediateGroups: Bool
+        let defaultConfig: String
+    }
+
+    let name: String
+    let options: Options
+    let configs: [String: String]
+    let settings: Settings
+    let packages: [String: Package]
+    let targets: [String: Target]
+}
+
+struct Settings: Encodable {
+    let base: [String: String]
+}
+
+struct Package: Encodable {
+    let url: String
+    let revision: String
+}
+
+struct Target: Encodable {
+    let type = "framework"
+    let platform = "macOS"
+    let sources: [Source]
+    let dependencies: [Dependency]?
+    let settings: Settings
+
+    init(sources: [Source], dependencies: [Dependency] = [], settings: Settings) {
+        self.sources = sources
+        self.dependencies = dependencies.isEmpty ? nil : dependencies
+        self.settings = settings
+    }
+}
+
+struct Source: Encodable {
+    let path: String
+    var excludes: [String]?
+    var headerVisibility: String?
+    var type: String?
+    var buildPhase: String?
+}
+
+enum Dependency: Encodable {
+    case target(String)
+    case package(String, product: String)
+
+    private enum CodingKeys: String, CodingKey {
+        case target, package, product
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .target(let name):
+            try container.encode(name, forKey: .target)
+        case .package(let package, let product):
+            try container.encode(package, forKey: .package)
+            try container.encode(product, forKey: .product)
+        }
+    }
 }
 
 // MARK: - Package inputs
@@ -65,7 +137,7 @@ func grammarProducts() -> [(product: String, package: String)] {
 }
 
 /// identity -> (location, revision), so the binary is built from what the source build resolved.
-func resolvedRevisions() -> [String: (location: String, revision: String)] {
+func resolvedRevisions() -> [String: Package] {
     struct Resolved: Decodable {
         struct Pin: Decodable {
             struct State: Decodable { let revision: String }
@@ -79,7 +151,9 @@ func resolvedRevisions() -> [String: (location: String, revision: String)] {
     guard let data = try? Data(contentsOf: file),
           let resolved = try? JSONDecoder().decode(Resolved.self, from: data)
     else { fail("could not read \(file.path) -- run `swift package resolve` first") }
-    return Dictionary(uniqueKeysWithValues: resolved.pins.map { ($0.identity, ($0.location, $0.state.revision)) })
+    return Dictionary(uniqueKeysWithValues: resolved.pins.map {
+        ($0.identity, Package(url: $0.location, revision: $0.state.revision))
+    })
 }
 
 /// The tree-sitter query directories, copied as folder references to preserve their structure.
@@ -110,234 +184,188 @@ func local(_ path: String) -> String {
     "../\(path)"
 }
 
-// MARK: - Spec
-
-var lines: [String] = []
-func add(_ line: String = "") { lines.append(line) }
+// MARK: - Settings
 
 /// Per-target settings.
 ///
-/// SKIP_INSTALL has to be set per target: XcodeGen writes `SKIP_INSTALL = YES` at the target
-/// level for framework targets, which overrides the project-level value, and an archive with
-/// SKIP_INSTALL on contains no framework to turn into an XCFramework.
+/// SKIP_INSTALL has to be set per target: XcodeGen writes `SKIP_INSTALL = YES` at the target level
+/// for framework targets, which overrides the project-level value, and an archive with SKIP_INSTALL
+/// on contains no framework to turn into an XCFramework.
 ///
-/// These belong here rather than on the xcodebuild command line, because command-line settings
-/// also apply to the SwiftPM dependencies -- and swift-collections does not compile with
-/// library evolution enabled.
-func settings(_ extra: [(String, String)] = []) {
-    add("    settings:")
-    add("      base:")
-    add("        SKIP_INSTALL: NO")
-    for (key, value) in extra {
-        add("        \(key): \(value)")
-    }
+/// These belong here rather than on the xcodebuild command line, because command-line settings also
+/// apply to the SwiftPM dependencies -- and swift-collections does not compile with library
+/// evolution enabled.
+func targetSettings(_ extra: [String: String] = [:]) -> Settings {
+    Settings(base: ["SKIP_INSTALL": "NO"].merging(extra) { _, new in new })
 }
+
+/// SWIFT_PACKAGE_NAME keeps the `package`-access declarations our three modules share resolvable
+/// across the framework boundary; AccessLevelOnImport enables the `internal import`s that keep the
+/// grammars out of the public interfaces.
+let ourSettings: [String: String] = [
+    "SWIFT_PACKAGE_NAME": "DoopEditor",
+    "OTHER_SWIFT_FLAGS": "$(inherited) -enable-experimental-feature AccessLevelOnImport",
+]
+
+// MARK: - Spec
 
 let grammars = grammarProducts()
 let revisions = resolvedRevisions()
 let resources = languageResources()
 
-func pin(_ identity: String) -> (location: String, revision: String) {
+func pin(_ identity: String) -> Package {
     guard let pin = revisions[identity] else { fail("\(identity) is not pinned in Package.resolved") }
     return pin
 }
 
-add("# Generated by Scripts/generate-binary-project.swift -- do not edit by hand.")
-add("name: DoopEditorBinary")
-add("options:")
-add("  deploymentTarget: { macOS: \"13.0\" }")
-add("  createIntermediateGroups: true")
-add("  defaultConfig: Release")
-add()
-add("configs:")
-add("  Release: release")
-add()
-add("settings:")
-add("  base:")
-// BUILD_LIBRARY_FOR_DISTRIBUTION is what emits the .swiftinterface that makes the binaries usable
-// from a different compiler than the one that built them.
-add("    BUILD_LIBRARY_FOR_DISTRIBUTION: YES")
-add("    SKIP_INSTALL: NO")
-add("    DYLIB_INSTALL_NAME_BASE: \"@rpath\"")
-add("    MACOSX_DEPLOYMENT_TARGET: \"13.0\"")
-add("    ARCHS: \"arm64 x86_64\"")
-add("    ONLY_ACTIVE_ARCH: NO")
-add("    SWIFT_VERSION: \"5.10\"")
-add("    DEFINES_MODULE: YES")
-add("    CODE_SIGN_IDENTITY: \"\"")
-add("    CODE_SIGNING_REQUIRED: NO")
-add("    CODE_SIGNING_ALLOWED: NO")
-add("    SWIFT_INSTALL_OBJC_HEADER: NO")
-add()
-
-add("packages:")
-for package in Set(grammars.map(\.package)).sorted() + ["swift-collections"] {
-    let (location, revision) = pin(package)
-    add("  \(package):")
-    add("    url: \(location)")
-    add("    revision: \(revision)")
+var packages: [String: Package] = [:]
+for package in Set(grammars.map(\.package)).union(["swift-collections"]) {
+    packages[package] = pin(package)
 }
-add()
 
-add("targets:")
+let docc = ["Documentation.docc"]
+
+var targets: [String: Target] = [:]
 
 // --- dependency layer ---------------------------------------------------------------------------
-// TextStory re-exports TSYTextStorage from its `Internal` ObjC target through a public typealias,
-// so `Internal` lands in TextStory's interface and has to ship under that name.
-add("  Internal:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("TextStory/Sources/Internal"))")
-add("        headerVisibility: public")
-add("      - path: Support/Internal.h")
-add("        headerVisibility: public")
-settings()
-add()
 
-add("  Rearrange:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("Rearrange/Sources/Rearrange"))")
-add("        excludes: [\"Documentation.docc\"]")
-settings()
-add()
+// TextStory re-exports TSYTextStorage from its `Internal` ObjC target through a public typealias, so
+// `Internal` lands in TextStory's interface and has to ship under that name.
+targets["Internal"] = Target(
+    sources: [
+        Source(path: checkout("TextStory/Sources/Internal"), headerVisibility: "public"),
+        Source(path: "Support/Internal.h", headerVisibility: "public"),
+    ],
+    settings: targetSettings()
+)
 
-add("  TextStory:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("TextStory/Sources/TextStory"))")
-add("        excludes: [\"Documentation.docc\"]")
-add("    dependencies:")
-add("      - target: Internal")
-add("      - target: Rearrange")
-settings()
-add()
+targets["Rearrange"] = Target(
+    sources: [Source(path: checkout("Rearrange/Sources/Rearrange"), excludes: docc)],
+    settings: targetSettings()
+)
 
-add("  TextFormation:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("TextFormation/Sources/TextFormation"))")
-add("        excludes: [\"Documentation.docc\"]")
-add("    dependencies:")
-add("      - target: TextStory")
-add("      - target: Rearrange")
-settings()
-add()
+targets["TextStory"] = Target(
+    sources: [Source(path: checkout("TextStory/Sources/TextStory"), excludes: docc)],
+    dependencies: [.target("Internal"), .target("Rearrange")],
+    settings: targetSettings()
+)
+
+targets["TextFormation"] = Target(
+    sources: [Source(path: checkout("TextFormation/Sources/TextFormation"), excludes: docc)],
+    dependencies: [.target("TextStory"), .target("Rearrange")],
+    settings: targetSettings()
+)
 
 // Mirrors the tree-sitter package's own C target settings (path lib, sources src, public headers
 // include, and the POSIX feature defines it needs).
-add("  TreeSitter:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("tree-sitter/lib/src"))")
-add("        excludes: [\"lib.c\", \"unicode/ICU_SHA\", \"unicode/README.md\", \"unicode/LICENSE\", \"wasm/stdlib-symbols.txt\"]")
-add("        headerVisibility: project")
-add("      - path: \(checkout("tree-sitter/lib/include"))")
-add("        headerVisibility: public")
-add("      - path: Support/TreeSitter.h")
-add("        headerVisibility: public")
-settings([
-    ("GCC_C_LANGUAGE_STANDARD", "c11"),
-    ("GCC_PREPROCESSOR_DEFINITIONS", "\"$(inherited) _POSIX_C_SOURCE=200112L _DEFAULT_SOURCE=1 _DARWIN_C_SOURCE=1\""),
-    ("HEADER_SEARCH_PATHS", "\"$(inherited) \(checkout("tree-sitter/lib/src")) \(checkout("tree-sitter/lib/include"))\""),
-])
-add()
+targets["TreeSitter"] = Target(
+    sources: [
+        Source(
+            path: checkout("tree-sitter/lib/src"),
+            excludes: ["lib.c", "unicode/ICU_SHA", "unicode/README.md", "unicode/LICENSE", "wasm/stdlib-symbols.txt"],
+            headerVisibility: "project"
+        ),
+        Source(path: checkout("tree-sitter/lib/include"), headerVisibility: "public"),
+        Source(path: "Support/TreeSitter.h", headerVisibility: "public"),
+    ],
+    settings: targetSettings([
+        "GCC_C_LANGUAGE_STANDARD": "c11",
+        "GCC_PREPROCESSOR_DEFINITIONS": "$(inherited) _POSIX_C_SOURCE=200112L _DEFAULT_SOURCE=1 _DARWIN_C_SOURCE=1",
+        "HEADER_SEARCH_PATHS": "$(inherited) \(checkout("tree-sitter/lib/src")) \(checkout("tree-sitter/lib/include"))",
+    ])
+)
 
-add("  SwiftTreeSitter:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(checkout("swift-tree-sitter/Sources/SwiftTreeSitter"))")
-add("        excludes: [\"Documentation.docc\"]")
-add("    dependencies:")
-add("      - target: TreeSitter")
-settings()
-add()
+targets["SwiftTreeSitter"] = Target(
+    sources: [Source(path: checkout("swift-tree-sitter/Sources/SwiftTreeSitter"), excludes: docc)],
+    dependencies: [.target("TreeSitter")],
+    settings: targetSettings()
+)
 
 // Only linked, never named in an interface -- but it still has to ship, because both
 // CodeEditTextView and CodeEditSourceEditor link against it.
-add("  CodeEditTextViewObjC:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(local("CodeEditTextView/Sources/CodeEditTextViewObjC"))")
-add("        excludes: [\"include/module.modulemap\"]")
-add("        headerVisibility: public")
-add("      - path: Support/CodeEditTextViewObjC.h")
-add("        headerVisibility: public")
-settings()
-add()
+targets["CodeEditTextViewObjC"] = Target(
+    sources: [
+        Source(
+            path: local("CodeEditTextView/Sources/CodeEditTextViewObjC"),
+            excludes: ["include/module.modulemap"],
+            headerVisibility: "public"
+        ),
+        Source(path: "Support/CodeEditTextViewObjC.h", headerVisibility: "public"),
+    ],
+    settings: targetSettings()
+)
 
 // --- our modules ----------------------------------------------------------------------------------
-// SWIFT_PACKAGE_NAME keeps the `package`-access declarations these modules share resolvable across
-// the framework boundary; AccessLevelOnImport enables the `internal import`s that keep the grammars
-// out of the public interfaces.
-let ourSettings: [(String, String)] = [
-    ("SWIFT_PACKAGE_NAME", "DoopEditor"),
-    ("OTHER_SWIFT_FLAGS", "\"$(inherited) -enable-experimental-feature AccessLevelOnImport\""),
-]
 
-add("  CodeEditTextView:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(local("CodeEditTextView/Sources/CodeEditTextView"))")
-add("        excludes: [\"Documentation.docc\"]")
-add("    dependencies:")
-add("      - target: TextStory")
-add("      - target: CodeEditTextViewObjC")
-add("      - package: swift-collections")
-add("        product: DequeModule")
-settings(ourSettings)
-add()
+targets["CodeEditTextView"] = Target(
+    sources: [Source(path: local("CodeEditTextView/Sources/CodeEditTextView"), excludes: docc)],
+    dependencies: [
+        .target("TextStory"),
+        .target("CodeEditTextViewObjC"),
+        .package("swift-collections", product: "DequeModule"),
+    ],
+    settings: targetSettings(ourSettings)
+)
 
-add("  CodeEditLanguages:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(local("CodeEditLanguages/Sources/CodeEditLanguages"))")
-add("        excludes: [\"Documentation.docc\", \"Resources\"]")
-for name in resources {
-    // Folder references, so `Resources/tree-sitter-<lang>/<query>.scm` keeps the layout
-    // CodeLanguage.queryURL(for:) expects inside the framework bundle.
-    add("      - path: \(local("CodeEditLanguages/Sources/CodeEditLanguages/Resources/\(name)"))")
-    add("        type: folder")
-    add("        buildPhase: resources")
-}
-add("    dependencies:")
-add("      - target: SwiftTreeSitter")
-for (product, package) in grammars {
-    add("      - package: \(package)")
-    add("        product: \(product)")
-}
-settings(ourSettings + [("OTHER_LDFLAGS", "\"$(inherited) -lc++\"")])
-add()
+targets["CodeEditLanguages"] = Target(
+    sources: [Source(path: local("CodeEditLanguages/Sources/CodeEditLanguages"), excludes: docc + ["Resources"])]
+        // Folder references, so `Resources/tree-sitter-<lang>/<query>.scm` keeps the layout
+        // CodeLanguage.queryURL(for:) expects inside the framework bundle.
+        + resources.map { name in
+            Source(
+                path: local("CodeEditLanguages/Sources/CodeEditLanguages/Resources/\(name)"),
+                type: "folder",
+                buildPhase: "resources"
+            )
+        },
+    dependencies: [.target("SwiftTreeSitter")] + grammars.map { .package($0.package, product: $0.product) },
+    settings: targetSettings(ourSettings.merging(["OTHER_LDFLAGS": "$(inherited) -lc++"]) { _, new in new })
+)
 
-add("  CodeEditSourceEditor:")
-add("    type: framework")
-add("    platform: macOS")
-add("    sources:")
-add("      - path: \(local("CodeEditSourceEditor/Sources/CodeEditSourceEditor"))")
-add("        excludes: [\"Documentation.docc\"]")
-add("    dependencies:")
-add("      - target: CodeEditTextView")
-add("      - target: CodeEditLanguages")
-add("      - target: TextFormation")
-add("      - target: CodeEditTextViewObjC")
-add("      - package: swift-collections")
-add("        product: _RopeModule")
-settings(ourSettings)
-add()
+targets["CodeEditSourceEditor"] = Target(
+    sources: [Source(path: local("CodeEditSourceEditor/Sources/CodeEditSourceEditor"), excludes: docc)],
+    dependencies: [
+        .target("CodeEditTextView"),
+        .target("CodeEditLanguages"),
+        .target("TextFormation"),
+        .target("CodeEditTextViewObjC"),
+        .package("swift-collections", product: "_RopeModule"),
+    ],
+    settings: targetSettings(ourSettings)
+)
+
+let spec = Spec(
+    name: "DoopEditorBinary",
+    options: .init(deploymentTarget: ["macOS": "13.0"], createIntermediateGroups: true, defaultConfig: "Release"),
+    configs: ["Release": "release"],
+    settings: Settings(base: [
+        // Emits the .swiftinterface that makes the binaries usable from a different compiler than
+        // the one that built them.
+        "BUILD_LIBRARY_FOR_DISTRIBUTION": "YES",
+        "SKIP_INSTALL": "NO",
+        "DYLIB_INSTALL_NAME_BASE": "@rpath",
+        "MACOSX_DEPLOYMENT_TARGET": "13.0",
+        "ARCHS": "arm64 x86_64",
+        "ONLY_ACTIVE_ARCH": "NO",
+        "SWIFT_VERSION": "5.10",
+        "DEFINES_MODULE": "YES",
+        "CODE_SIGN_IDENTITY": "",
+        "CODE_SIGNING_REQUIRED": "NO",
+        "CODE_SIGNING_ALLOWED": "NO",
+        "SWIFT_INSTALL_OBJC_HEADER": "NO",
+    ]),
+    packages: packages,
+    targets: targets
+)
+
+let encoder = JSONEncoder()
+// Sorted keys keep the file stable between runs, so a regenerated spec only differs when an input did.
+encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 
 do {
     try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
-    try (lines.joined(separator: "\n") + "\n").write(to: output, atomically: true, encoding: .utf8)
+    try (encoder.encode(spec) + Data("\n".utf8)).write(to: output, options: .atomic)
 } catch {
     fail("could not write \(output.path): \(error)")
 }
-print("wrote BinaryDistribution/project.yml (\(grammars.count) grammar products)")
+print("wrote BinaryDistribution/project.json (\(grammars.count) grammar products)")

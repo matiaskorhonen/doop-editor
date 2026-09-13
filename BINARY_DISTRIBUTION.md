@@ -94,7 +94,7 @@ evolution enabled (`deinitializer can only be '@inlinable' if the class is
 `SKIP_INSTALL = YES` at target level for framework targets, which overrides the project-level
 value — and an archive built with it on contains no framework to package.
 
-Generated and not checked in: `BinaryDistribution/project.yml`,
+Generated and not checked in: `BinaryDistribution/project.json` (written with `JSONEncoder`, which XcodeGen reads as readily as YAML),
 `BinaryDistribution/DoopEditorBinary.xcodeproj`, `build/`. Checked in:
 `BinaryDistribution/Support/*.h`, the umbrella headers the C and Obj-C frameworks need for
 Xcode to emit a module map.
@@ -118,7 +118,9 @@ build verified.
 Runs that don't publish:
 
 - a push to any branch that changes the workflow file;
-- a manual run ("Run workflow") with the version left empty, which builds the chosen branch.
+- a manual run ("Run workflow") with the version left empty, which builds the chosen branch or
+  tag. Only a tag *push*, or a manual run naming a version, publishes -- starting a manual run
+  from a tag doesn't.
 
 Their artifact, `doop-editor-xcframeworks-<short sha>`, expires after 7 days, and its manifest
 uses a placeholder `v0.0.0-ci.<run>` version.
@@ -173,6 +175,10 @@ The zips are uploaded before the tag is published because the manifest's downloa
 to resolve by the time a consumer can see the version. A published version is never rebuilt:
 its manifest pins the checksums of zips consumers have already resolved, and rebuilds don't
 reproduce them.
+
+If the version's release is still a **draft**, **Publish** stops before uploading anything: a
+draft's assets can't be downloaded anonymously, so publishing the binary package would give
+consumers 404s. Publish the release, then re-run as below.
 
 If **Publish** fails, use "Re-run failed jobs": it republishes the same artifact without
 rebuilding, so the checksums still match. A release run's artifact is kept for 30 days for this.

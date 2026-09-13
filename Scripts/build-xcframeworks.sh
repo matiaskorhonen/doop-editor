@@ -39,7 +39,7 @@ swift package --force-resolved-versions resolve
 
 echo "==> Generating $PROJECT"
 Scripts/generate-binary-project.swift
-(cd BinaryDistribution && xcodegen generate --spec project.yml)
+(cd BinaryDistribution && xcodegen generate --spec project.json)
 
 rm -rf "$ARCHIVE" "$OUTPUT"
 mkdir -p "$OUTPUT"

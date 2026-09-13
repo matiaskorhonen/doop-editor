@@ -18,9 +18,17 @@ fi
 # so none may appear in a public interface.
 ABSORBED='^(TreeSitter[A-Z]|Collections$|DequeModule$|_RopeModule$|InternalCollectionsUtilities$)'
 
+# The top-level module of every import in an interface. Interfaces don't only print bare
+# `import X`: attributes (`@preconcurrency import X`, `@_exported import X`), access modifiers
+# (`public import X`) and scoped imports (`import struct X.Y`) all appear too, and an absorbed
+# module imported any of those ways leaks just the same.
+imported_modules() {
+    sed -nE 's/^[[:space:]]*(@[A-Za-z_]+(\([^)]*\))?[[:space:]]+)*((public|package|internal|fileprivate|private)[[:space:]]+)?import[[:space:]]+((typealias|struct|class|enum|protocol|let|var|func)[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*).*/\7/p' "$1"
+}
+
 status=0
 for module in CodeEditTextView CodeEditLanguages CodeEditSourceEditor; do
-    # Each framework is archived separately, so look through every directory given.
+    # Accept several directories, e.g. an archive's Frameworks directory plus build products.
     framework=""
     for dir in "$@"; do
         if [ -d "$dir/$module.framework" ]; then
@@ -37,8 +45,7 @@ for module in CodeEditTextView CodeEditLanguages CodeEditSourceEditor; do
     found=0
     while IFS= read -r interface; do
         found=1
-        leaked=$(grep -E '^import ' "$interface" | sed 's/^import //' \
-                 | grep -E "$ABSORBED" || true)
+        leaked=$(imported_modules "$interface" | grep -E "$ABSORBED" || true)
         if [ -n "$leaked" ]; then
             echo "error: $module's public interface leaks absorbed modules:" >&2
             echo "$leaked" | sed 's/^/  /' >&2
