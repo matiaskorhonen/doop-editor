@@ -1,43 +1,34 @@
 # Upstream forks
 
-DoopEditor vendors three [CodeEdit](https://github.com/CodeEditApp) packages as git subtrees, each pulled from a custom fork rather than directly from CodeEditApp:
+DoopEditor started as three [CodeEdit](https://github.com/CodeEditApp) packages, vendored as git
+subtrees from custom forks:
 
-| Subtree | Source | Branch |
-|---|---|---|
-| `CodeEditSourceEditor/` | [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` |
-| `CodeEditTextView/` | [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` |
-| `CodeEditLanguages/` | [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` |
+| Former subtree | Source | Branch | Imported at |
+|---|---|---|---|
+| `CodeEditSourceEditor/` | [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` | `5a0923dadeb2b485476db0c7add20df1d796d9a8` |
+| `CodeEditTextView/` | [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` | `1589ee7d45b5523084b6f611be2efc1c111cd271` |
+| `CodeEditLanguages/` | [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` | `3a8e205fe59262a5e7bce689084a43476bd3acf5` |
 
-The `custom` branch on each fork is the canonical source for that package. `CodeEditLanguages/custom` also has the `spm-direct-dependencies` changes merged in, which is why `CodeEditLanguages` depends directly on SwiftPM grammar packages instead of an xcframework.
+`CodeEditLanguages/custom` also carried the `spm-direct-dependencies` changes, which is why the
+grammars are direct SwiftPM dependencies instead of an `xcframework`.
 
-Each subdirectory contains the full imported history from its upstream fork, but only the root `Package.swift` is used to build — changes made inside a subtree directory are regular commits in this repo, no special workflow needed for day-to-day edits.
+## The subtrees are severed
 
-This monorepo exists for fast cross-package iteration on Doop and is not intended for upstreaming changes back to CodeEdit.
+They were imported once, on 2026-05-21, and **never pulled again**. Every change since has been
+local work in this repository, and the three packages have since been merged into a single
+`DoopEditor` module — so the directory prefixes `git subtree pull` needs no longer exist.
 
-## Bootstrapping
+There is no path back. Upstream and this fork have diverged in ways that a merge could not
+reconcile anyway:
 
-### Import the subtrees
+- one module instead of three, with no `CodeEditTextView`, `CodeEditLanguages` or
+  `CodeEditSourceEditor` module to import;
+- the tree-sitter grammars as direct SwiftPM dependencies rather than an `xcframework`;
+- the third-party dependencies deliberately absent from the public API, so that the binary
+  distribution can ship one XCFramework (see [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md)).
 
-```bash
-git subtree add --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
+The forks above stay on GitHub as the record of where the code came from. To take a specific
+upstream fix, read it there and apply it by hand.
 
-git subtree add --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree add --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
-
-### Pull upstream changes
-
-```bash
-git subtree pull --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
-
-git subtree pull --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree pull --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
+The original MIT licences are preserved in [Licenses/](Licenses/), and the root
+[LICENSE](LICENSE) covers all three.

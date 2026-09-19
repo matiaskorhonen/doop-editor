@@ -1,6 +1,6 @@
 import SwiftUI
 import AppKit
-import CodeEditTextView
+import DoopEditor
 
 struct RawTextView: View {
     var text: NSTextStorage

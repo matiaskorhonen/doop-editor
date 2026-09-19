@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
 # This script updates tree-sitter query files (.scm) from grammar checkouts
 # and fills in missing queries from the nvim-treesitter submodule.
@@ -9,7 +9,7 @@
 #      git submodule update --init
 #
 # Usage:
-#   ./update_queries.sh
+#   Scripts/update-queries.sh
 #
 # Created from build_framework.sh query-copy logic
 
@@ -21,9 +21,10 @@ status () {
     echo "${GREEN}◆ $1${NC}"
 }
 
-CHECKOUTS_PATH="$PWD/.build/checkouts"
-RESOURCES_PATH="$PWD/Sources/CodeEditLanguages/Resources"
-NVIM_TS_PATH="$PWD/vendor/nvim-treesitter/runtime/queries"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CHECKOUTS_PATH="$ROOT/.build/checkouts"
+RESOURCES_PATH="$ROOT/Sources/DoopEditor/CodeEditLanguages/Resources"
+NVIM_TS_PATH="$ROOT/Vendor/nvim-treesitter/runtime/queries"
 
 if [ ! -d "$CHECKOUTS_PATH" ]; then
     echo "Error: .build/checkouts not found. Run 'swift package resolve' first."
@@ -31,7 +32,7 @@ if [ ! -d "$CHECKOUTS_PATH" ]; then
 fi
 
 if [ ! -d "$NVIM_TS_PATH" ]; then
-    echo "Error: vendor/nvim-treesitter not found. Run 'git submodule update --init' first."
+    echo "Error: Vendor/nvim-treesitter not found. Run 'git submodule update --init' first."
     exit 1
 fi
 

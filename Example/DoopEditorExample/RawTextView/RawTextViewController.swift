@@ -1,5 +1,5 @@
 import AppKit
-import CodeEditTextView
+import DoopEditor
 
 class RawTextViewController: NSViewController {
     var scrollView: NSScrollView!
