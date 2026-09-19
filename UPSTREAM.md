@@ -30,5 +30,6 @@ reconcile anyway:
 The forks above stay on GitHub as the record of where the code came from. To take a specific
 upstream fix, read it there and apply it by hand.
 
-The original MIT licences are preserved in [Licenses/](Licenses/), and the root
-[LICENSE](LICENSE) covers all three.
+The original MIT licence is preserved as the root [LICENSE](LICENSE), which names all three
+packages. Their own licence files were identical to it apart from the copyright line, so the years
+are folded into it rather than kept separately.

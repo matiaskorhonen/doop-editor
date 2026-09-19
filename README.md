@@ -84,8 +84,8 @@ directly, useful for manually testing changes without pulling them into Doop fir
 
 ## License
 
-MIT. The root [LICENSE](LICENSE) covers all three original packages; their own licence files are
-preserved in [Licenses/](Licenses/).
+MIT. The root [LICENSE](LICENSE) is the upstream CodeEdit licence, and covers all three original
+packages.
 
 ## Notes
 
