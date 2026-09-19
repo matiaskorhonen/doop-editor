@@ -7,14 +7,15 @@ import Foundation
 internal import TextStory
 internal import TextFormation
 
-/// Adapts a ``CodeEditTextView/TextView`` to TextFormation's `TextInterface`, which is what the text
-/// filters edit through.
+/// Adapts a ``TextView`` to TextFormation's `TextInterface`, which is what the text filters edit
+/// through.
 ///
-/// `TextView` used to conform to `TextInterface` itself. A public conformance to a third-party
-/// protocol puts that protocol's module into this module's public `.swiftinterface`, which would make
-/// every consumer of the binary distribution resolve TextFormation -- and nothing outside these
-/// filters needs it. Wrapping the conformance keeps TextFormation an implementation detail, so the
-/// binary distribution absorbs it instead of shipping it. See BINARY_DISTRIBUTION.md.
+/// `TextView` deliberately does not conform to `TextInterface` itself. A conformance of a public
+/// type to a third-party protocol is public, and a public conformance puts that protocol's module
+/// into this module's public `.swiftinterface` -- which would make every consumer of the binary
+/// distribution resolve TextFormation, and nothing outside these filters needs it. Wrapping the
+/// conformance keeps TextFormation an implementation detail the distribution can absorb. See
+/// BINARY_DISTRIBUTION.md.
 ///
 /// A class rather than a struct: `Filter.processMutation(_:in:with:)` takes the interface by value,
 /// so a struct's mutations to `selectedRange` would be lost.

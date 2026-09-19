@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-DoopEditor is a SwiftPM package built from customized forks of three [CodeEdit](https://github.com/CodeEditApp) packages, vendored for Doop:
+DoopEditor is a SwiftPM package built from customized forks of three [CodeEdit](https://github.com/CodeEditApp) packages, vendored for Doop. It is a single module.
 
 ```
 DoopEditor/
@@ -20,9 +20,9 @@ DoopEditor/
 └── Example/                            # standalone Xcode project exercising the editor
 ```
 
-The three directories under `Sources/DoopEditor` were once three separate modules. **They are one module now** — there is no boundary between them, nothing to import, and no `package` access level. Keep the directories as they are: they are how the code stays navigable, and they keep diffs against the upstream forks readable.
+The three directories under `Sources/DoopEditor` divide the module by layer, one per upstream package. **They are one module** — no boundary between them, nothing to import, and no `package` access level. Keep the directories as they are: they are how the code stays navigable, and they keep diffs against the forks readable.
 
-The forks were git subtrees. They are **severed**: imported once in May 2026, never pulled, and the directory prefixes `git subtree pull` needs no longer exist. See [UPSTREAM.md](UPSTREAM.md). Some upstream docs and comments describe processes this fork no longer uses (e.g. `Documentation.docc/Add-Languages.md`, which describes an `xcframework`-based workflow).
+Nothing is pulled from the forks and nothing is contributed back; see [UPSTREAM.md](UPSTREAM.md). Some inherited documentation describes upstream's processes rather than this repository's (e.g. `Documentation.docc/Add-Languages.md`, which describes an `xcframework` workflow).
 
 ## Package
 

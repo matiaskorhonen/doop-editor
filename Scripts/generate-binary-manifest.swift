@@ -2,8 +2,8 @@
 //
 // Generate the doop-editor-binary package from a completed xcframework build.
 //
-// The XCFrameworks are attached to the doop-editor GitHub release for a version; the package that
-// points at them lives in its own repository, doop-editor-binary, tagged with the same version.
+// The XCFramework is attached to the doop-editor GitHub release for a version; the package that
+// points at it lives in its own repository, doop-editor-binary, tagged with the same version.
 // Keeping it out of this repo means each repository has exactly one tag per version -- SwiftPM
 // strips a leading `v` when reading tags, so a `v0.9.0` and a `0.9.0` in one repo are two tags for
 // the same version, and it silently resolves whichever it prefers.

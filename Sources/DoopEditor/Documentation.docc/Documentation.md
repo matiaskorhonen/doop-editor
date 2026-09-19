@@ -6,10 +6,9 @@ An Xcode-inspired code editor view, with syntax highlighting powered by tree-sit
 
 ![logo](codeeditsourceeditor-logo)
 
-DoopEditor is a customised fork of three [CodeEdit](https://github.com/CodeEditApp) packages —
-`CodeEditTextView`, `CodeEditLanguages` and `CodeEditSourceEditor` — combined into a single module.
-It is built for [Doop](https://github.com/matiaskorhonen/doop) and is not intended for upstream
-contribution.
+DoopEditor is a single module, built from customised forks of three
+[CodeEdit](https://github.com/CodeEditApp) packages. It is made for
+[Doop](https://github.com/matiaskorhonen/doop) and is not intended for upstream contribution.
 
 ![banner](preview)
 

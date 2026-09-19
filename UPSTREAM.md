@@ -1,35 +1,37 @@
 # Upstream forks
 
-DoopEditor started as three [CodeEdit](https://github.com/CodeEditApp) packages, vendored as git
-subtrees from custom forks:
+DoopEditor's code comes from three [CodeEdit](https://github.com/CodeEditApp) packages, by way of
+custom forks:
 
-| Former subtree | Source | Branch | Imported at |
+| Source | Branch | Imported at | Now |
 |---|---|---|---|
-| `CodeEditSourceEditor/` | [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` | `5a0923dadeb2b485476db0c7add20df1d796d9a8` |
-| `CodeEditTextView/` | [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` | `1589ee7d45b5523084b6f611be2efc1c111cd271` |
-| `CodeEditLanguages/` | [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` | `3a8e205fe59262a5e7bce689084a43476bd3acf5` |
+| [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` | `5a0923dadeb2b485476db0c7add20df1d796d9a8` | `Sources/DoopEditor/CodeEditSourceEditor/` |
+| [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` | `1589ee7d45b5523084b6f611be2efc1c111cd271` | `Sources/DoopEditor/CodeEditTextView/` |
+| [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` | `3a8e205fe59262a5e7bce689084a43476bd3acf5` | `Sources/DoopEditor/CodeEditLanguages/` |
 
-`CodeEditLanguages/custom` also carried the `spm-direct-dependencies` changes, which is why the
-grammars are direct SwiftPM dependencies instead of an `xcframework`.
+`CodeEditLanguages/custom` also carries the `spm-direct-dependencies` changes, which is why the
+grammars are direct SwiftPM dependencies rather than an `xcframework`.
 
-## The subtrees are severed
+## There is no upstream workflow
 
-They were imported once, on 2026-05-21, and **never pulled again**. Every change since has been
-local work in this repository, and the three packages have since been merged into a single
-`DoopEditor` module — so the directory prefixes `git subtree pull` needs no longer exist.
+This repository is the only home of its code. Nothing is pulled from the forks, and nothing is
+contributed back. They were imported as git subtrees; the prefixes `git subtree pull` would need
+don't exist here.
 
-There is no path back. Upstream and this fork have diverged in ways that a merge could not
-reconcile anyway:
+The two codebases have diverged past the point where a merge would mean anything:
 
-- one module instead of three, with no `CodeEditTextView`, `CodeEditLanguages` or
-  `CodeEditSourceEditor` module to import;
+- one module, `DoopEditor`, rather than three — there is no `CodeEditTextView`,
+  `CodeEditLanguages` or `CodeEditSourceEditor` to import;
 - the tree-sitter grammars as direct SwiftPM dependencies rather than an `xcframework`;
-- the third-party dependencies deliberately absent from the public API, so that the binary
-  distribution can ship one XCFramework (see [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md)).
+- no third-party type anywhere in the public API, so that the binary distribution is a single
+  XCFramework (see [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md)).
 
-The forks above stay on GitHub as the record of where the code came from. To take a specific
-upstream fix, read it there and apply it by hand.
+The forks stay on GitHub as the record of where the code came from. To take a specific upstream
+fix, read it there and apply it by hand.
 
-The original MIT licence is preserved as the root [LICENSE](LICENSE), which names all three
-packages. Their own licence files were identical to it apart from the copyright line, so the years
-are folded into it rather than kept separately.
+Some inherited documentation still describes upstream's processes rather than this repository's —
+`Documentation.docc/Add-Languages.md`, for one, describes the `xcframework` workflow.
+
+## Licence
+
+The root [LICENSE](LICENSE) is CodeEdit's MIT licence and names all three packages.

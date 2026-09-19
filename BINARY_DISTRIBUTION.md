@@ -9,35 +9,28 @@ The source package on `main` stays the source of truth; everything here is addit
 
 ## What ships
 
-**One** universal (arm64 + x86_64) dynamic framework: `DoopEditor`. Everything else is absorbed
-into it — TextStory, TextFormation, Rearrange, Internal, SwiftTreeSitter, TreeSitter,
-`CodeEditTextViewObjC`, `_RopeModule` and the 36 grammar packages.
+**One** universal (arm64 + x86_64) dynamic framework: `DoopEditor`, about 26 MB zipped. Everything
+else is absorbed into it — TextStory, TextFormation, Rearrange, Internal, SwiftTreeSitter,
+TreeSitter, `CodeEditTextViewObjC`, `_RopeModule` and the 36 grammar packages.
 
 That is possible because DoopEditor is a **single module**. A dependency has to ship as its own
 framework if either of two things is true, and with one module neither can be:
 
 1. **Its module is named in a public `.swiftinterface`.** Consumers' compilers have to resolve
-   every module an interface imports, whatever the link graph says. This used to keep
-   `SwiftTreeSitter` and `TextStory` — and the frameworks *their* interfaces name in turn — in the
-   release. Almost all of those references were public only in order to cross the boundary between
-   `CodeEditTextView`, `CodeEditLanguages` and `CodeEditSourceEditor`; merging the three made them
-   internal.
+   every module an interface imports, whatever the link graph says. Keeping third-party types out
+   of the public API is what prevents this, and it is the constraint to protect — see below.
 2. **Two of our frameworks link it.** Xcode then promotes it to a shared dynamic framework instead
    of absorbing a copy into each, and a promoted framework has to ship or the consumer hits a dyld
    error. With one framework there is no second linker.
 
-The set is still **discovered from the link graph**, not hand-written:
+The set is **discovered from the link graph**, not hand-written:
 `Scripts/framework-closure.sh` walks `otool -L` out from `DoopEditor` and fails the build if
 anything it loads at runtime wasn't built. It should always print exactly one framework; if it ever
 prints two, a dependency stopped being absorbed and the release would be broken without it.
 
-Three shipped frameworks became one in two steps. v0.8.2 shipped eleven and 47.5 MB;
-absorbing `TextFormation`, `CodeEditTextViewObjC` and `InternalCollectionsUtilities` brought that
-to eight and 38.0 MB; merging the modules brings it to **one and 26.2 MB**.
-
-Everything is archived **in a single pass** from one scheme. That was originally forced by the
-promotion behaviour above — archiving each scheme separately produced frameworks that disagreed
-about their own link graph — and it is simply the shape of the build now.
+Everything is archived **in a single pass** from one scheme, which is both the simplest shape for a
+single framework and a guard against the promotion behaviour above: archiving schemes separately
+produces frameworks that disagree about their own link graph.
 
 ## How the source is kept distributable
 
@@ -47,7 +40,7 @@ Three properties of the sources make this work, and all three are easy to break 
    `import` for *every* module a source file imports, used publicly or not, so a plain
    `import TreeSitterSwift` in `CodeLanguage.swift` would put all 40 grammar modules into the public
    `.swiftinterface` — consumers would then need every grammar package, defeating the point. The
-   same goes for `SwiftTreeSitter`, `TextStory` and `TextFormation`, which no longer ship at all.
+   same goes for `SwiftTreeSitter`, `TextStory` and `TextFormation`: none of them ship.
    `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing.
    It doesn't keep a list of forbidden modules: it forbids every module the build compiled from
    a SwiftPM package (Xcode writes a module map for each into `GeneratedModuleMaps`) that doesn't

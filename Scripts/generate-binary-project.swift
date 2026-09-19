@@ -1,6 +1,6 @@
 #!/usr/bin/env swift
 //
-// Generate the XcodeGen spec used to build DoopEditor's distributable XCFrameworks.
+// Generate the XcodeGen spec that builds DoopEditor's distributable XCFramework.
 //
 // The spec is derived from the package itself so it cannot drift from the source build: the
 // grammar products come from SwiftPM's parsed manifest (`swift package dump-package`), and every

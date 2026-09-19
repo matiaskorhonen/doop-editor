@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Build DoopEditor's distributable XCFrameworks.
+# Build DoopEditor's distributable XCFramework.
 #
-# Produces one universal (arm64 + x86_64) macOS XCFramework per shipped module under
-# `build/xcframeworks`, plus a zip and SwiftPM checksum for each, and the dependency graph
-# that Scripts/generate-binary-manifest.swift turns into the doop-editor-binary Package.swift.
+# Produces the universal (arm64 + x86_64) macOS XCFramework under `build/xcframeworks`, with a zip,
+# a SwiftPM checksum, and the dependency graph that Scripts/generate-binary-manifest.swift turns
+# into the doop-editor-binary Package.swift.
 #
 # Usage: Scripts/build-xcframeworks.sh [version]
 set -euo pipefail

@@ -2,11 +2,10 @@
 
 A code editor for macOS, built from customized forks of the
 [CodeEdit](https://github.com/CodeEditApp) editor components and used by
-[Doop](https://github.com/matiaskorhonen/doop).
+[Doop](https://github.com/matiaskorhonen/doop). It is a single module, `DoopEditor`.
 
-It was three packages — `CodeEditTextView`, `CodeEditLanguages` and `CodeEditSourceEditor` — and is
-now a single `DoopEditor` module. See [UPSTREAM.md](UPSTREAM.md) for where the code came from, and
-[BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md) for why it was merged.
+See [UPSTREAM.md](UPSTREAM.md) for where the code came from, and
+[BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md) for how it is released as a prebuilt XCFramework.
 
 ## Structure
 
@@ -24,8 +23,9 @@ DoopEditor/
 └── Example/                               # a standalone Xcode project
 ```
 
-The three directories under `Sources/DoopEditor` are the former packages, kept apart for
-readability. They are one module: there is no boundary between them and nothing to import.
+The three directories under `Sources/DoopEditor` divide the module by layer, and each corresponds
+to one of the upstream CodeEdit packages -- which keeps diffs against the forks readable. They are
+one module: there is no boundary between them and nothing to import.
 
 ## Requirements
 

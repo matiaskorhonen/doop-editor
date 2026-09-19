@@ -67,11 +67,10 @@ let package = Package(
             path: "Sources/CodeEditTextViewObjC",
             publicHeadersPath: "include"
         ),
-        // One module. It was three (CodeEditTextView, CodeEditLanguages, CodeEditSourceEditor),
-        // whose sources still live in a directory each under Sources/DoopEditor. Merging them is
-        // what lets the binary distribution ship a single XCFramework: a dependency only has to
-        // ship when a public interface names it or when two of our frameworks link it, and with one
-        // module neither can happen. See BINARY_DISTRIBUTION.md.
+        // One module, divided into a directory per layer under Sources/DoopEditor. That is what lets
+        // the binary distribution ship a single XCFramework: a dependency only has to ship when a
+        // public interface names it or when two of our frameworks link it, and with one module
+        // neither can happen. See BINARY_DISTRIBUTION.md.
         .target(
             name: "DoopEditor",
             dependencies: [

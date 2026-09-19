@@ -10,12 +10,11 @@ internal import TextStory
 
 /// The text-mutation primitives the filters edit a ``TextView`` through.
 ///
-/// `TextView` used to conform to TextStory's `TextStoring` here. A conformance of a public type to a
-/// third-party protocol is itself public, which puts TextStory into this module's public
-/// `.swiftinterface` and so forces every consumer of the binary distribution to resolve it. Nothing
-/// outside this module needs any of it, so these are plain internal methods instead, and
-/// ``TextViewTextInterface`` carries the conformance TextFormation's filters actually ask for. See
-/// BINARY_DISTRIBUTION.md.
+/// `TextView` deliberately does not conform to TextStory's `TextStoring`: a conformance of a public
+/// type to a third-party protocol is public, and cannot be made internal, so it would put TextStory
+/// into this module's public `.swiftinterface`. Nothing outside this module needs any of it, so
+/// these are plain internal methods, and ``TextViewTextInterface`` carries the conformance
+/// TextFormation's filters ask for. See BINARY_DISTRIBUTION.md.
 extension TextView {
     var length: Int {
         textStorage.length
@@ -41,12 +40,12 @@ extension TextView {
         layoutManager.invalidateLayoutForRange(mutation.range)
     }
 
-    /// Replaces a range with a string, as `TextStoring`'s protocol extension used to.
+    /// Replaces a range with a string. Mirrors `TextStoring`'s protocol-extension default.
     func replaceString(in range: NSRange, with string: String) {
         applyMutation(TextMutation(string: string, range: range, limit: length))
     }
 
-    /// Inserts a string at a location, as `TextStoring`'s protocol extension used to.
+    /// Inserts a string at a location. Mirrors `TextStoring`'s protocol-extension default.
     func insertString(_ string: String, at location: Int) {
         applyMutation(TextMutation(string: string, range: NSRange(location: location, length: 0), limit: length))
     }
