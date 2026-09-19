@@ -6,12 +6,16 @@
 //
 
 import AppKit
-internal import DequeModule
 
 /// Maintains a queue of views available for reuse.
 public class ViewReuseQueue<View: NSView, Key: Hashable> {
     /// A stack of views that are not currently in use
-    internal var queuedViews: Deque<View> = []
+    ///
+    /// A plain array rather than a `Deque`: the queue never grows past the number of views in use --
+    /// a screenful of line fragments -- and swift-collections is the only thing this module needed
+    /// from outside, which cost the binary distribution an extra framework. Views are taken from the
+    /// end, since a queued view carries no state that makes any particular one preferable.
+    internal var queuedViews: [View] = []
 
     /// Maps views that are no longer queued to the keys they're queued with.
     public var usedViews: [Key: View] = [:]
@@ -33,7 +37,7 @@ public class ViewReuseQueue<View: NSView, Key: Hashable> {
         if let usedView = usedViews[key] {
             view = usedView
         } else {
-            view = queuedViews.popFirst() ?? createView()
+            view = queuedViews.popLast() ?? createView()
             view.prepareForReuse()
             view.isHidden = false
             usedViews[key] = view

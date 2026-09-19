@@ -7,7 +7,6 @@
 
 import AppKit
 import CodeEditTextView
-internal import CodeEditTextViewObjC
 
 public protocol GutterViewDelegate: AnyObject {
     func gutterViewWidthDidUpdate()
@@ -276,7 +275,7 @@ public class GutterView: NSView {
             // Leading padding + (width - linewidth)
             let xPos = edgeInsets.leading + (maxLineNumberWidth - lineNumberWidth)
 
-            ContextSetHiddenSmoothingStyle(context, 16)
+            context.setHiddenFontSmoothingStyle(16)
 
             context.textPosition = CGPoint(x: xPos, y: yPos)
 

@@ -9,12 +9,12 @@ The source package on `main` stays the source of truth; everything here is addit
 
 ## What ships
 
-Eleven universal (arm64 + x86_64) dynamic frameworks. The set is **discovered from the link
+Eight universal (arm64 + x86_64) dynamic frameworks. The set is **discovered from the link
 graph**, not hand-written: `Scripts/framework-closure.sh` walks `otool -L` out from the three
 products and fails the build if anything they load at runtime wasn't built. That matters
 because Xcode decides on its own whether a SwiftPM dependency is absorbed into the framework
-using it or promoted to a shared dynamic framework, and that decision is not stable — see
-`InternalCollectionsUtilities` below.
+using it or promoted to a shared dynamic framework, and that decision depends on how many of
+our targets use it — see `InternalCollectionsUtilities` below.
 
 | Framework | Why |
 |---|---|
@@ -23,24 +23,38 @@ using it or promoted to a shared dynamic framework, and that decision is not sta
 | `TreeSitter` | `SwiftTreeSitter` exposes `TreeSitter.TSInputEncoding` publicly |
 | `TextStory` | `TextMutation` is in the public API |
 | `Internal` | `TextStory` re-exports its `TSYTextStorage` through a public typealias |
-| `TextFormation` | `extension TextView: TextInterface` is a public conformance |
 | `Rearrange` | in `TextStory`'s public interface |
-| `CodeEditTextViewObjC` | never named in an interface, but two frameworks link it |
-| `InternalCollectionsUtilities` | promoted to a shared dynamic framework by Xcode (below) |
 
 **Absorbed** into the framework that uses them, and not shipped: the 40 tree-sitter grammars,
-`DequeModule`, `ContainersPreview` (which `DequeModule` depends on) and `_RopeModule`.
+`TextFormation`, `CodeEditTextViewObjC`, `_RopeModule`, and the swift-collections modules under
+it (`InternalCollectionsUtilities`, `ContainersPreview`).
 
-`InternalCollectionsUtilities` is the awkward one. `CodeEditTextView` uses `DequeModule` and
-`CodeEditSourceEditor` uses `_RopeModule`, and both of those depend on it — so Xcode absorbs it
-statically when only one of our targets needs it, and promotes it to a shared dynamic framework
-once both do. That is also why everything is archived **in a single pass**: archiving each
-scheme separately produced frameworks that disagreed with each other about their own link
-graph, and the promoted framework was silently absent from the release (SwiftPM package
-products keep `SKIP_INSTALL=YES`, so it never reaches the archive and has to be picked out of
-the build products). It ships binary-only: built without library evolution, it has no
-`.swiftinterface`, which `-create-xcframework` rejects — and no consumer imports it, so the
-unusable module is stripped and only the dylib ships.
+A framework ships only if it has to, and there are exactly two reasons it has to:
+
+1. **Its module is named in one of our public interfaces.** Consumers' compilers have to resolve
+   every module an interface imports, so those can't be absorbed, whatever the link graph says.
+   That is what keeps `SwiftTreeSitter` and `TextStory` — with the frameworks *their* interfaces
+   name in turn — in the list.
+2. **Two of our frameworks link it.** Xcode then promotes it to a shared dynamic framework
+   instead of absorbing a copy into each, and a promoted framework has to ship or the consumer
+   hits a dyld error.
+
+Both reasons are worth checking before adding a dependency, since either one adds a framework.
+`TextFormation` and `CodeEditTextViewObjC` used to ship for those reasons and no longer do:
+TextFormation's `TextInterface` conformance moved off the public `TextView` onto an internal
+wrapper, and the gutter's one Obj-C call went through a `package` method on `CGContext`, which
+left each used by a single framework. Both are now `library.static` targets in the generated
+project, absorbed by whichever framework links them. That is also what `InternalCollectionsUtilities`
+did once `CodeEditTextView` stopped using `DequeModule`: `_RopeModule` in `CodeEditSourceEditor`
+is the only user left, so Xcode absorbs it rather than promoting it.
+
+That promotion behaviour is why everything is archived **in a single pass**: archiving each
+scheme separately produced frameworks that disagreed with each other about their own link graph,
+and a promoted framework was silently absent from the release (SwiftPM package products keep
+`SKIP_INSTALL=YES`, so one never reaches the archive and has to be picked out of the build
+products). The build still handles a promoted framework if one reappears: it ships binary-only,
+since built without library evolution it has no `.swiftinterface`, which `-create-xcframework`
+rejects — no consumer imports it, so the unusable module is stripped and only the dylib ships.
 
 ## How the source is kept distributable
 
@@ -109,12 +123,16 @@ value — and an archive built with it on contains no framework to package.
 
 Generated and not checked in: `BinaryDistribution/project.json` (written with `JSONEncoder`, which XcodeGen reads as readily as YAML),
 `BinaryDistribution/DoopEditorBinary.xcodeproj`, `build/`. Checked in:
-`BinaryDistribution/Support/*.h`, the umbrella headers the C and Obj-C frameworks need for
-Xcode to emit a module map.
+`BinaryDistribution/Support/*.h`, the umbrella headers the C frameworks need for Xcode to emit a
+module map. A `library.static` target needs none: `CodeEditTextViewObjC` is imported through the
+package's own `include/module.modulemap`, passed to the importing target with
+`-Xcc -fmodule-map-file=`.
 
-Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). Note that
+XcodeGen adds a static-library dependency to a target without linking it, so those dependencies
+are declared with `link: true` -- otherwise the absorbed symbols come up undefined.
 
-The release is about 48 MB of zips, 18 MB of it `CodeEditLanguages` (the grammars). The builds
+The release is about 36 MB of zips, 17 MB of it `CodeEditLanguages` (the grammars). The builds
 are **not** bit-reproducible -- two runs of the same commit produce different checksums, since
 timestamps and dSYM UUIDs end up in the archives -- so the checksums in the manifest always
 come from the same build that produced the uploaded zips. Don't hand-edit one.

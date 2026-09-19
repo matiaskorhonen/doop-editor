@@ -56,13 +56,16 @@ struct Package: Encodable {
 }
 
 struct Target: Encodable {
-    let type = "framework"
+    /// `framework` ships as its own XCFramework; `library.static` is absorbed into whichever
+    /// framework links it, and so never reaches a consumer.
+    let type: String
     let platform = "macOS"
     let sources: [Source]
     let dependencies: [Dependency]?
     let settings: Settings
 
-    init(sources: [Source], dependencies: [Dependency] = [], settings: Settings) {
+    init(type: String = "framework", sources: [Source], dependencies: [Dependency] = [], settings: Settings) {
+        self.type = type
         self.sources = sources
         self.dependencies = dependencies.isEmpty ? nil : dependencies
         self.settings = settings
@@ -79,10 +82,13 @@ struct Source: Encodable {
 
 enum Dependency: Encodable {
     case target(String)
+    /// A `library.static` target, which XcodeGen leaves out of the link phase unless `link` says
+    /// otherwise -- the symbols are absorbed into this target's binary, so it must be linked.
+    case staticTarget(String)
     case package(String, product: String)
 
     private enum CodingKeys: String, CodingKey {
-        case target, package, product
+        case target, package, product, link
     }
 
     func encode(to encoder: Encoder) throws {
@@ -90,6 +96,9 @@ enum Dependency: Encodable {
         switch self {
         case .target(let name):
             try container.encode(name, forKey: .target)
+        case .staticTarget(let name):
+            try container.encode(name, forKey: .target)
+            try container.encode(true, forKey: .link)
         case .package(let package, let product):
             try container.encode(package, forKey: .package)
             try container.encode(product, forKey: .product)
@@ -199,6 +208,18 @@ func targetSettings(_ extra: [String: String] = [:]) -> Settings {
     Settings(base: ["SKIP_INSTALL": "NO"].merging(extra) { _, new in new })
 }
 
+/// Settings for a target that is absorbed into the framework linking it rather than shipped.
+///
+/// It must not install (there is no product to package), and it doesn't need library evolution:
+/// nothing outside the framework that absorbs it ever imports it, and a resilient static library
+/// would only add dispatch overhead. That is how the SwiftPM package targets are built too.
+func staticSettings(_ extra: [String: String] = [:]) -> Settings {
+    Settings(base: [
+        "SKIP_INSTALL": "YES",
+        "BUILD_LIBRARY_FOR_DISTRIBUTION": "NO",
+    ].merging(extra) { _, new in new })
+}
+
 /// SWIFT_PACKAGE_NAME keeps the `package`-access declarations our three modules share resolvable
 /// across the framework boundary; AccessLevelOnImport enables the `internal import`s that keep the
 /// grammars out of the public interfaces.
@@ -250,10 +271,13 @@ targets["TextStory"] = Target(
     settings: targetSettings()
 )
 
+// Absorbed into CodeEditSourceEditor, the only module that uses it: its types reach no public
+// interface, so consumers never need to import it.
 targets["TextFormation"] = Target(
+    type: "library.static",
     sources: [Source(path: checkout("TextFormation/Sources/TextFormation"), excludes: docc)],
     dependencies: [.target("TextStory"), .target("Rearrange")],
-    settings: targetSettings()
+    settings: staticSettings()
 )
 
 // Mirrors the tree-sitter package's own C target settings (path lib, sources src, public headers
@@ -281,19 +305,24 @@ targets["SwiftTreeSitter"] = Target(
     settings: targetSettings()
 )
 
-// Only linked, never named in an interface -- but it still has to ship, because both
-// CodeEditTextView and CodeEditSourceEditor link against it.
+// Absorbed into CodeEditTextView, now the only module that imports it: CodeEditSourceEditor's gutter
+// goes through `CGContext.setHiddenFontSmoothingStyle(_:)` instead. A static library has no module of
+// its own, so `internal import CodeEditTextViewObjC` resolves against the package's checked-in module
+// map, passed to the importing target below.
 targets["CodeEditTextViewObjC"] = Target(
+    type: "library.static",
     sources: [
         Source(
             path: local("CodeEditTextView/Sources/CodeEditTextViewObjC"),
             excludes: ["include/module.modulemap"],
-            headerVisibility: "public"
-        ),
-        Source(path: "Support/CodeEditTextViewObjC.h", headerVisibility: "public"),
+            headerVisibility: "project"
+        )
     ],
-    settings: targetSettings()
+    settings: staticSettings()
 )
+
+/// The module map of the Obj-C shim above, as an absolute path for the compiler.
+let objcModuleMap = "$(SRCROOT)/" + local("CodeEditTextView/Sources/CodeEditTextViewObjC/include/module.modulemap")
 
 // --- our modules ----------------------------------------------------------------------------------
 
@@ -301,10 +330,11 @@ targets["CodeEditTextView"] = Target(
     sources: [Source(path: local("CodeEditTextView/Sources/CodeEditTextView"), excludes: docc)],
     dependencies: [
         .target("TextStory"),
-        .target("CodeEditTextViewObjC"),
-        .package("swift-collections", product: "DequeModule"),
+        .staticTarget("CodeEditTextViewObjC"),
     ],
-    settings: targetSettings(ourSettings)
+    settings: targetSettings(ourSettings.merging([
+        "OTHER_SWIFT_FLAGS": "\(ourSettings["OTHER_SWIFT_FLAGS"]!) -Xcc -fmodule-map-file=\(objcModuleMap)",
+    ]) { _, new in new })
 )
 
 targets["CodeEditLanguages"] = Target(
@@ -327,8 +357,7 @@ targets["CodeEditSourceEditor"] = Target(
     dependencies: [
         .target("CodeEditTextView"),
         .target("CodeEditLanguages"),
-        .target("TextFormation"),
-        .target("CodeEditTextViewObjC"),
+        .staticTarget("TextFormation"),
         .package("swift-collections", product: "_RopeModule"),
     ],
     settings: targetSettings(ourSettings)

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import TextFormation
+internal import TextFormation
 import TextStory
 
 /// Filter for replacing tab characters with the user-defined indentation unit.

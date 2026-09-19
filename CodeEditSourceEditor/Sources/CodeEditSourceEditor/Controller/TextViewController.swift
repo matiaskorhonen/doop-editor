@@ -10,7 +10,7 @@ import CodeEditTextView
 import CodeEditLanguages
 import SwiftUI
 import Combine
-import TextFormation
+internal import TextFormation
 
 /// # TextViewController
 /// 
