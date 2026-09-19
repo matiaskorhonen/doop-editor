@@ -1,9 +1,10 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-// Settings shared by the three library targets. `AccessLevelOnImport` lets the modules mark
-// implementation-detail imports (e.g. the tree-sitter grammars) `internal import`, which keeps them
-// out of the generated `.swiftinterface` when the targets are built for binary distribution.
+// `AccessLevelOnImport` lets the module mark implementation-detail imports (the tree-sitter
+// grammars, SwiftTreeSitter, TextStory, TextFormation) `internal import`, which keeps them out of
+// the generated `.swiftinterface` when the module is built for binary distribution. Nothing outside
+// this package may name one of their types -- see BINARY_DISTRIBUTION.md.
 let resilientSettings: [SwiftSetting] = [
     .enableExperimentalFeature("AccessLevelOnImport")
 ]
@@ -12,9 +13,7 @@ let package = Package(
     name: "DoopEditor",
     platforms: [.macOS(.v13)],
     products: [
-        .library(name: "CodeEditSourceEditor", targets: ["CodeEditSourceEditor"]),
-        .library(name: "CodeEditTextView", targets: ["CodeEditTextView"]),
-        .library(name: "CodeEditLanguages", targets: ["CodeEditLanguages"]),
+        .library(name: "DoopEditor", targets: ["DoopEditor"]),
     ],
     dependencies: [
         // CodeEditTextView deps
@@ -63,31 +62,24 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-zig.git", revision: "b0b21e587fb0702d67e276b6ef574cd1c2313c15"), // update
     ],
     targets: [
-        // MARK: - CodeEditTextView
         .target(
             name: "CodeEditTextViewObjC",
-            path: "CodeEditTextView/Sources/CodeEditTextViewObjC",
+            path: "Sources/CodeEditTextViewObjC",
             publicHeadersPath: "include"
         ),
+        // One module. It was three (CodeEditTextView, CodeEditLanguages, CodeEditSourceEditor),
+        // whose sources still live in a directory each under Sources/DoopEditor. Merging them is
+        // what lets the binary distribution ship a single XCFramework: a dependency only has to
+        // ship when a public interface names it or when two of our frameworks link it, and with one
+        // module neither can happen. See BINARY_DISTRIBUTION.md.
         .target(
-            name: "CodeEditTextView",
+            name: "DoopEditor",
             dependencies: [
                 "TextStory",
+                "TextFormation",
                 "CodeEditTextViewObjC",
-            ],
-            path: "CodeEditTextView/Sources/CodeEditTextView",
-            swiftSettings: resilientSettings
-        ),
-        .testTarget(
-            name: "CodeEditTextViewTests",
-            dependencies: ["CodeEditTextView"],
-            path: "CodeEditTextView/Tests/CodeEditTextViewTests"
-        ),
-
-        // MARK: - CodeEditLanguages
-        .target(
-            name: "CodeEditLanguages",
-            dependencies: [
+                // RangeStore's rope.
+                .product(name: "_RopeModule", package: "swift-collections"),
                 .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
                 .product(name: "TreeSitterAgda", package: "tree-sitter-agda"),
                 .product(name: "TreeSitterBash", package: "tree-sitter-bash"),
@@ -126,77 +118,56 @@ let package = Package(
                 .product(name: "TreeSitterYAML", package: "tree-sitter-yaml"),
                 .product(name: "TreeSitterZig", package: "tree-sitter-zig"),
             ],
-            path: "CodeEditLanguages/Sources/CodeEditLanguages",
+            path: "Sources/DoopEditor",
             resources: [
-                .copy("Resources/tree-sitter-agda"),
-                .copy("Resources/tree-sitter-bash"),
-                .copy("Resources/tree-sitter-c"),
-                .copy("Resources/tree-sitter-c-sharp"),
-                .copy("Resources/tree-sitter-cpp"),
-                .copy("Resources/tree-sitter-css"),
-                .copy("Resources/tree-sitter-dockerfile"),
-                .copy("Resources/tree-sitter-elixir"),
-                .copy("Resources/tree-sitter-generic"),
-                .copy("Resources/tree-sitter-go"),
-                .copy("Resources/tree-sitter-go-mod"),
-                .copy("Resources/tree-sitter-haskell"),
-                .copy("Resources/tree-sitter-html"),
-                .copy("Resources/tree-sitter-java"),
-                .copy("Resources/tree-sitter-javascript"),
-                .copy("Resources/tree-sitter-jsdoc"),
-                .copy("Resources/tree-sitter-json"),
-                .copy("Resources/tree-sitter-julia"),
-                .copy("Resources/tree-sitter-kotlin"),
-                .copy("Resources/tree-sitter-lua"),
-                .copy("Resources/tree-sitter-markdown"),
-                .copy("Resources/tree-sitter-markdown-inline"),
-                .copy("Resources/tree-sitter-objc"),
-                .copy("Resources/tree-sitter-ocaml"),
-                .copy("Resources/tree-sitter-perl"),
-                .copy("Resources/tree-sitter-php"),
-                .copy("Resources/tree-sitter-python"),
-                .copy("Resources/tree-sitter-regex"),
-                .copy("Resources/tree-sitter-ruby"),
-                .copy("Resources/tree-sitter-rust"),
-                .copy("Resources/tree-sitter-scala"),
-                .copy("Resources/tree-sitter-sql"),
-                .copy("Resources/tree-sitter-swift"),
-                .copy("Resources/tree-sitter-toml"),
-                .copy("Resources/tree-sitter-typescript"),
-                .copy("Resources/tree-sitter-yaml"),
-                .copy("Resources/tree-sitter-zig"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-agda"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-bash"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-c"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-c-sharp"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-cpp"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-css"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-dockerfile"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-elixir"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-generic"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-go"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-go-mod"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-haskell"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-html"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-java"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-javascript"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-jsdoc"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-json"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-julia"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-kotlin"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-lua"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-markdown"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-markdown-inline"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-objc"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-ocaml"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-perl"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-php"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-python"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-regex"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-ruby"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-rust"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-scala"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-sql"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-swift"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-toml"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-typescript"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-yaml"),
+                .copy("CodeEditLanguages/Resources/tree-sitter-zig"),
             ],
             swiftSettings: resilientSettings,
             linkerSettings: [.linkedLibrary("c++")]
         ),
         .testTarget(
-            name: "CodeEditLanguagesTests",
-            dependencies: ["CodeEditLanguages"],
-            path: "CodeEditLanguages/Tests/CodeEditLanguagesTests"
-        ),
-
-        // MARK: - CodeEditSourceEditor
-        .target(
-            name: "CodeEditSourceEditor",
+            name: "DoopEditorTests",
             dependencies: [
-                "CodeEditTextView",
-                "CodeEditLanguages",
-                "TextFormation",
-                // RangeStore's rope. Declared here rather than picked up through CodeEditTextView,
-                // which no longer depends on swift-collections at all.
-                .product(name: "_RopeModule", package: "swift-collections"),
-            ],
-            path: "CodeEditSourceEditor/Sources/CodeEditSourceEditor",
-            swiftSettings: resilientSettings
-        ),
-        .testTarget(
-            name: "CodeEditSourceEditorTests",
-            dependencies: [
-                "CodeEditSourceEditor",
-                "CodeEditLanguages",
+                "DoopEditor",
                 .product(name: "CustomDump", package: "swift-custom-dump"),
             ],
-            path: "CodeEditSourceEditor/Tests/CodeEditSourceEditorTests"
+            path: "Tests/DoopEditorTests"
         ),
     ]
 )
