@@ -7,7 +7,7 @@
 
 import Foundation
 
-package extension TextSelectionManager {
+extension TextSelectionManager {
     /// Extends a selection from the given offset determining the length by the destination.
     ///
     /// Returns a new range that needs to be merged with an existing selection range using `NSRange.formUnion`

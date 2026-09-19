@@ -1,4 +1,4 @@
-# ``CodeEditLanguages/CodeLanguage``
+# ``DoopEditor/CodeLanguage``
 
 ## Overview
 

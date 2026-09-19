@@ -110,6 +110,18 @@ public struct CodeLanguage {
     /// A set of additional identifiers to use for things like shebang matching.
     public let additionalIdentifiers: Set<String>
 
+    /// Whether this language can actually be highlighted: its tree-sitter grammar is linked in and
+    /// its highlight query is bundled and compiles.
+    ///
+    /// Both are baked into the module -- the grammars statically, the `.scm` queries as resources --
+    /// so for a given build this is a constant. It is worth asking when a consumer wants to offer
+    /// only the languages that will really highlight, and the release's consumer check uses it to
+    /// prove a built framework carries both. Compiling a query is expensive; the result comes from
+    /// ``TreeSitterModel``'s cache, so repeated calls for the same language are cheap.
+    public var isHighlightable: Bool {
+        language != nil && TreeSitterModel.shared.query(for: id) != nil
+    }
+
     /// The tree-sitter language for the language if available
     var language: Language? {
         guard let tsLanguage = tsLanguage else { return nil }

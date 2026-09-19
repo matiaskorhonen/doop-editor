@@ -7,7 +7,7 @@
 
 import Foundation
 
-package extension TextSelectionManager {
+extension TextSelectionManager {
     // MARK: - Vertical Methods
 
     /// Extends a selection from the given offset vertically to the destination.

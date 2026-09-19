@@ -1,4 +1,4 @@
-# ``CodeEditLanguages/TreeSitterModel``
+# ``DoopEditor/TreeSitterModel``
 
 ## Overview
 

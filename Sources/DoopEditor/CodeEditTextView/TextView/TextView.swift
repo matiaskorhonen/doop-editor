@@ -302,13 +302,13 @@ open class TextView: NSView, NSTextContent {
     /// - Warning: Do not update the text storage object directly. Doing so will very likely break the text view's
     ///            layout system. Use methods like ``TextView/replaceCharacters(in:with:)-58mt7`` or
     ///            ``TextView/insertText(_:)`` to modify content.
-    package(set) public var textStorage: NSTextStorage!
+    internal(set) public var textStorage: NSTextStorage!
 
     /// The layout manager for the text view.
-    package(set) public var layoutManager: TextLayoutManager!
+    internal(set) public var layoutManager: TextLayoutManager!
 
     /// The selection manager for the text view.
-    package(set) public var selectionManager: TextSelectionManager!
+    internal(set) public var selectionManager: TextSelectionManager!
 
     /// Manages emphasized text ranges in the text view
     public var emphasisManager: EmphasisManager?

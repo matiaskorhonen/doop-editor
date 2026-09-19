@@ -37,7 +37,7 @@ public extension TextAttachment {
 /// This type cannot be initialized outside of `CodeEditTextView`, but will be received when interrogating
 /// the ``TextAttachmentManager``.
 public struct AnyTextAttachment: Equatable {
-    package(set) public var range: NSRange
+    internal(set) public var range: NSRange
     public let attachment: any TextAttachment
 
     var width: CGFloat {
