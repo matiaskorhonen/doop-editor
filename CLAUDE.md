@@ -44,7 +44,7 @@ None of these may appear in the public API. See below.
 
 ```bash
 swift build      # build the module
-swift test       # run all tests (245 XCTest + 107 swift-testing cases)
+swift test       # run all tests (245 XCTest + 111 swift-testing cases)
 ```
 
 `Package.resolved` is committed. The XCFramework build and its CI resolve with
