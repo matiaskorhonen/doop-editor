@@ -186,6 +186,9 @@ This repository holds only the generated `Package.swift`. The framework itself i
 attached to the [\(version) release](https://github.com/\(sourceRepo)/releases/tag/\(version))
 of the source repository, and each tag here matches a tag there.
 
+Release notes live with the source repository too, on its
+[releases page](https://github.com/\(sourceRepo)/releases).
+
 ```swift
 dependencies: [
     .package(url: "https://github.com/\(binaryRepo).git", from: "\(semver)"),
@@ -215,8 +218,8 @@ bundled dependency's licence in full. Tools that read a package's `LICENSE` verb
 `THIRD-PARTY-LICENSES.md` is the same set of notices on its own, with a summary table of what is
 bundled at which version.
 
-Generated for \(version) by `Scripts/generate-binary-manifest.swift` in the source repository --
-do not edit by hand; changes here are overwritten by the next release.
+<!-- Generated for \(version) by Scripts/generate-binary-manifest.swift in the source
+repository. Do not edit by hand; changes here are overwritten by the next release. -->
 
 """
 
