@@ -7,7 +7,7 @@
 
 import Foundation
 import CodeEditTextView
-import TextFormation
+internal import TextFormation
 import TextStory
 
 /// Filter for quickly deleting indent whitespace

@@ -59,15 +59,19 @@ the 40 tree-sitter grammars. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md
 Three things in the sources exist for that pipeline and are easy to break by accident:
 
 - **`internal import`** on implementation-detail imports (the grammars, `TreeSitter`,
-  `_RopeModule`, `DequeModule`, `CodeEditTextViewObjC`). A plain `import` puts the module into
+  `_RopeModule`, `TextFormation`, `CodeEditTextViewObjC`). A plain `import` puts the module into
   the public `.swiftinterface` and forces consumers of the binaries to resolve it, so adding a
   grammar means adding an `internal import` in `CodeLanguage.swift`.
   `Scripts/check-interface-imports.sh` gates this. The `AccessLevelOnImport` feature it needs
   is enabled by `resilientSettings` in `Package.swift`.
 - **`Bundle.codeEditLanguages`**, not `Bundle.module`, for the `.scm` query lookup —
   `Bundle.module` doesn't exist in a framework build.
-- New public API that exposes a *new* third-party type adds a framework to the distribution.
-  Prefer keeping such types internal.
+- **New public API that names a third-party type adds a framework to the distribution**, and so
+  does a second one of our modules using a dependency the first one uses — Xcode then promotes
+  it to a shared framework rather than absorbing it. Keep such types internal (e.g.
+  `TextViewTextInterface` wraps TextFormation's `TextInterface` instead of `TextView`
+  conforming to it), and prefer routing a one-off use through the module that already has the
+  dependency (e.g. `CGContext.setHiddenFontSmoothingStyle(_:)`).
 
 ## Architecture
 

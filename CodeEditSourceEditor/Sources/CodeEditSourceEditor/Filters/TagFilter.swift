@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import TextFormation
+internal import TextFormation
 import TextStory
 import CodeEditTextView
 import CodeEditLanguages

@@ -7,7 +7,7 @@
 
 import Foundation
 import TextStory
-import TextFormation
+internal import TextFormation
 
 // Helper extension to extract capture groups
 extension String {

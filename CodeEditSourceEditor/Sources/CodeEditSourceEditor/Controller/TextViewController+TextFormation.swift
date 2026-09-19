@@ -7,7 +7,7 @@
 
 import AppKit
 import CodeEditTextView
-import TextFormation
+internal import TextFormation
 import TextStory
 
 extension TextViewController {
@@ -106,8 +106,9 @@ extension TextViewController {
             }
         )
 
+        let interface = TextViewTextInterface(textView)
         for filter in textFilters {
-            let action = filter.processMutation(mutation, in: textView, with: whitespaceProvider)
+            let action = filter.processMutation(mutation, in: interface, with: whitespaceProvider)
             switch action {
             case .none:
                 continue

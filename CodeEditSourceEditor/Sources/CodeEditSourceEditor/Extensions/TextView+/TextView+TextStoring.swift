@@ -8,23 +8,8 @@
 import Foundation
 import CodeEditTextView
 import TextStory
-import TextFormation
 
-extension TextView: TextStoring {}
-extension TextView: TextInterface {
-    public var selectedRange: NSRange {
-        get {
-            return selectionManager
-                .textSelections
-                .sorted(by: { $0.range.lowerBound < $1.range.lowerBound })
-                .first?
-                .range ?? .zero
-        }
-        set {
-            selectionManager.setSelectedRange(newValue)
-        }
-    }
-
+extension TextView: TextStoring {
     public var length: Int {
         textStorage.length
     }

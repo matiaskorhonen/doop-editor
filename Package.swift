@@ -73,7 +73,6 @@ let package = Package(
             name: "CodeEditTextView",
             dependencies: [
                 "TextStory",
-                .product(name: "Collections", package: "swift-collections"),
                 "CodeEditTextViewObjC",
             ],
             path: "CodeEditTextView/Sources/CodeEditTextView",
@@ -183,6 +182,9 @@ let package = Package(
                 "CodeEditTextView",
                 "CodeEditLanguages",
                 "TextFormation",
+                // RangeStore's rope. Declared here rather than picked up through CodeEditTextView,
+                // which no longer depends on swift-collections at all.
+                .product(name: "_RopeModule", package: "swift-collections"),
             ],
             path: "CodeEditSourceEditor/Sources/CodeEditSourceEditor",
             swiftSettings: resilientSettings
