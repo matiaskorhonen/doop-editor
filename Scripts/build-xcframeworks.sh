@@ -35,6 +35,12 @@ echo "==> Resolving package dependencies"
 # `swift package update` (or `resolve`) and commit the result.
 swift package --force-resolved-versions resolve
 
+# The framework absorbs every one of those dependencies, so their licences have to ship with it.
+# This only checks that the committed notices list what Package.resolved pins; the texts themselves
+# are regenerated from the checkouts by Scripts/generate-binary-manifest.swift.
+echo "==> Checking third-party licences"
+Scripts/generate-licenses.swift --check
+
 echo "==> Generating $PROJECT"
 Scripts/generate-binary-project.swift
 (cd BinaryDistribution && xcodegen generate --spec project.json)

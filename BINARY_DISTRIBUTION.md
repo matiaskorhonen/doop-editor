@@ -59,13 +59,47 @@ Three properties of the sources make this work, and all three are easy to break 
    build the `.scm` queries live in the framework's own bundle. See
    `Sources/DoopEditor/CodeEditLanguages/Bundle+CodeEditLanguages.swift`.
 
+## Licences
+
+Absorbing a dependency doesn't absorb its licence. The MIT, BSD 3-Clause and Apache 2.0 licences of
+the 43 things in the framework all require their text and copyright notice to be redistributed with
+the code, in binary form as much as in source, and Apache 2.0 additionally requires any `NOTICE`
+file to travel along. A consumer of the binary package can't satisfy that on their own: the
+dependencies aren't in its dependency graph, so nothing they run over their app can see them.
+
+So the notices ship with it. `Scripts/generate-licenses.swift` collects them from the checkouts
+`Package.resolved` pins, and writes two files:
+
+- **`THIRD-PARTY-LICENSES.md`**, committed at the root of this repository. The source package needs
+  it too -- the bundled `.scm` queries are copied out of the grammar repositories and out of
+  nvim-treesitter (Apache 2.0), which is why the submodule is one of the entries.
+- **`LICENSE` in doop-editor-binary**, written by `Scripts/generate-binary-manifest.swift` into
+  `build/binary-package/` alongside the manifest. It is this repository's `LICENSE` verbatim and
+  first -- so the package still reads as MIT -- followed by every bundled licence in full.
+
+It goes in `LICENSE` rather than beside it because that's the file a licence scanner reads.
+[LicensePlist](https://github.com/mono0926/LicensePlist), which Doop uses, takes the entire
+contents of a package's first `LICENSE`-ish file as that package's notice, whether it reads it from
+the GitHub API or from the checkout -- so one file is all it will look at, and that file has the
+whole set. `THIRD-PARTY-LICENSES.md` ships there as well, for people rather than tools.
+
+`Scripts/build-xcframeworks.sh` gates on `Scripts/generate-licenses.swift --check`, which compares
+the committed summary table against `Package.resolved`. The check reads no checkouts and no
+submodule, so it runs anywhere; regenerating the texts needs both. **Adding, removing or repinning
+a dependency means rerunning `Scripts/generate-licenses.swift` and committing the result**, the
+same way `Package.resolved` itself has to be committed.
+
 ## Building locally
 
 ```bash
 Scripts/build-xcframeworks.sh                  # -> build/xcframeworks/DoopEditor.xcframework{,.zip}
-Scripts/generate-binary-manifest.swift v0.9.0  # -> build/binary-package/Package.swift
+Scripts/generate-binary-manifest.swift v0.9.0  # -> build/binary-package/{Package.swift,LICENSE,…}
 Scripts/verify-binary-consumption.sh           # builds and runs the product as a consumer would
 ```
+
+Regenerating the licence texts needs the nvim-treesitter submodule
+(`git submodule update --init Vendor/nvim-treesitter`); CI's build job checks it out for that
+reason alone.
 
 `build-xcframeworks.sh` resolves the package, regenerates the XcodeGen spec from
 `Package.swift` and the committed `Package.resolved` -- resolving with
@@ -232,7 +266,7 @@ as a draft and publishes it only when it's complete.
    build's (`Scripts/verify-release-assets.sh` compares GitHub's SHA-256 digests with the
    checksums), and publishes it. Only the newest stable version is marked "Latest", so a patch to
    an older version or a prerelease doesn't take that from the current release.
-4. **Publish** then commits the generated `Package.swift` and README to
+4. **Publish** then commits the generated `Package.swift`, README and licence files to
    [doop-editor-binary](https://github.com/matiaskorhonen/doop-editor-binary) and tags it with the
    same version (`Scripts/publish-binary-package.sh`). That repository's `main` only moves to the
    newest stable version; an older patch or a prerelease gets just its tag. "Newest stable" means

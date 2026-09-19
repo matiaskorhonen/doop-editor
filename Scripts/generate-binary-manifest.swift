@@ -15,7 +15,13 @@
 // Usage: Scripts/generate-binary-manifest.swift <vX.Y.Z> [--source-repo owner/name]
 //                                                        [--binary-repo owner/name]
 // Reads build/xcframeworks/binary-targets.txt (module, checksum and direct dependencies, written by
-// Scripts/build-xcframeworks.sh) and writes build/binary-package/{Package.swift,README.md}.
+// Scripts/build-xcframeworks.sh) and writes
+// build/binary-package/{Package.swift,README.md,LICENSE,THIRD-PARTY-LICENSES.md}.
+//
+// The two licence files are what keeps the binary release distributable: the framework statically
+// links all 40-odd dependencies, and their MIT/BSD/Apache licences require the text and copyright
+// notices to travel with the code. A consumer of the binary package can't reach any of them --
+// they're not in its dependency graph -- so they ship here. See Scripts/generate-licenses.swift.
 
 import Foundation
 
@@ -195,6 +201,20 @@ reference:
 ```
 
 \(supportingSection)
+## Licensing
+
+DoopEditor is MIT-licensed, and the framework statically links its dependencies -- the tree-sitter
+grammars, TextStory, TextFormation, Rearrange, SwiftTreeSitter, TreeSitter and swift-collections --
+whose licences (MIT, BSD 3-Clause and Apache 2.0) require their notices to be redistributed with
+the binary. Because those packages aren't in this package's dependency graph, a licence scanner
+run against an app that depends on this package can't find them on its own.
+
+`LICENSE` therefore carries the complete set: DoopEditor's own MIT licence first, followed by every
+bundled dependency's licence in full. Tools that read a package's `LICENSE` verbatim -- including
+[LicensePlist](https://github.com/mono0926/LicensePlist) -- pick up all of it from that one file.
+`THIRD-PARTY-LICENSES.md` is the same set of notices on its own, with a summary table of what is
+bundled at which version.
+
 Generated for \(version) by `Scripts/generate-binary-manifest.swift` in the source repository --
 do not edit by hand; changes here are overwritten by the next release.
 
@@ -211,3 +231,28 @@ do {
 } catch {
     fail("could not write the binary package: \(error)")
 }
+
+// MARK: - Licences
+
+// Generated rather than copied: `LICENSE` here is this repository's LICENSE with every bundled
+// dependency's licence appended, which is the file a licence scanner reads for the whole package.
+func generateLicenses(format: String, output: String) {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    process.arguments = [root.appendingPathComponent("Scripts/generate-licenses.swift").path,
+                         "--format", format,
+                         "--output", outputDirectory.appendingPathComponent(output).path]
+    fflush(stdout)   // the child writes to the same stdout; don't let our buffer land after it
+    do {
+        try process.run()
+    } catch {
+        fail("could not run Scripts/generate-licenses.swift: \(error)")
+    }
+    process.waitUntilExit()
+    guard process.terminationStatus == 0 else {
+        fail("Scripts/generate-licenses.swift failed -- the binary package must ship its licences")
+    }
+}
+
+generateLicenses(format: "license", output: "LICENSE")
+generateLicenses(format: "markdown", output: "THIRD-PARTY-LICENSES.md")

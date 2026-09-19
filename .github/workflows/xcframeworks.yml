@@ -164,8 +164,10 @@ jobs:
       - name: Check out
         uses: actions/checkout@v7
         with:
-          # The nvim-treesitter submodule is a query reference, not a build input.
-          submodules: false
+          # nvim-treesitter isn't a build input -- it's where Scripts/update-queries.sh takes
+          # missing highlight queries from -- but its Apache-2.0 licence has to ship with them,
+          # and Scripts/generate-licenses.swift reads it from the submodule.
+          submodules: true
 
       - name: Resolve version
         id: mode
