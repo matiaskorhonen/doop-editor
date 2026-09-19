@@ -122,6 +122,19 @@ echo "==> Checking interface hygiene"
 Scripts/check-interface-imports.sh "$INSTALLED" \
     "$INTERMEDIATES/IntermediateBuildFilesPath/GeneratedModuleMaps" "${IMPORTABLE[@]}"
 
+# A framework with no Info.plist links fine but cannot be embedded in an app bundle: Xcode
+# fails the consuming build with "did not contain an Info.plist". Nothing else here notices,
+# because the consumer check builds a SwiftPM executable, which links the framework without
+# embedding it. v0.9.0 and earlier shipped without one.
+echo "==> Checking bundle structure"
+while IFS=$'\t' read -r module path deps <&3; do
+    if [ ! -f "$path/Versions/A/Resources/Info.plist" ] && [ ! -f "$path/Resources/Info.plist" ]; then
+        echo "error: $module.framework has no Info.plist -- it cannot be embedded in an app bundle." >&2
+        echo "       Set GENERATE_INFOPLIST_FILE=YES on its target in the generated project." >&2
+        exit 1
+    fi
+done 3< "$CLOSURE"
+
 STAGED="$BUILD/staged"
 rm -rf "$STAGED"
 

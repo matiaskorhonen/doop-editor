@@ -406,8 +406,17 @@ targets["DoopEditor"] = Target(
         .moduleTarget("TreeSitter"),
         .package("swift-collections", product: "_RopeModule"),
     ] + grammars.map { .package($0.package, product: $0.product) },
+    // GENERATE_INFOPLIST_FILE, because a framework without an Info.plist cannot be embedded in
+    // an app bundle -- Xcode fails the consuming build with "did not contain an Info.plist".
+    // Nothing catches this before a real app consumes the release: a SwiftPM executable, which
+    // is what Scripts/verify-binary-consumption.sh builds, links the framework without embedding
+    // it and so never needs one.
     settings: targetSettings(withModuleMaps(ourSettings, objcModuleMap, treeSitterModuleMap, internalModuleMap)
-        .merging(["OTHER_LDFLAGS": "$(inherited) -lc++"]) { _, new in new })
+        .merging([
+            "OTHER_LDFLAGS": "$(inherited) -lc++",
+            "GENERATE_INFOPLIST_FILE": "YES",
+            "PRODUCT_BUNDLE_IDENTIFIER": "fi.matiaskorhonen.DoopEditor",
+        ]) { _, new in new })
 )
 
 let spec = Spec(
