@@ -1,6 +1,6 @@
 import Testing
 import AppKit
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 extension TextLineStorage {
     /// Validate that the internal tree is intact and correct.

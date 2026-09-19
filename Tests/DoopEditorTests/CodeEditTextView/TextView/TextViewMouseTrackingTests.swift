@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 /// Tests for the nested event-tracking loop `mouseDown` enters to follow a selection drag
 /// (`TextView+Mouse.trackSelectionDrag`).

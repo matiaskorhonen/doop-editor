@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import CodeEditLanguages
+@testable import DoopEditor
 import RegexBuilder
 
 // swiftlint:disable all

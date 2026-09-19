@@ -1,6 +1,5 @@
 import XCTest
-import CodeEditTextView
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 // swiftlint:disable all
 

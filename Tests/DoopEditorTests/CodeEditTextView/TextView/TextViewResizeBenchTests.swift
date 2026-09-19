@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 final class TextViewResizeBenchTests: XCTestCase {
     /// Sets up a text view + scroll view pair and lays out `string` as a single line, ready to simulate a

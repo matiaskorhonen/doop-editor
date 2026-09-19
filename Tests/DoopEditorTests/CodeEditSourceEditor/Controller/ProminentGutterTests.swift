@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 import AppKit
 
 /// Verifies ``SourceEditorConfiguration/Appearance/prominentGutter``: when enabled, the gutter is drawn with the

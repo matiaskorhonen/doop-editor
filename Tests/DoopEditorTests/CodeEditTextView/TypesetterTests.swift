@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 final class DemoTextAttachment: TextAttachment {
     var width: CGFloat

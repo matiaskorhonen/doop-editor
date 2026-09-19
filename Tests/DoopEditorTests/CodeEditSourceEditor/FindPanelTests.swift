@@ -1,7 +1,6 @@
 import Testing
 import AppKit
-import CodeEditTextView
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 @MainActor
 struct FindPanelTests {

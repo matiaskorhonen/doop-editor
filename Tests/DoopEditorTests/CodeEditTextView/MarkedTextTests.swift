@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 class MarkedTextTests: XCTestCase {
     func test_markedTextSingleChar() {

@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 import AppKit
 
 /// Verifies that the editor's theme background reaches the trailing edge of the scroll view regardless of the

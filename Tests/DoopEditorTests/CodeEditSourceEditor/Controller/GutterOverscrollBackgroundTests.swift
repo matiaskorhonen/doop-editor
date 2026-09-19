@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 import AppKit
 
 /// Verifies that `GutterBackgroundClipView` — the source editor's scroll view `contentView` — fills the

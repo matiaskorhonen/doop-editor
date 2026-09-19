@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 @Suite()
 struct EmphasisManagerTests {

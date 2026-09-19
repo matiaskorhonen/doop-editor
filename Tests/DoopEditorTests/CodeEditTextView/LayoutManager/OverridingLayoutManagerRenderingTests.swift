@@ -1,6 +1,6 @@
 import Testing
 import AppKit
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 class MockRenderDelegate: TextLayoutManagerRenderDelegate {
     var prepareForDisplay: ((

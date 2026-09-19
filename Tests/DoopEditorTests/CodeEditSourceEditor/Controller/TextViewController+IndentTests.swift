@@ -6,8 +6,7 @@
 //
 
 import XCTest
-@testable import CodeEditSourceEditor
-@testable import CodeEditTextView
+@testable import DoopEditor
 import CustomDump
 
 final class TextViewControllerIndentTests: XCTestCase {

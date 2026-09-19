@@ -1,5 +1,5 @@
 import Testing
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 extension RangeStore {
     var length: Int { _guts.summary.length }

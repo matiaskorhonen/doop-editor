@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 /// Tests for ``TextView/selectColumns(betweenPointA:pointB:)``, the square region option-dragging
 /// in the editor creates.

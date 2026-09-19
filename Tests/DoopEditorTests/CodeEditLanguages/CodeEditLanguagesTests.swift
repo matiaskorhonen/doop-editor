@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import CodeEditLanguages
+@testable import DoopEditor
 import SwiftTreeSitter
 
 final class CodeEditLanguagesTests: XCTestCase {

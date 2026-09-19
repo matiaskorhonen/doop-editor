@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import CodeEditLanguages
+@testable import DoopEditor
 
 final class LanguageResourcesTests: XCTestCase {
     /// Look at each language and do two checks:

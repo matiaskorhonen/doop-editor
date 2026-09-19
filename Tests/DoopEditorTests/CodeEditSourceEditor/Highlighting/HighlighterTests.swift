@@ -1,7 +1,5 @@
 import XCTest
-import CodeEditTextView
-import CodeEditLanguages
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 final class HighlighterTests: XCTestCase {
     class MockHighlightProvider: HighlightProviding {

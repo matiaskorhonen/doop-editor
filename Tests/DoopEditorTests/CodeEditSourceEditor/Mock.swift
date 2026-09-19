@@ -1,8 +1,6 @@
 import Foundation
 import AppKit
-import CodeEditTextView
-import CodeEditLanguages
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 class MockHighlightProvider: HighlightProviding {
     var onSetUp: (CodeLanguage) -> Void

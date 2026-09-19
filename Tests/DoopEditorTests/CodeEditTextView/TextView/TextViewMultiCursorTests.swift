@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 /// Tests for ``TextView/addCursorAbove()``, ``TextView/addCursorBelow()`` and the escape key collapsing a
 /// column of cursors back to one.

@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditSourceEditor
+@testable import DoopEditor
 
 final class VisibleRangeProviderTests: XCTestCase {
     @MainActor

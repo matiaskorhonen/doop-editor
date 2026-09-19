@@ -7,7 +7,7 @@
 
 import Testing
 import AppKit
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 @MainActor
 @Suite

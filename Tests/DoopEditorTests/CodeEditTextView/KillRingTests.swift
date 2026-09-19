@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 class KillRingTests: XCTestCase {
     func test_killRingYank() {

@@ -1,5 +1,5 @@
 import XCTest
-@testable import CodeEditTextView
+@testable import DoopEditor
 
 fileprivate extension CGFloat {
     func approxEqual(_ value: CGFloat) -> Bool {
