@@ -2,8 +2,12 @@
 #
 # Publish the generated binary package to the doop-editor-binary repository.
 #
-# Commits build/binary-package/{Package.swift,README.md} on top of that repository's main branch
-# and tags the commit with the release version. `main` itself only moves to the newest stable
+# Commits build/binary-package/{Package.swift,README.md,LICENSE,THIRD-PARTY-LICENSES.md} on top of
+# that repository's main branch and tags the commit with the release version. The licence files are
+# not optional: the framework statically links its dependencies, so their notices have to ship with
+# it -- see Scripts/generate-licenses.swift.
+#
+# `main` itself only moves to the newest stable
 # version: publishing an older patch release or a prerelease pushes just its tag, so `main` -- and
 # the README on the repository's front page -- keep describing the latest release. When `main`
 # does move, the branch and the tag are pushed atomically.
@@ -21,7 +25,7 @@ cd "$(dirname "$0")/.."
 PACKAGE="$PWD/build/binary-package"
 SCRIPTS="$PWD/Scripts"
 
-for file in Package.swift README.md; do
+for file in Package.swift README.md LICENSE THIRD-PARTY-LICENSES.md; do
     if [ ! -f "$PACKAGE/$file" ]; then
         echo "error: $PACKAGE/$file not found -- run Scripts/generate-binary-manifest.swift" >&2
         exit 1
@@ -64,8 +68,8 @@ else
     git checkout --quiet --orphan main
 fi
 
-cp "$PACKAGE/Package.swift" "$PACKAGE/README.md" .
-git add Package.swift README.md
+cp "$PACKAGE/Package.swift" "$PACKAGE/README.md" "$PACKAGE/LICENSE" "$PACKAGE/THIRD-PARTY-LICENSES.md" .
+git add Package.swift README.md LICENSE THIRD-PARTY-LICENSES.md
 
 if [ -z "$(git config user.name || true)" ]; then
     git config user.name "github-actions[bot]"

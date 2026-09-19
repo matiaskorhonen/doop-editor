@@ -87,6 +87,12 @@ directly, useful for manually testing changes without pulling them into Doop fir
 MIT. The root [LICENSE](LICENSE) is the upstream CodeEdit licence, and covers all three original
 packages.
 
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) carries the licences of everything this
+repository redistributes: the tree-sitter highlight queries bundled as resources, copied from the
+grammar repositories and from nvim-treesitter, and — in the prebuilt XCFramework, which links them
+statically — every dependency. Regenerate it with `Scripts/generate-licenses.swift` after changing
+a dependency; `Scripts/build-xcframeworks.sh` fails if it doesn't match `Package.resolved`.
+
 ## Notes
 
 - `Package.swift` is the source of truth for the package graph.

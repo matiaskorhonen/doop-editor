@@ -80,6 +80,12 @@ Three things in the sources exist for that pipeline and are easy to break by acc
 - **`Bundle.codeEditLanguages`**, not `Bundle.module`, for the `.scm` query lookup —
   `Bundle.module` doesn't exist in a framework build.
 
+Changing a dependency also means rerunning `Scripts/generate-licenses.swift` and committing
+`THIRD-PARTY-LICENSES.md`. Statically linking a dependency doesn't absorb its licence, and a
+consumer of the binary package can't find those licences for themselves, so the notices ship with
+it — `Scripts/build-xcframeworks.sh` fails if the committed file is out of step with
+`Package.resolved`.
+
 ## Architecture
 
 The module is a layered stack, one directory per layer: `CodeEditTextView/` (generic text rendering/editing) → `CodeEditLanguages/` (tree-sitter grammar/query lookup) → `CodeEditSourceEditor/` (SwiftUI/AppKit code editor that wires the two together with syntax highlighting). The layering is a convention now, not a compiler-enforced boundary.
