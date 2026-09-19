@@ -42,7 +42,7 @@ public final class TreeSitterClient: HighlightProviding {
     /// The internal tree-sitter layer tree object.
     var state: TreeSitterState?
 
-    package var executor: TreeSitterExecutor = .init()
+    var executor: TreeSitterExecutor = .init()
 
     /// The end point of the previous edit.
     private var oldEndPoint: Point?
@@ -50,7 +50,7 @@ public final class TreeSitterClient: HighlightProviding {
     internal var pendingEdits: Atomic<[InputEdit]> = Atomic([])
 
     /// Optional flag to force every operation to be done on the caller's thread.
-    package var forceSyncOperation: Bool = false
+    var forceSyncOperation: Bool = false
 
     public init() { }
 

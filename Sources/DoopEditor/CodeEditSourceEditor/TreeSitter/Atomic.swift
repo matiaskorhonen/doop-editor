@@ -8,7 +8,7 @@
 import Foundation
 
 /// A simple atomic value using `NSLock`.
-final package class Atomic<T> {
+final class Atomic<T> {
     private let lock: NSLock = .init()
     private var wrappedValue: T
 

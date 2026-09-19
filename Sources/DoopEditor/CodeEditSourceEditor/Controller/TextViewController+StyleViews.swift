@@ -8,7 +8,7 @@
 import AppKit
 
 extension TextViewController {
-    package func generateParagraphStyle() -> NSMutableParagraphStyle {
+    func generateParagraphStyle() -> NSMutableParagraphStyle {
         // swiftlint:disable:next force_cast
         let paragraph = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
         paragraph.tabStops.removeAll()
@@ -17,13 +17,13 @@ extension TextViewController {
     }
 
     /// Style the text view.
-    package func styleTextView() {
+    func styleTextView() {
         textView.postsFrameChangedNotifications = true
         textView.translatesAutoresizingMaskIntoConstraints = false
     }
 
     /// Style the scroll view.
-    package func styleScrollView() {
+    func styleScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.contentView.postsFrameChangedNotifications = true
         scrollView.hasVerticalScroller = true
@@ -32,7 +32,7 @@ extension TextViewController {
     }
 
     /// Updates all relevant content insets including the find panel, scroll view, and gutter position.
-    package func updateContentInsets() {
+    func updateContentInsets() {
         updateTextInsets()
 
         scrollView.contentView.postsBoundsChangedNotifications = true

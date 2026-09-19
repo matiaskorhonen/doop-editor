@@ -81,11 +81,11 @@ public class TextLayoutManager: NSObject {
     let viewReuseQueue: ViewReuseQueue<LineFragmentView, LineFragment.ID> = ViewReuseQueue()
     let lineFragmentRenderer: LineFragmentRenderer
 
-    package var visibleLineIds: Set<TextLine.ID> = []
+    var visibleLineIds: Set<TextLine.ID> = []
     /// Used to force a complete re-layout using `setNeedsLayout`
-    package var needsLayout: Bool = false
+    var needsLayout: Bool = false
 
-    package var transactionCounter: Int = 0
+    var transactionCounter: Int = 0
     public var isInTransaction: Bool {
         transactionCounter > 0
     }

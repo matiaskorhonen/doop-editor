@@ -100,7 +100,7 @@ public final class LineFragment: Identifiable, Equatable {
         }
     }
 
-    package func findContent(at location: Int) -> (content: FragmentContent, position: ContentPosition)? {
+    func findContent(at location: Int) -> (content: FragmentContent, position: ContentPosition)? {
         var position = ContentPosition(xPos: 0, offset: 0)
 
         for content in contents {
@@ -117,7 +117,7 @@ public final class LineFragment: Identifiable, Equatable {
         return nil
     }
 
-    package func findContent(atX xPos: CGFloat) -> (content: FragmentContent, position: ContentPosition)? {
+    func findContent(atX xPos: CGFloat) -> (content: FragmentContent, position: ContentPosition)? {
         var position = ContentPosition(xPos: 0, offset: 0)
 
         for content in contents {

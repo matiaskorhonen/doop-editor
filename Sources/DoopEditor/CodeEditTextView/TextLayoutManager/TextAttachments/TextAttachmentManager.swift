@@ -130,7 +130,7 @@ public final class TextAttachmentManager {
     /// - Parameters:
     ///   - atOffset: The offset text was updated at.
     ///   - delta: The change delta, positive is an insertion.
-    package func textUpdated(atOffset: Int, delta: Int) {
+    func textUpdated(atOffset: Int, delta: Int) {
         for (idx, attachment) in orderedAttachments.enumerated().reversed() {
             if attachment.range.contains(atOffset) {
                 orderedAttachments.remove(at: idx)
