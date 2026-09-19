@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Build DoopEditor's distributable XCFrameworks.
+# Build DoopEditor's distributable XCFramework.
 #
-# Produces one universal (arm64 + x86_64) macOS XCFramework per shipped module under
-# `build/xcframeworks`, plus a zip and SwiftPM checksum for each, and the dependency graph
-# that Scripts/generate-binary-manifest.swift turns into the doop-editor-binary Package.swift.
+# Produces the universal (arm64 + x86_64) macOS XCFramework under `build/xcframeworks`, with a zip,
+# a SwiftPM checksum, and the dependency graph that Scripts/generate-binary-manifest.swift turns
+# into the doop-editor-binary Package.swift.
 #
 # Usage: Scripts/build-xcframeworks.sh [version]
 set -euo pipefail
@@ -19,15 +19,13 @@ ARCHIVE="$BUILD/DoopEditor.xcarchive"
 OUTPUT="$BUILD/xcframeworks"
 DERIVED="$BUILD/DerivedData"
 
-# CodeEditSourceEditor sits at the top of the graph, so archiving it builds and installs every
-# framework in one pass. Archiving each scheme separately would be both slower and *wrong*: a
-# module that two of our frameworks share (InternalCollectionsUtilities, via DequeModule and
-# _RopeModule) gets absorbed statically when only one target needs it and promoted to a shared
-# dynamic framework when both do -- so per-scheme archives disagree about their own link graph.
-TOP_SCHEME="CodeEditSourceEditor"
+# The one framework. Everything else in the generated project is a static library absorbed
+# into it, so archiving this scheme builds and installs the whole release.
+TOP_SCHEME="DoopEditor"
 
-# Sanity check only; the shipped set is discovered from the link graph below.
-EXPECTED=(CodeEditTextView CodeEditLanguages CodeEditSourceEditor)
+# Sanity check only; the shipped set is still discovered from the link graph below, which is
+# what catches a dependency that stopped being absorbed and became a second framework.
+EXPECTED=(DoopEditor)
 
 echo "==> Resolving package dependencies"
 # The third-party framework targets build straight out of .build/checkouts, and the grammar

@@ -1,5 +1,5 @@
 import SwiftUI
-import CodeEditLanguages
+import DoopEditor
 
 struct LanguagePicker: View {
     @Binding var language: CodeLanguage

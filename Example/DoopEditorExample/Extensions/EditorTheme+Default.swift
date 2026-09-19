@@ -1,6 +1,6 @@
 import Foundation
 import AppKit
-import CodeEditSourceEditor
+import DoopEditor
 
 extension EditorTheme {
     static var light: EditorTheme {

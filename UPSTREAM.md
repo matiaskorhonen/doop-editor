@@ -1,43 +1,37 @@
 # Upstream forks
 
-DoopEditor vendors three [CodeEdit](https://github.com/CodeEditApp) packages as git subtrees, each pulled from a custom fork rather than directly from CodeEditApp:
+DoopEditor's code comes from three [CodeEdit](https://github.com/CodeEditApp) packages, by way of
+custom forks:
 
-| Subtree | Source | Branch |
-|---|---|---|
-| `CodeEditSourceEditor/` | [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` |
-| `CodeEditTextView/` | [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` |
-| `CodeEditLanguages/` | [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` |
+| Source | Branch | Imported at | Now |
+|---|---|---|---|
+| [`matiaskorhonen/CodeEditSourceEditor`](https://github.com/matiaskorhonen/CodeEditSourceEditor) | `custom` | `5a0923dadeb2b485476db0c7add20df1d796d9a8` | `Sources/DoopEditor/CodeEditSourceEditor/` |
+| [`matiaskorhonen/CodeEditTextView`](https://github.com/matiaskorhonen/CodeEditTextView) | `custom` | `1589ee7d45b5523084b6f611be2efc1c111cd271` | `Sources/DoopEditor/CodeEditTextView/` |
+| [`matiaskorhonen/CodeEditLanguages`](https://github.com/matiaskorhonen/CodeEditLanguages) | `custom` | `3a8e205fe59262a5e7bce689084a43476bd3acf5` | `Sources/DoopEditor/CodeEditLanguages/` |
 
-The `custom` branch on each fork is the canonical source for that package. `CodeEditLanguages/custom` also has the `spm-direct-dependencies` changes merged in, which is why `CodeEditLanguages` depends directly on SwiftPM grammar packages instead of an xcframework.
+`CodeEditLanguages/custom` also carries the `spm-direct-dependencies` changes, which is why the
+grammars are direct SwiftPM dependencies rather than an `xcframework`.
 
-Each subdirectory contains the full imported history from its upstream fork, but only the root `Package.swift` is used to build — changes made inside a subtree directory are regular commits in this repo, no special workflow needed for day-to-day edits.
+## There is no upstream workflow
 
-This monorepo exists for fast cross-package iteration on Doop and is not intended for upstreaming changes back to CodeEdit.
+This repository is the only home of its code. Nothing is pulled from the forks, and nothing is
+contributed back. They were imported as git subtrees; the prefixes `git subtree pull` would need
+don't exist here.
 
-## Bootstrapping
+The two codebases have diverged past the point where a merge would mean anything:
 
-### Import the subtrees
+- one module, `DoopEditor`, rather than three — there is no `CodeEditTextView`,
+  `CodeEditLanguages` or `CodeEditSourceEditor` to import;
+- the tree-sitter grammars as direct SwiftPM dependencies rather than an `xcframework`;
+- no third-party type anywhere in the public API, so that the binary distribution is a single
+  XCFramework (see [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md)).
 
-```bash
-git subtree add --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
+The forks stay on GitHub as the record of where the code came from. To take a specific upstream
+fix, read it there and apply it by hand.
 
-git subtree add --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
+Some inherited documentation still describes upstream's processes rather than this repository's —
+`Documentation.docc/Add-Languages.md`, for one, describes the `xcframework` workflow.
 
-git subtree add --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
+## Licence
 
-### Pull upstream changes
-
-```bash
-git subtree pull --prefix=CodeEditSourceEditor \
-  https://github.com/matiaskorhonen/CodeEditSourceEditor.git custom
-
-git subtree pull --prefix=CodeEditTextView \
-  https://github.com/matiaskorhonen/CodeEditTextView.git custom
-
-git subtree pull --prefix=CodeEditLanguages \
-  https://github.com/matiaskorhonen/CodeEditLanguages.git custom
-```
+The root [LICENSE](LICENSE) is CodeEdit's MIT licence and names all three packages.

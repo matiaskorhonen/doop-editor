@@ -1,7 +1,5 @@
 import SwiftUI
-import CodeEditSourceEditor
-import CodeEditLanguages
-import CodeEditTextView
+import DoopEditor
 
 struct SourceEditorView: View {
     @Environment(\.colorScheme)

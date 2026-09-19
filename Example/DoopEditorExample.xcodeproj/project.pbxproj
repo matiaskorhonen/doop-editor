@@ -10,13 +10,12 @@
 		11CA370ABD4E01163B853E67 /* LanguagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2214B554314156C8DC9CA /* LanguagePicker.swift */; };
 		17E8773075C68F4ACA909160 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC5532F2BD5EE0A5CF0A820C /* Assets.xcassets */; };
 		218236FC676F9B1A1231E586 /* RawTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87FB3DB4286140961151D9A0 /* RawTextView.swift */; };
-		2BCCCEAFA55C4AD4135EEEC1 /* CodeEditSourceEditor in Frameworks */ = {isa = PBXBuildFile; productRef = F070906ADE743EEE82D2C1B9 /* CodeEditSourceEditor */; };
+		2BCCCEAFA55C4AD4135EEEC1 /* DoopEditor in Frameworks */ = {isa = PBXBuildFile; productRef = F070906ADE743EEE82D2C1B9 /* DoopEditor */; };
 		2DF24BF94D42BAD3FB0D44CE /* RawTextViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC4B1D719C8FA97515AEDC5 /* RawTextViewController.swift */; };
 		30C2282BBC2612F9C479789C /* RawTextViewStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86AB9C5300607DB76DB9923 /* RawTextViewStatusBar.swift */; };
 		41755257E247EBA65339970C /* IndentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADD95E7F2F8F9BDE179AEBD /* IndentPicker.swift */; };
 		46F08A6F7368A9AC4789AF05 /* String+Lines.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F00A59296F3FDD9C4CEDD /* String+Lines.swift */; };
 		4E102563AB7856CE54A34625 /* NSColor+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F7B7E2E93B507F51788233 /* NSColor+Hex.swift */; };
-		56E148B309390F380A2DD324 /* CodeEditTextView in Frameworks */ = {isa = PBXBuildFile; productRef = DD0E8000310ADF70989E39E1 /* CodeEditTextView */; };
 		59EB53D94BBD3D7E00E16D2E /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0AEC9FDD6481130062F78D /* Document.swift */; };
 		6F674D57F78689F191F80214 /* SourceEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE20DC2F40D52588F0F16C3 /* SourceEditorView.swift */; };
 		B58434F8AC2A3D1F5D9E22CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D87F01F73A473D610E875E40 /* ContentView.swift */; };
@@ -53,8 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BCCCEAFA55C4AD4135EEEC1 /* CodeEditSourceEditor in Frameworks */,
-				56E148B309390F380A2DD324 /* CodeEditTextView in Frameworks */,
+				2BCCCEAFA55C4AD4135EEEC1 /* DoopEditor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,8 +157,7 @@
 			);
 			name = DoopEditorExample;
 			packageProductDependencies = (
-				F070906ADE743EEE82D2C1B9 /* CodeEditSourceEditor */,
-				DD0E8000310ADF70989E39E1 /* CodeEditTextView */,
+				F070906ADE743EEE82D2C1B9 /* DoopEditor */,
 			);
 			productName = DoopEditorExample;
 			productReference = B3099E077D7089D25A3BF3BC /* DoopEditorExample.app */;
@@ -438,13 +435,9 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		DD0E8000310ADF70989E39E1 /* CodeEditTextView */ = {
+		F070906ADE743EEE82D2C1B9 /* DoopEditor */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CodeEditTextView;
-		};
-		F070906ADE743EEE82D2C1B9 /* CodeEditSourceEditor */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CodeEditSourceEditor;
+			productName = DoopEditor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

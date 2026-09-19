@@ -1,6 +1,5 @@
 import SwiftUI
-import CodeEditSourceEditor
-import CodeEditLanguages
+import DoopEditor
 
 struct SourceEditorStatusBar: View {
     let fileURL: URL?

@@ -1,5 +1,5 @@
 import SwiftUI
-import CodeEditSourceEditor
+import DoopEditor
 
 struct IndentPicker: View {
     @Binding var indentOption: IndentOption

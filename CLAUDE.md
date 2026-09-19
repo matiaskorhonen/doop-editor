@@ -4,41 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-DoopEditor is a SwiftPM monorepo with customized forks of three [CodeEdit](https://github.com/CodeEditApp) packages, vendored as dependencies for Doop:
+DoopEditor is a SwiftPM package built from customized forks of three [CodeEdit](https://github.com/CodeEditApp) packages, vendored for Doop. It is a single module.
 
 ```
 DoopEditor/
-├── Package.swift              # Root package manifest — source of truth
-├── CodeEditTextView/          # Sources/ and Tests/ for the CodeEditTextView target
-├── CodeEditLanguages/         # Sources/ and Tests/ for the CodeEditLanguages target
-├── CodeEditSourceEditor/      # Sources/ and Tests/ for the CodeEditSourceEditor target
-└── Example/                   # Standalone Xcode project exercising CodeEditSourceEditor
+├── Package.swift                       # the manifest — source of truth
+├── Sources/
+│   ├── DoopEditor/                     # the module
+│   │   ├── CodeEditTextView/           # text rendering and editing
+│   │   ├── CodeEditLanguages/          # tree-sitter grammars and queries
+│   │   ├── CodeEditSourceEditor/       # the editor view
+│   │   └── Documentation.docc/
+│   └── CodeEditTextViewObjC/           # Obj-C shim for one private CoreGraphics call
+├── Tests/DoopEditorTests/              # one test target, same three directories
+└── Example/                            # standalone Xcode project exercising the editor
 ```
 
-Each package directory is a git subtree from an upstream fork; see [UPSTREAM.md](UPSTREAM.md) for fork sources and how to pull upstream changes. Editing across package boundaries (e.g. changing a `CodeEditTextView` API and updating `CodeEditSourceEditor` to match) is just normal file edits within this repo — no package resolution or subtree workflow needed for day-to-day work.
+The three directories under `Sources/DoopEditor` divide the module by layer, one per upstream package. **They are one module** — no boundary between them, nothing to import, and no `package` access level. Keep the directories as they are: they are how the code stays navigable, and they keep diffs against the forks readable.
 
-This monorepo exists for fast cross-package iteration on Doop. It is **not** intended for upstreaming changes back to CodeEdit — some upstream docs/comments (e.g. `CodeEditLanguages`'s `Add-Languages.md`, which describes an `xcframework`-based workflow) describe a process this fork no longer uses; see below.
+Nothing is pulled from the forks and nothing is contributed back; see [UPSTREAM.md](UPSTREAM.md). Some inherited documentation describes upstream's processes rather than this repository's (e.g. `Documentation.docc/Add-Languages.md`, which describes an `xcframework` workflow).
 
 ## Package
 
 - Package name: `DoopEditor`
 - Platforms: macOS 13+
 - Swift tools version: 5.9+
-- Targets: `CodeEditTextView` (+ `CodeEditTextViewObjC`), `CodeEditLanguages`, `CodeEditSourceEditor` — each an independent library target with its own test target. `CodeEditSourceEditor` depends on the other two.
+- One library product, `DoopEditor`, from one target of the same name (plus the `CodeEditTextViewObjC` target it absorbs), with one test target.
 
 ### Key dependencies
 
-- `ChimeHQ/TextStory`, `ChimeHQ/TextFormation` — text editing primitives underlying `CodeEditTextView`
-- `apple/swift-collections` — used for `TextLineStorage`/`RangeStore`'s efficient rope/tree structures
+- `ChimeHQ/TextStory`, `ChimeHQ/TextFormation` — text editing primitives
+- `apple/swift-collections` — `_RopeModule`, for `RangeStore`'s rope
 - `tree-sitter/swift-tree-sitter` — tree-sitter Swift bindings (pinned to `0.10.0`)
-- One SPM package per supported language grammar (`tree-sitter-swift`, `tree-sitter-rust`, etc.), depended on directly by `CodeEditLanguages` — **no xcframework**, unlike upstream CodeEditLanguages
+- One SPM package per supported language grammar (`tree-sitter-swift`, `tree-sitter-rust`, etc.) — **no xcframework**, unlike upstream CodeEditLanguages
+
+None of these may appear in the public API. See below.
 
 ## Building and testing
 
 ```bash
-swift build              # build all targets
-swift test                # run all tests
-swift test --filter CodeEditLanguagesTests   # run one test target
+swift build      # build the module
+swift test       # run all tests (245 XCTest + 107 swift-testing cases)
 ```
 
 `Package.resolved` is committed. The XCFramework build and its CI resolve with
@@ -48,36 +54,37 @@ alongside it.
 
 Scripts in this repo are shell scripts or Swift scripts (`#!/usr/bin/env swift`) -- never Python or other languages. Keep shell scripts compatible with macOS's bash 3.2 (no associative arrays).
 
-The `Example/DoopEditorExample` Xcode project is useful for manually exercising `CodeEditSourceEditor` changes without pulling them into Doop first.
+The `Example/DoopEditorExample` Xcode project is useful for manually exercising changes without pulling them into Doop first.
 
 ## Binary distribution
 
-`Scripts/build-xcframeworks.sh` builds the three modules (plus the dependencies whose types
-appear in their public API) as universal macOS XCFrameworks for release, statically absorbing
-the 40 tree-sitter grammars. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md).
+`Scripts/build-xcframeworks.sh` builds the module as **one** universal macOS XCFramework for
+release, statically absorbing every dependency — the 36 grammars, TextStory, TextFormation,
+SwiftTreeSitter, TreeSitter and the rest. See [BINARY_DISTRIBUTION.md](BINARY_DISTRIBUTION.md).
 
 Three things in the sources exist for that pipeline and are easy to break by accident:
 
-- **`internal import`** on implementation-detail imports (the grammars, `TreeSitter`,
-  `_RopeModule`, `TextFormation`, `CodeEditTextViewObjC`). A plain `import` puts the module into
-  the public `.swiftinterface` and forces consumers of the binaries to resolve it, so adding a
-  grammar means adding an `internal import` in `CodeLanguage.swift`.
+- **`internal import`** on every third-party import — the grammars, `SwiftTreeSitter`,
+  `TreeSitter`, `TextStory`, `TextFormation`, `_RopeModule`, `CodeEditTextViewObjC`. Swift's
+  interface printer emits an `import` for every module a file imports, used publicly or not, so a
+  plain `import` puts the module into the public `.swiftinterface` and forces consumers of the
+  binary to resolve it. Adding a grammar means adding an `internal import` in `CodeLanguage.swift`.
   `Scripts/check-interface-imports.sh` gates this. The `AccessLevelOnImport` feature it needs
   is enabled by `resilientSettings` in `Package.swift`.
+- **No public API naming a third-party type**, which `internal import` does not prevent on its own.
+  A public signature mentioning one puts the module back into the interface, and so does a public
+  conformance of a public type to a third-party protocol — a conformance can't be made internal, so
+  wrap it instead (`TextViewTextInterface` carries TextFormation's `TextInterface` so `TextView`
+  doesn't; `CodeLanguage.isHighlightable` reports what a `SwiftTreeSitter.Query` would have).
+  This is the constraint that lets the release be a single framework: keep it and it stays one.
 - **`Bundle.codeEditLanguages`**, not `Bundle.module`, for the `.scm` query lookup —
   `Bundle.module` doesn't exist in a framework build.
-- **New public API that names a third-party type adds a framework to the distribution**, and so
-  does a second one of our modules using a dependency the first one uses — Xcode then promotes
-  it to a shared framework rather than absorbing it. Keep such types internal (e.g.
-  `TextViewTextInterface` wraps TextFormation's `TextInterface` instead of `TextView`
-  conforming to it), and prefer routing a one-off use through the module that already has the
-  dependency (e.g. `CGContext.setHiddenFontSmoothingStyle(_:)`).
 
 ## Architecture
 
-The three packages form a layered stack: `CodeEditTextView` (generic text rendering/editing) → `CodeEditLanguages` (tree-sitter grammar/query lookup) → `CodeEditSourceEditor` (SwiftUI/AppKit code editor that wires the two together with syntax highlighting).
+The module is a layered stack, one directory per layer: `CodeEditTextView/` (generic text rendering/editing) → `CodeEditLanguages/` (tree-sitter grammar/query lookup) → `CodeEditSourceEditor/` (SwiftUI/AppKit code editor that wires the two together with syntax highlighting). The layering is a convention now, not a compiler-enforced boundary.
 
-### CodeEditTextView — text rendering engine
+### CodeEditTextView/ — text rendering engine
 
 `TextView` (`TextView/TextView.swift`) is an `NSView` subclass conforming to `NSTextInputClient`, reading from an `NSTextStorage` (built on `TextStory`). It owns:
 
@@ -88,14 +95,14 @@ The three packages form a layered stack: `CodeEditTextView` (generic text render
 
 Edit flow: a keystroke hits `TextView`, which mutates `NSTextStorage`; `TextLayoutManager` is invalidated and recomputes affected line layout; selection and marked-text state are updated in parallel by their respective managers.
 
-### CodeEditLanguages — grammar and query lookup
+### CodeEditLanguages/ — grammar and query lookup
 
-`CodeLanguage` is the main public API: a struct with language metadata (id, display name, file extensions, highlight query URL), with static members per supported language (`.swift`, `.python`, etc.) and `detectLanguageFrom(url:)` for extension-based detection. `TreeSitterLanguage` maps each language id to its C tree-sitter parser function (e.g. `tree_sitter_swift()`), and each language has a `Resources/tree-sitter-{lang}/highlights.scm` query file bundled as a package resource. `TreeSitterModel.shared` lazily loads and caches compiled `Query` objects per language (parsing queries is expensive — this is why release builds matter for performance, see the docc warning).
+`CodeLanguage` is the main public API: a struct with language metadata (id, display name, file extensions, highlight query URL), with static members per supported language (`.swift`, `.python`, etc.) and `detectLanguageFrom(url:)` for extension-based detection. `TreeSitterLanguage` maps each language id to its C tree-sitter parser function (e.g. `tree_sitter_swift()`), and each language has a `Resources/tree-sitter-{lang}/highlights.scm` query file bundled as a package resource. `TreeSitterModel.shared` lazily loads and caches compiled `Query` objects per language; parsing a query is expensive, which is why release builds matter for performance (see the docc warning). That API is internal, since `Query` is a `SwiftTreeSitter` type — `CodeLanguage.isHighlightable` is the public way to ask whether a language has a working grammar and query.
 
-### CodeEditSourceEditor — editor view and highlighting
+### CodeEditSourceEditor/ — editor view and highlighting
 
-`SourceEditor` (`SourceEditor/SourceEditor.swift`) is an `NSViewControllerRepresentable` — the public SwiftUI entry point — wrapping `TextViewController` (`Controller/TextViewController.swift`, an `NSViewController` embedding a `CodeEditTextView.TextView`). An AppKit-only API exists too (construct `TextViewController` directly). Configuration (`SourceEditorConfiguration`: appearance/behavior/layout, immutable, triggers `didSetOnController()` on change) is separate from `SourceEditorState` (ephemeral: cursor positions, scroll position, find panel state).
+`SourceEditor` (`SourceEditor/SourceEditor.swift`) is an `NSViewControllerRepresentable` — the public SwiftUI entry point — wrapping `TextViewController` (`Controller/TextViewController.swift`, an `NSViewController` embedding a `TextView`). An AppKit-only API exists too (construct `TextViewController` directly). Configuration (`SourceEditorConfiguration`: appearance/behavior/layout, immutable, triggers `didSetOnController()` on change) is separate from `SourceEditorState` (ephemeral: cursor positions, scroll position, find panel state).
 
-Highlighting is pluggable via the `HighlightProviding` protocol; if no custom providers are passed, `TreeSitterClient` (`TreeSitter/`) is used by default. Edit flow: `Highlighter` (`Highlighting/Highlighter.swift`) is notified of storage edits, asks each `HighlightProviding` instance for `[HighlightRange]`s over the affected range, and `StyledRangeContainer` coalesces overlapping results from multiple providers (handling priority) into a `RangeStore` — an efficient rope-backed range→style map. The `TextViewController` applies the resulting styles as `NSAttributedString` attributes, which flows back down into `CodeEditTextView`'s layout/render cycle.
+Highlighting is pluggable via the `HighlightProviding` protocol; if no custom providers are passed, `TreeSitterClient` (`TreeSitter/`) is used by default. Edit flow: `Highlighter` (`Highlighting/Highlighter.swift`) is notified of storage edits, asks each `HighlightProviding` instance for `[HighlightRange]`s over the affected range, and `StyledRangeContainer` coalesces overlapping results from multiple providers (handling priority) into a `RangeStore` — an efficient rope-backed range→style map. The `TextViewController` applies the resulting styles as `NSAttributedString` attributes, which flows back down into the layout/render cycle.
 
-`TextViewCoordinator` (see `Documentation.docc/TextViewCoordinators.md`) is the extension-point protocol for injecting custom behavior (e.g. autocomplete, combine publishers for cursor state) without threading new bindings/callbacks through `SourceEditor`'s initializer; coordinators can also conform to `CodeEditTextView`'s `TextViewDelegate` to receive low-level text change notifications.
+`TextViewCoordinator` (see `Documentation.docc/TextViewCoordinators.md`) is the extension-point protocol for injecting custom behavior (e.g. autocomplete, combine publishers for cursor state) without threading new bindings/callbacks through `SourceEditor`'s initializer; coordinators can also conform to `TextViewDelegate` to receive low-level text change notifications.

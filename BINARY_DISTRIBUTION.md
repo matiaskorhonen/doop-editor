@@ -1,117 +1,113 @@
 # Binary distribution
 
-DoopEditor ships prebuilt macOS XCFrameworks so that consumers don't have to clone and compile
+DoopEditor ships a prebuilt macOS XCFramework so that consumers don't have to clone and compile
 the 40+ tree-sitter grammar packages. The grammars are statically linked into
-`CodeEditLanguages.framework` and are invisible to consumers.
+`DoopEditor.framework` and are invisible to consumers.
 
 The source package on `main` stays the source of truth; everything here is additive, and
 `swift build` / `swift test` work unchanged.
 
 ## What ships
 
-Eight universal (arm64 + x86_64) dynamic frameworks. The set is **discovered from the link
-graph**, not hand-written: `Scripts/framework-closure.sh` walks `otool -L` out from the three
-products and fails the build if anything they load at runtime wasn't built. That matters
-because Xcode decides on its own whether a SwiftPM dependency is absorbed into the framework
-using it or promoted to a shared dynamic framework, and that decision depends on how many of
-our targets use it — see `InternalCollectionsUtilities` below.
+**One** universal (arm64 + x86_64) dynamic framework: `DoopEditor`, about 26 MB zipped. Everything
+else is absorbed into it — TextStory, TextFormation, Rearrange, Internal, SwiftTreeSitter,
+TreeSitter, `CodeEditTextViewObjC`, `_RopeModule` and the 36 grammar packages.
 
-| Framework | Why |
-|---|---|
-| `CodeEditTextView`, `CodeEditLanguages`, `CodeEditSourceEditor` | the products |
-| `SwiftTreeSitter` | `Query`, `Language` and `Node` are all over the public API |
-| `TreeSitter` | `SwiftTreeSitter` exposes `TreeSitter.TSInputEncoding` publicly |
-| `TextStory` | `TextMutation` is in the public API |
-| `Internal` | `TextStory` re-exports its `TSYTextStorage` through a public typealias |
-| `Rearrange` | in `TextStory`'s public interface |
+That is possible because DoopEditor is a **single module**. A dependency has to ship as its own
+framework if either of two things is true, and with one module neither can be:
 
-**Absorbed** into the framework that uses them, and not shipped: the 40 tree-sitter grammars,
-`TextFormation`, `CodeEditTextViewObjC`, `_RopeModule`, and the swift-collections modules under
-it (`InternalCollectionsUtilities`, `ContainersPreview`).
+1. **Its module is named in a public `.swiftinterface`.** Consumers' compilers have to resolve
+   every module an interface imports, whatever the link graph says. Keeping third-party types out
+   of the public API is what prevents this, and it is the constraint to protect — see below.
+2. **Two of our frameworks link it.** Xcode then promotes it to a shared dynamic framework instead
+   of absorbing a copy into each, and a promoted framework has to ship or the consumer hits a dyld
+   error. With one framework there is no second linker.
 
-A framework ships only if it has to, and there are exactly two reasons it has to:
+The set is **discovered from the link graph**, not hand-written:
+`Scripts/framework-closure.sh` walks `otool -L` out from `DoopEditor` and fails the build if
+anything it loads at runtime wasn't built. It should always print exactly one framework; if it ever
+prints two, a dependency stopped being absorbed and the release would be broken without it.
 
-1. **Its module is named in one of our public interfaces.** Consumers' compilers have to resolve
-   every module an interface imports, so those can't be absorbed, whatever the link graph says.
-   That is what keeps `SwiftTreeSitter` and `TextStory` — with the frameworks *their* interfaces
-   name in turn — in the list.
-2. **Two of our frameworks link it.** Xcode then promotes it to a shared dynamic framework
-   instead of absorbing a copy into each, and a promoted framework has to ship or the consumer
-   hits a dyld error.
-
-Both reasons are worth checking before adding a dependency, since either one adds a framework.
-`TextFormation` and `CodeEditTextViewObjC` used to ship for those reasons and no longer do:
-TextFormation's `TextInterface` conformance moved off the public `TextView` onto an internal
-wrapper, and the gutter's one Obj-C call went through a `package` method on `CGContext`, which
-left each used by a single framework. Both are now `library.static` targets in the generated
-project, absorbed by whichever framework links them. That is also what `InternalCollectionsUtilities`
-did once `CodeEditTextView` stopped using `DequeModule`: `_RopeModule` in `CodeEditSourceEditor`
-is the only user left, so Xcode absorbs it rather than promoting it.
-
-That promotion behaviour is why everything is archived **in a single pass**: archiving each
-scheme separately produced frameworks that disagreed with each other about their own link graph,
-and a promoted framework was silently absent from the release (SwiftPM package products keep
-`SKIP_INSTALL=YES`, so one never reaches the archive and has to be picked out of the build
-products). The build still handles a promoted framework if one reappears: it ships binary-only,
-since built without library evolution it has no `.swiftinterface`, which `-create-xcframework`
-rejects — no consumer imports it, so the unusable module is stripped and only the dylib ships.
+Everything is archived **in a single pass** from one scheme, which is both the simplest shape for a
+single framework and a guard against the promotion behaviour above: archiving schemes separately
+produces frameworks that disagree about their own link graph.
 
 ## How the source is kept distributable
 
 Three properties of the sources make this work, and all three are easy to break accidentally:
 
 1. **`internal import` on implementation-detail imports.** Swift's interface printer emits an
-   `import` for *every* module a source file imports, so a plain `import TreeSitterSwift` in
-   `CodeLanguage.swift` would put all 40 grammar modules into the public
-   `.swiftinterface` — consumers would then need every grammar package, defeating the point.
-   `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing. It
-   checks every shipped Swift framework's interface, the third-party ones included.
+   `import` for *every* module a source file imports, used publicly or not, so a plain
+   `import TreeSitterSwift` in `CodeLanguage.swift` would put all 40 grammar modules into the public
+   `.swiftinterface` — consumers would then need every grammar package, defeating the point. The
+   same goes for `SwiftTreeSitter`, `TextStory` and `TextFormation`: none of them ship.
+   `Scripts/check-interface-imports.sh` is a hard gate in the build against this regressing.
    It doesn't keep a list of forbidden modules: it forbids every module the build compiled from
    a SwiftPM package (Xcode writes a module map for each into `GeneratedModuleMaps`) that doesn't
    ship with an importable module, and it recognises `@preconcurrency`, `@_exported`,
    `public import` and `import struct X.Y` forms as well as plain imports.
    It needs the `AccessLevelOnImport` feature, enabled in `Package.swift` via
    `resilientSettings`.
-2. **`SWIFT_PACKAGE_NAME = DoopEditor`.** The three modules share `package`-access
-   declarations, which only resolve across the framework boundary when every framework is
-   built with the same package name.
+2. **No public API naming a third-party type.** An `internal import` is not enough on its own: a
+   public declaration whose signature mentions one of those types puts the module back in the
+   interface, and so does a public conformance of a public type to a third-party protocol — a
+   conformance cannot be made internal, so it has to be wrapped instead. See
+   `TextViewTextInterface`, which carries TextFormation's `TextInterface` so `TextView` doesn't,
+   and `CodeLanguage.isHighlightable`, which answers "did the grammar link and the query compile"
+   without returning a `SwiftTreeSitter.Query`.
 3. **`Bundle.codeEditLanguages`.** `Bundle.module` only exists under SwiftPM; in a framework
    build the `.scm` queries live in the framework's own bundle. See
-   `CodeEditLanguages/Sources/CodeEditLanguages/Bundle+CodeEditLanguages.swift`.
-
-A dependency whose types appear in public API has to be rebuilt with library evolution too —
-otherwise the compiler refuses the public import. That's why the third-party frameworks above
-ship rather than being absorbed. None of them needed source changes.
+   `Sources/DoopEditor/CodeEditLanguages/Bundle+CodeEditLanguages.swift`.
 
 ## Building locally
 
 ```bash
-Scripts/build-xcframeworks.sh                  # -> build/xcframeworks/*.xcframework{,.zip}
+Scripts/build-xcframeworks.sh                  # -> build/xcframeworks/DoopEditor.xcframework{,.zip}
 Scripts/generate-binary-manifest.swift v0.9.0  # -> build/binary-package/Package.swift
-Scripts/verify-binary-consumption.sh           # builds and runs each product as a consumer would
+Scripts/verify-binary-consumption.sh           # builds and runs the product as a consumer would
 ```
 
 `build-xcframeworks.sh` resolves the package, regenerates the XcodeGen spec from
 `Package.swift` and the committed `Package.resolved` -- resolving with
-`--force-resolved-versions`, so the binaries are built from exactly the versions pinned there, on
+`--force-resolved-versions`, so the binary is built from exactly the versions pinned there, on
 any machine -- archives the whole graph in one pass from a clean build directory, checks interface
-hygiene, resolves the framework closure, then packages and checksums everything. It records each
-framework's direct dependencies next to its checksum, and
-`Scripts/generate-binary-manifest.swift` expands those into each product's target list — a
-`.binaryTarget` can't declare dependencies, so a product has to name every framework it needs,
-and a hand-maintained list would go stale.
+hygiene, resolves the framework closure, then packages and checksums everything.
 
 Each build starts from an empty `build/DerivedData/Build`, so a local build is as clean as CI's.
 Only `build/DerivedData/SourcePackages`, Xcode's checkouts of the dependencies, is kept between
 runs.
 
 `verify-binary-consumption.sh` is the check that matters. It loads the generated `Package.swift`
-exactly as it will be published, then builds and runs a throwaway executable per product against
-a copy whose binary targets point at the local frameworks, each product on its own. That catches a
-broken manifest, a product that doesn't list every framework it needs (a missing module fails the
-build, a missing dylib fails the launch), a leaked interface import (the grammar modules aren't
-there, so the build fails), and a missing resource (it compiles a tree-sitter `Query` from a `.scm`
-file inside the framework bundle).
+exactly as it will be published, then builds and runs a throwaway executable against a copy whose
+binary target points at the local framework. That catches a broken manifest, a leaked interface
+import (the absorbed modules aren't there, so the build fails), a missing dylib (the launch fails),
+and a missing resource or unlinked grammar — `CodeLanguage.isHighlightable` compiles a tree-sitter
+query from a `.scm` file inside the framework bundle against the statically linked parser.
+
+### The generated project
+
+One framework target; everything else is `library.static`, absorbed into it.
+
+**Each static library must be linked exactly once.** Xcode copies a static target's static
+dependencies into its own archive, so `libTextFormation.a` already contains TextStory, Rearrange
+and Internal. Linking any of those again alongside it produces several hundred duplicate symbols.
+The rule is to link only the outermost archive of each chain and declare the rest `moduleTarget`,
+which builds them and puts their modules on the search path without linking:
+
+```
+TextFormation -> TextStory -> { Internal, Rearrange }
+SwiftTreeSitter -> TreeSitter
+CodeEditTextViewObjC
+```
+
+XcodeGen adds a static-library dependency to a target *without* linking it by default, so the ones
+that must be linked are declared with `link: true` — otherwise the absorbed symbols come up
+undefined.
+
+A `library.static` target has no module of its own, so Swift can't `import` it without a module
+map. `CodeEditTextViewObjC` has one checked in, in the package. `TreeSitter` and `Internal` get one
+written next to the spec by `generate-binary-project.swift`, naming the header by absolute path —
+the checkout location differs per machine, so they can't be checked in.
 
 One setting deserves care: `SKIP_INSTALL` and `BUILD_LIBRARY_FOR_DISTRIBUTION` are set **per
 target** in the generated spec, never on the `xcodebuild` command line. Command-line settings
@@ -119,32 +115,28 @@ also apply to the SwiftPM dependencies, and swift-collections does not compile w
 evolution enabled (`deinitializer can only be '@inlinable' if the class is
 '@_fixed_layout'`). `SKIP_INSTALL` additionally has to be per-target because XcodeGen writes
 `SKIP_INSTALL = YES` at target level for framework targets, which overrides the project-level
-value — and an archive built with it on contains no framework to package.
+value — and an archive built with it on contains no framework to package. The absorbed targets
+don't need library evolution at all: nothing outside the framework imports them, and a resilient
+static library would only add dispatch overhead.
 
-Generated and not checked in: `BinaryDistribution/project.json` (written with `JSONEncoder`, which XcodeGen reads as readily as YAML),
-`BinaryDistribution/DoopEditorBinary.xcodeproj`, `build/`. Checked in:
-`BinaryDistribution/Support/*.h`, the umbrella headers the C frameworks need for Xcode to emit a
-module map. A `library.static` target needs none: `CodeEditTextViewObjC` is imported through the
-package's own `include/module.modulemap`, passed to the importing target with
-`-Xcc -fmodule-map-file=`.
+Generated and not checked in: `BinaryDistribution/project.json` (written with `JSONEncoder`, which
+XcodeGen reads as readily as YAML), `BinaryDistribution/*.modulemap`,
+`BinaryDistribution/DoopEditorBinary.xcodeproj`, `build/`.
 
-Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). Note that
-XcodeGen adds a static-library dependency to a target without linking it, so those dependencies
-are declared with `link: true` -- otherwise the absorbed symbols come up undefined.
+Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
-The release is about 36 MB of zips, 17 MB of it `CodeEditLanguages` (the grammars). The builds
-are **not** bit-reproducible -- two runs of the same commit produce different checksums, since
-timestamps and dSYM UUIDs end up in the archives -- so the checksums in the manifest always
-come from the same build that produced the uploaded zips. Don't hand-edit one.
-
+The release is about 26 MB, most of it the grammars. The builds are **not** bit-reproducible --
+two runs of the same commit produce different checksums, since timestamps and dSYM UUIDs end up in
+the archives -- so the checksum in the manifest always comes from the same build that produced the
+uploaded zip. Don't hand-edit it.
 ## CI
 
 `.github/workflows/xcframeworks.yml` has three jobs:
 
 - **Prepare release** runs only for a version tag push. It creates the draft release; see below.
 - **Build** runs on `macos-26` with read-only permissions. It verifies the source package, builds
-  the frameworks, generates the binary package, runs the consumer check against both, and uploads
-  the zips and generated package as an expiring workflow artifact. If it fails, `archive.log` is
+  the framework, generates the binary package, runs the consumer check against both, and uploads
+  the zip and generated package as an expiring workflow artifact. If it fails, `archive.log` is
   kept as an artifact for 7 days.
 - **Publish** runs only for a release. It uploads exactly the artifact Build verified, publishes the
   release, and publishes the binary package. It has the write permissions and the
@@ -176,7 +168,7 @@ versions SwiftPM updates every mirror from its remote during resolution: a fully
 took 25 minutes locally, against 7.7 minutes with pinned versions, where all 44 packages came
 from the mirrors in 2 seconds. The working copies are unavoidable.
 
-`.build` and Xcode's `DerivedData` are deliberately not cached. Released frameworks should come
+`.build` and Xcode's `DerivedData` are deliberately not cached. A released framework should come
 from a clean build rather than whatever a previous run left behind, and at 6.7 GB of checkouts
 each they would take most of the repository's 10 GB cache allowance.
 
@@ -235,8 +227,8 @@ as a draft and publishes it only when it's complete.
    or a message that's only the version -- it uses GitHub's generated notes instead. `-rc.1` style
    tags become prereleases. A draft left behind by an earlier attempt is reused as-is, including
    any notes edited on it.
-2. **Build** builds and verifies the frameworks.
-3. **Publish** uploads the zips to the draft, checks that the release's assets are exactly the
+2. **Build** builds and verifies the framework.
+3. **Publish** uploads the zip to the draft, checks that the release's assets are exactly the
    build's (`Scripts/verify-release-assets.sh` compares GitHub's SHA-256 digests with the
    checksums), and publishes it. Only the newest stable version is marked "Latest", so a patch to
    an older version or a prerelease doesn't take that from the current release.
