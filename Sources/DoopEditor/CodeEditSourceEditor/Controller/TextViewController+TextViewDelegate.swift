@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import TextStory
+internal import TextStory
 
 extension TextViewController: TextViewDelegate {
     public func textView(_ textView: TextView, willReplaceContentsIn range: NSRange, with string: String) {

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 // Functions for querying and navigating the tree-sitter node tree. These functions should throw if not able to be
 // performed asynchronously as (currently) any editing tasks that would use these must be performed synchronously.
@@ -15,7 +15,7 @@ extension TreeSitterClient {
     public struct NodeResult {
         let id: TreeSitterLanguage
         let language: Language
-        public let node: Node
+        let node: Node
     }
 
     public struct QueryResult {
@@ -81,7 +81,7 @@ extension TreeSitterClient {
     ///   - query: The query to perform.
     ///   - matchingLanguages: A set of languages to limit the query to. Leave empty to not filter out any layers.
     /// - Returns: Any matching nodes from the query.
-    public func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) throws -> [QueryResult] {
+    func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) throws -> [QueryResult] {
         try executor.execSync({
             guard let readCallback = self.readCallback else { return [] }
             var result: [QueryResult] = []
@@ -102,7 +102,7 @@ extension TreeSitterClient {
     ///   - query: The query to perform.
     ///   - matchingLanguages: A set of languages to limit the query to. Leave empty to not filter out any layers.
     /// - Returns: Any matching nodes from the query.
-    public func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) async throws -> [QueryResult] {
+    func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) async throws -> [QueryResult] {
         try await executor.exec {
             guard let readCallback = self.readCallback else { return [] }
             var result: [QueryResult] = []

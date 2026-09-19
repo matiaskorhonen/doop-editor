@@ -7,7 +7,7 @@
 
 import Foundation
 import AppKit
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 import OSLog
 
 /// This class manages fetching syntax highlights from providers, and applying those styles to the editor.

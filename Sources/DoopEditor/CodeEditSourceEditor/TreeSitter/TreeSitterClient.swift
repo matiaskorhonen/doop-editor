@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 import OSLog
 
 /// # TreeSitterClient
@@ -47,7 +47,7 @@ public final class TreeSitterClient: HighlightProviding {
     /// The end point of the previous edit.
     private var oldEndPoint: Point?
 
-    package var pendingEdits: Atomic<[InputEdit]> = Atomic([])
+    internal var pendingEdits: Atomic<[InputEdit]> = Atomic([])
 
     /// Optional flag to force every operation to be done on the caller's thread.
     package var forceSyncOperation: Bool = false

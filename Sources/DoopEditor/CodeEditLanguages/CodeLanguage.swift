@@ -7,7 +7,7 @@
 
 import Foundation
 internal import TreeSitter
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 internal import TreeSitterAgda
 internal import TreeSitterBash
 internal import TreeSitterC
@@ -111,7 +111,7 @@ public struct CodeLanguage {
     public let additionalIdentifiers: Set<String>
 
     /// The tree-sitter language for the language if available
-    public var language: Language? {
+    var language: Language? {
         guard let tsLanguage = tsLanguage else { return nil }
         return Language(language: tsLanguage)
     }

@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import TextStory
+internal import TextStory
 
 /// # Text View
 ///

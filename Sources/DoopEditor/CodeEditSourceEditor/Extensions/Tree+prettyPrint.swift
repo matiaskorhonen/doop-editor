@@ -5,7 +5,7 @@
 //  Created by Khan Winter on 3/16/23.
 //
 
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 #if DEBUG
 private func prettyPrintTree(rootNode: Node?) {

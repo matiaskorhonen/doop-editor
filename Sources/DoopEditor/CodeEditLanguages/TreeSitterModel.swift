@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 /// A singleton class to manage `tree-sitter` queries and keep them in memory.
 public class TreeSitterModel {
@@ -17,7 +17,7 @@ public class TreeSitterModel {
     /// Get a query for a specific language
     /// - Parameter language: The language to request the query for.
     /// - Returns: A Query if available. Returns `nil` for not implemented languages
-    public func query(for language: TreeSitterLanguage) -> Query? {
+    func query(for language: TreeSitterLanguage) -> Query? {
         // swiftlint:disable:previous cyclomatic_complexity function_body_length
         switch language {
         case .agda:
@@ -106,202 +106,202 @@ public class TreeSitterModel {
     }
 
     /// Query for `Agda` files.
-    public private(set) lazy var agdaQuery: Query? = {
+    private(set) lazy var agdaQuery: Query? = {
         return queryFor(.agda)
     }()
 
     /// Query for `Bash` files.
-    public private(set) lazy var bashQuery: Query? = {
+    private(set) lazy var bashQuery: Query? = {
         return queryFor(.bash)
     }()
 
     /// Query for `C` files.
-    public private(set) lazy var cQuery: Query? = {
+    private(set) lazy var cQuery: Query? = {
         return queryFor(.c)
     }()
 
     /// Query for `C++` files.
-    public private(set) lazy var cppQuery: Query? = {
+    private(set) lazy var cppQuery: Query? = {
         return queryFor(.cpp)
     }()
 
     /// Query for `C#` files.
-    public private(set) lazy var cSharpQuery: Query? = {
+    private(set) lazy var cSharpQuery: Query? = {
         return queryFor(.cSharp)
     }()
 
     /// Query for `CSS` files.
-    public private(set) lazy var cssQuery: Query? = {
+    private(set) lazy var cssQuery: Query? = {
         return queryFor(.css)
     }()
 
     /// Query for `Dockerfile` files.
-    public private(set) lazy var dockerfileQuery: Query? = {
+    private(set) lazy var dockerfileQuery: Query? = {
         return queryFor(.dockerfile)
     }()
 
     /// Query for `Elixir` files.
-    public private(set) lazy var elixirQuery: Query? = {
+    private(set) lazy var elixirQuery: Query? = {
         return queryFor(.elixir)
     }()
 
     /// Query for `Generic` files.
-    public private(set) lazy var genericQuery: Query? = {
+    private(set) lazy var genericQuery: Query? = {
         return queryFor(.generic)
     }()
 
     /// Query for `Go` files.
-    public private(set) lazy var goQuery: Query? = {
+    private(set) lazy var goQuery: Query? = {
         return queryFor(.go)
     }()
 
     /// Query for `GoMod` files.
-    public private(set) lazy var goModQuery: Query? = {
+    private(set) lazy var goModQuery: Query? = {
         return queryFor(.goMod)
     }()
 
     /// Query for `Haskell` files.
-    public private(set) lazy var haskellQuery: Query? = {
+    private(set) lazy var haskellQuery: Query? = {
         return queryFor(.haskell)
     }()
 
     /// Query for `HTML` files.
-    public private(set) lazy var htmlQuery: Query? = {
+    private(set) lazy var htmlQuery: Query? = {
         return queryFor(.html)
     }()
 
     /// Query for `Java` files.
-    public private(set) lazy var javaQuery: Query? = {
+    private(set) lazy var javaQuery: Query? = {
         return queryFor(.java)
     }()
 
     /// Query for `JavaScript` files.
-    public private(set) lazy var javascriptQuery: Query? = {
+    private(set) lazy var javascriptQuery: Query? = {
         return queryFor(.javascript)
     }()
 
     /// Query for `JSDoc` files.
-    public private(set) lazy var jsdocQuery: Query? = {
+    private(set) lazy var jsdocQuery: Query? = {
         return queryFor(.jsdoc)
     }()
 
     /// Query for `JSX` files.
-    public private(set) lazy var jsxQuery: Query? = {
+    private(set) lazy var jsxQuery: Query? = {
         return queryFor(.jsx)
     }()
 
     /// Query for `JSON` files.
-    public private(set) lazy var jsonQuery: Query? = {
+    private(set) lazy var jsonQuery: Query? = {
         return queryFor(.json)
     }()
 
     /// Query for `Julia` files.
-    public private(set) lazy var juliaQuery: Query? = {
+    private(set) lazy var juliaQuery: Query? = {
         return queryFor(.julia)
     }()
 
     /// Query for `Kotlin` files.
-    public private(set) lazy var kotlinQuery: Query? = {
+    private(set) lazy var kotlinQuery: Query? = {
         return queryFor(.kotlin)
     }()
 
     /// Query for `Lua` files.
-    public private(set) lazy var luaQuery: Query? = {
+    private(set) lazy var luaQuery: Query? = {
         return queryFor(.lua)
     }()
 
     /// Query for `Markdown` files.
-    public private(set) lazy var markdownQuery: Query? = {
+    private(set) lazy var markdownQuery: Query? = {
         return queryFor(.markdown)
     }()
 
     /// Query for `Markdown Inline` files.
-    public private(set) lazy var markdownInlineQuery: Query? = {
+    private(set) lazy var markdownInlineQuery: Query? = {
         return queryFor(.markdownInline)
     }()
 
     /// Query for `Objective C` files.
-    public private(set) lazy var objcQuery: Query? = {
+    private(set) lazy var objcQuery: Query? = {
         return queryFor(.objc)
     }()
 
     /// Query for `OCaml` files.
-    public private(set) lazy var ocamlQuery: Query? = {
+    private(set) lazy var ocamlQuery: Query? = {
         return queryFor(.ocaml)
     }()
 
     /// Query for `OCaml Interface` files.
-    public private(set) lazy var ocamlInterfaceQuery: Query? = {
+    private(set) lazy var ocamlInterfaceQuery: Query? = {
         return queryFor(.ocamlInterface)
     }()
 
     /// Query for `Perl` files.
-    public private(set) lazy var perlQuery: Query? = {
+    private(set) lazy var perlQuery: Query? = {
         return queryFor(.perl)
     }()
 
     /// Query for `PHP` files.
-    public private(set) lazy var phpQuery: Query? = {
+    private(set) lazy var phpQuery: Query? = {
         return queryFor(.php)
     }()
 
     /// Query for `Python` files.
-    public private(set) lazy var pythonQuery: Query? = {
+    private(set) lazy var pythonQuery: Query? = {
         return queryFor(.python)
     }()
 
     /// Query for `Regex` files.
-    public private(set) lazy var regexQuery: Query? = {
+    private(set) lazy var regexQuery: Query? = {
         return queryFor(.regex)
     }()
 
     /// Query for `Ruby` files.
-    public private(set) lazy var rubyQuery: Query? = {
+    private(set) lazy var rubyQuery: Query? = {
         return queryFor(.ruby)
     }()
 
     /// Query for `Rust` files.
-    public private(set) lazy var rustQuery: Query? = {
+    private(set) lazy var rustQuery: Query? = {
         return queryFor(.rust)
     }()
 
     /// Query for `Scala` files.
-    public private(set) lazy var scalaQuery: Query? = {
+    private(set) lazy var scalaQuery: Query? = {
         return queryFor(.scala)
     }()
 
     /// Query for `SQL` files.
-    public private(set) lazy var sqlQuery: Query? = {
+    private(set) lazy var sqlQuery: Query? = {
         return queryFor(.sql)
     }()
 
     /// Query for `Swift` files.
-    public private(set) lazy var swiftQuery: Query? = {
+    private(set) lazy var swiftQuery: Query? = {
         return queryFor(.swift)
     }()
 
     /// Query for `TOML` files.
-    public private(set) lazy var tomlQuery: Query? = {
+    private(set) lazy var tomlQuery: Query? = {
         return queryFor(.toml)
     }()
 
     /// Query for `TSX` files.
-    public private(set) lazy var tsxQuery: Query? = {
+    private(set) lazy var tsxQuery: Query? = {
         return queryFor(.tsx)
     }()
 
     /// Query for `Typescript` files.
-    public private(set) lazy var typescriptQuery: Query? = {
+    private(set) lazy var typescriptQuery: Query? = {
         return queryFor(.typescript)
     }()
 
     /// Query for `YAML` files.
-    public private(set) lazy var yamlQuery: Query? = {
+    private(set) lazy var yamlQuery: Query? = {
         return queryFor(.yaml)
     }()
 
     /// Query for `Zig` files.
-    public private(set) lazy var zigQuery: Query? = {
+    private(set) lazy var zigQuery: Query? = {
         return queryFor(.zig)
     }()
 

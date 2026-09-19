@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TreeSitterClient {
     func queryHighlightsForRange(range: NSRange) -> [HighlightRange] {

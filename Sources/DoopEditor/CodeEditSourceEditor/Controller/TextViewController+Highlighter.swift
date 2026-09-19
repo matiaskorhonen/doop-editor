@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TextViewController {
     package func setUpHighlighter() {

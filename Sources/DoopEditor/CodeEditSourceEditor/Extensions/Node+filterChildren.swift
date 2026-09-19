@@ -5,7 +5,7 @@
 //  Created by Khan Winter on 5/29/24.
 //
 
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension Node {
     func firstChild(`where` isMatch: (Node) -> Bool) -> Node? {

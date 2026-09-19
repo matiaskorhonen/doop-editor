@@ -7,8 +7,8 @@
 
 import Foundation
 internal import TextFormation
-import TextStory
-import SwiftTreeSitter
+internal import TextStory
+internal import SwiftTreeSitter
 
 struct TagFilter: Filter {
     enum Error: Swift.Error {

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import TextStory
+internal import TextStory
 internal import TextFormation
 
 // Helper extension to extract capture groups

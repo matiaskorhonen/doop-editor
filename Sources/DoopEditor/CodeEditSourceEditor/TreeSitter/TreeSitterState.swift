@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 /// TreeSitterState contains the tree of language layers that make up the tree-sitter document.
 public final class TreeSitterState {
@@ -115,7 +115,7 @@ public final class TreeSitterState {
     /// - Parameters:
     ///   - layerId: A language ID to add as a layer.
     ///   - readBlock: Completion called for efficient string lookup.
-    public func addLanguageLayer(
+    func addLanguageLayer(
         layerId: TreeSitterLanguage,
         readBlock: @escaping Parser.ReadBlock
     ) -> LanguageLayer? {
@@ -155,7 +155,7 @@ public final class TreeSitterState {
     ///                    Use this to determine if any layers were not modified after this method was run.
     ///                    Those layers should be removed.
     /// - Returns: A set of indices of any new layers. This set indicates ranges that should be re-highlighted.
-    public func updateInjectedLayers(
+    func updateInjectedLayers(
         readCallback: @escaping SwiftTreeSitter.Predicate.TextProvider,
         readBlock: @escaping Parser.ReadBlock,
         touchedLayers: Set<LanguageLayer>

@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TreeSitterClient {
     static func quickHighlight(

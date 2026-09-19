@@ -5,7 +5,7 @@
 //  Created by Khan Winter on 3/1/24.
 //
 
-import TextStory
+internal import TextStory
 
 extension TextMutation {
     /// Determines if the mutation is an empty mutation.

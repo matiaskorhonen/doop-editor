@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension InputEdit {
     init?(range: NSRange, delta: Int, oldEndPoint: Point, textView: TextView) {

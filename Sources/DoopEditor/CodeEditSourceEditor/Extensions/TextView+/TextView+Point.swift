@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TextView {
     func pointForLocation(_ location: Int) -> Point? {

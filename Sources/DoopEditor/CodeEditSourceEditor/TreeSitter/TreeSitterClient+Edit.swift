@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TreeSitterClient {
     /// Applies the given edit to the current state and calls the editState's completion handler.

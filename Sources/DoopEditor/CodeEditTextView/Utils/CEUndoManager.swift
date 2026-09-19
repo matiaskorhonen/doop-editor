@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import TextStory
+internal import TextStory
 
 /// Maintains a history of edits applied to the editor and allows for undo/redo actions using those edits.
 /// 
@@ -165,7 +165,7 @@ public class CEUndoManager: UndoManager {
     ///
     /// Calling this method while the manager is in an undo/redo operation will result in a no-op.
     /// - Parameter mutation: The mutation to register for undo/redo
-    public func registerMutation(_ mutation: TextMutation) {
+    func registerMutation(_ mutation: TextMutation) {
         removeAllActions()
         guard let textView,
               let textStorage = textView.textStorage,

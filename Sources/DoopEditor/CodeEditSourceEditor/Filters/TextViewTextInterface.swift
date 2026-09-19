@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import TextStory
+internal import TextStory
 internal import TextFormation
 
 /// Adapts a ``CodeEditTextView/TextView`` to TextFormation's `TextInterface`, which is what the text

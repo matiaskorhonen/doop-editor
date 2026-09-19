@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import TextStory
+internal import TextStory
 
 extension TextView {
     override public func selectAll(_ sender: Any?) {

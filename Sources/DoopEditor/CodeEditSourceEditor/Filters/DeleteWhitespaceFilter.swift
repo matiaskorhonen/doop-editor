@@ -7,7 +7,7 @@
 
 import Foundation
 internal import TextFormation
-import TextStory
+internal import TextStory
 
 /// Filter for quickly deleting indent whitespace
 ///

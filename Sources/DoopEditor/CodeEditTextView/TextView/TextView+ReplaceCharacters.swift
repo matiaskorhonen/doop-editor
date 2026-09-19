@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import TextStory
+internal import TextStory
 
 extension TextView {
     /// Replace the characters in the given ranges with the given string.

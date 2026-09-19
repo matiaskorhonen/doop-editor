@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftTreeSitter
+internal import SwiftTreeSitter
 
 extension TextView {
     /// Creates a block for safely reading data into a parser's read block.

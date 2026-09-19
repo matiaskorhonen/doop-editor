@@ -7,7 +7,7 @@
 
 import AppKit
 internal import TextFormation
-import TextStory
+internal import TextStory
 
 extension TextViewController {
     // MARK: - Filter Configuration
