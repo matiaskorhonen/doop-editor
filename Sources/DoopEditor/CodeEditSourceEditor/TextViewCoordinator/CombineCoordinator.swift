@@ -7,7 +7,6 @@
 
 import Foundation
 import Combine
-import CodeEditTextView
 
 /// A ``TextViewCoordinator`` class that publishes text changes and selection changes using Combine publishers.
 ///

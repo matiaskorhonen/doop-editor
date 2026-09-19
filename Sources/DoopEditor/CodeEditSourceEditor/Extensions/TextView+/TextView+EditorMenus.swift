@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 extension TextView {
 

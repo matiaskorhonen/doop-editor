@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftTreeSitter
-import CodeEditLanguages
 
 /// TreeSitterState contains the tree of language layers that make up the tree-sitter document.
 public final class TreeSitterState {

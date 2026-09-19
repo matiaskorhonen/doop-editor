@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 internal import TextFormation
 import TextStory
 

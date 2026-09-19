@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 /// Object that tells the text view how to draw invisible characters.
 ///

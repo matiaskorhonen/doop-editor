@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import CodeEditLanguages
-import CodeEditTextView
 import OSLog
 
 @MainActor

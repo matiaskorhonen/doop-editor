@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 public protocol GutterViewDelegate: AnyObject {
     func gutterViewWidthDidUpdate()

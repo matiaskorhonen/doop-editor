@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 extension TextViewController {
     /// Handles indentation and unindentation for selected lines in the text view.

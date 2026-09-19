@@ -6,8 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
-import CodeEditLanguages
 import SwiftUI
 import Combine
 internal import TextFormation

@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 /// Creates a container controller for displaying and hiding a find panel with a content view.
 final class FindViewController: NSViewController {

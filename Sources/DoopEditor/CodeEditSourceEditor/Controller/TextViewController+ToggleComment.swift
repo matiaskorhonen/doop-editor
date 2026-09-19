@@ -5,7 +5,6 @@
 //  Created by Sophia Hooley on 4/21/24.
 //
 
-import CodeEditTextView
 import AppKit
 
 extension TextViewController {

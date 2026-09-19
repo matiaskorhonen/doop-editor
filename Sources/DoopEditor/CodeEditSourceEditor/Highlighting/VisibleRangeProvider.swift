@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 @MainActor
 protocol VisibleRangeProviderDelegate: AnyObject {

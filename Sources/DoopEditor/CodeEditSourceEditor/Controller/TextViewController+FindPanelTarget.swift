@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 extension TextViewController: FindPanelTarget {
     var findPanelTargetView: NSView {

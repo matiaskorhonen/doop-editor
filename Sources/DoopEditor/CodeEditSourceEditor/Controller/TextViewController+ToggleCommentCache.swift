@@ -5,7 +5,6 @@
 //  Created by Tommy Ludwig on 23.08.24.
 //
 
-import CodeEditTextView
 
 extension TextViewController {
     /// A cache used to store and manage comment-related information for lines in a text view.

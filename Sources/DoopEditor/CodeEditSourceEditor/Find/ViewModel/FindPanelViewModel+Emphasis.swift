@@ -5,7 +5,6 @@
 //  Created by Khan Winter on 4/18/25.
 //
 
-import CodeEditTextView
 
 extension FindPanelViewModel {
     func addMatchEmphases(flashCurrent: Bool) {

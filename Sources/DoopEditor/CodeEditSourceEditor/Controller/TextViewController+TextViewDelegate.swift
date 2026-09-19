@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CodeEditTextView
 import TextStory
 
 extension TextViewController: TextViewDelegate {

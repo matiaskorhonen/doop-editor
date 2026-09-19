@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 extension TextViewController {
     /// Emphasizes bracket pairs using the current selection.

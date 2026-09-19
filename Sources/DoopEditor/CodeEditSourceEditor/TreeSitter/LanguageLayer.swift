@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CodeEditLanguages
 import SwiftTreeSitter
 internal import TreeSitter
 

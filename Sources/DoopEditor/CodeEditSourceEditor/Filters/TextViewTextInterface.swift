@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import CodeEditTextView
 import TextStory
 internal import TextFormation
 

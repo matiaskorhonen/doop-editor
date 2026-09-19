@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Combine
-import CodeEditTextView
 
 class FindPanelViewModel: ObservableObject {
     enum Notifications {

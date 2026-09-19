@@ -5,7 +5,6 @@
 //  Created by Khan Winter on 10/14/23.
 //
 
-import CodeEditTextView
 import AppKit
 
 extension TextViewController {

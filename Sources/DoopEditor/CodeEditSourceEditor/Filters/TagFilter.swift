@@ -8,8 +8,6 @@
 import Foundation
 internal import TextFormation
 import TextStory
-import CodeEditTextView
-import CodeEditLanguages
 import SwiftTreeSitter
 
 struct TagFilter: Filter {

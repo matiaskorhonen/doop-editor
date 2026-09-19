@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CodeEditLanguages
 import SwiftTreeSitter
 
 // Functions for querying and navigating the tree-sitter node tree. These functions should throw if not able to be

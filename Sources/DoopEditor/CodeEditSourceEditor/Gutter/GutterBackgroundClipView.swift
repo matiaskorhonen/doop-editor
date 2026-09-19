@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 /// A clip view used as the source editor's scroll view `contentView`.
 ///

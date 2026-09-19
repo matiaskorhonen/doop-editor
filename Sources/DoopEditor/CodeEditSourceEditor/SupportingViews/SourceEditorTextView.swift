@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 final class SourceEditorTextView: TextView {
     var additionalCursorRects: [(NSRect, NSCursor)] = []

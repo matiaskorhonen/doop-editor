@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CodeEditTextView
 
 extension FindPanelViewModel {
     /// Replace one or all ``findMatches`` with the contents of ``replaceText``.

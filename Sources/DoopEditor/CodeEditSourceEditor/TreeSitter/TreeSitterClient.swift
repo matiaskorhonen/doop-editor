@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import CodeEditTextView
-import CodeEditLanguages
 import SwiftTreeSitter
 import OSLog
 

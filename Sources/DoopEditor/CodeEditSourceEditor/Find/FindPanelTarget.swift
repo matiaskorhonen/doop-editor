@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 protocol FindPanelTarget: AnyObject {
     var textView: TextView! { get }

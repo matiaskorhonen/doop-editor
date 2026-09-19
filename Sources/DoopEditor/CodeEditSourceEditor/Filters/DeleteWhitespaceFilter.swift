@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import CodeEditTextView
 internal import TextFormation
 import TextStory
 

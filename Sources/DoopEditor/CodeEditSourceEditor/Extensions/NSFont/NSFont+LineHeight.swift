@@ -6,7 +6,6 @@
 //
 
 import AppKit
-import CodeEditTextView
 
 public extension NSFont {
     /// The default line height of the font.

@@ -7,9 +7,7 @@
 
 import Foundation
 import AppKit
-import CodeEditTextView
 import SwiftTreeSitter
-import CodeEditLanguages
 import OSLog
 
 /// This class manages fetching syntax highlights from providers, and applying those styles to the editor.
