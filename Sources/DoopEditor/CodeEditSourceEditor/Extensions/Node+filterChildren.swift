@@ -19,15 +19,6 @@ extension Node {
         return nil
     }
 
-    func mapChildren<T>(_ callback: (Node) -> T) -> [T] {
-        var retVal: [T] = []
-        for idx in 0..<childCount {
-            guard let node = child(at: idx) else { continue }
-            retVal.append(callback(node))
-        }
-        return retVal
-    }
-
     func filterChildren(_ isIncluded: (Node) -> Bool) -> [Node] {
         var retVal: [Node] = []
         for idx in 0..<childCount {

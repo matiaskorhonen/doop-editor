@@ -129,24 +129,6 @@ extension TextLineStorage {
             }
         }
 
-        func getSuccessor() -> Node<NodeData>? {
-            // If node has right child: successor is the min of this right tree
-            if let right {
-                return right.minimum()
-            } else {
-                // Else go upward until node is a left child
-                var currentNode = self
-                var parent = currentNode.parent
-                while currentNode.parent?.right === currentNode {
-                    if let parent = parent {
-                        currentNode = parent
-                    }
-                    parent = currentNode.parent
-                }
-                return parent
-            }
-        }
-
         deinit {
             left = nil
             right = nil

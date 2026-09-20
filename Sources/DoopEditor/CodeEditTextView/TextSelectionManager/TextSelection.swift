@@ -35,12 +35,3 @@ public extension TextSelectionManager {
         }
     }
 }
-
-private extension TextSelectionManager.TextSelection {
-    func didInsertText(length: Int, retainLength: Bool = false) {
-        if !retainLength {
-            range.length = 0
-        }
-        range.location += length
-    }
-}

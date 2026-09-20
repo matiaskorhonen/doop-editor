@@ -45,31 +45,6 @@ class StyledRangeContainer {
         }
     }
 
-    enum RunState {
-        case empty
-        case value(RangeStoreRun<StyleElement>)
-        case exhausted
-
-        var isExhausted: Bool {
-            if case .exhausted = self { return true }
-            return false
-        }
-
-        var hasValue: Bool {
-            if case .value = self { return true }
-            return false
-        }
-
-        var length: Int {
-            switch self {
-            case .empty, .exhausted:
-                return 0
-            case .value(let run):
-                return run.length
-            }
-        }
-    }
-
     var _storage: [ProviderID: (store: RangeStore<StyleElement>, priority: Int)] = [:]
     weak var delegate: StyledRangeContainerDelegate?
 

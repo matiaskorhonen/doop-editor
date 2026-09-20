@@ -16,12 +16,4 @@ extension Result {
             throw failure
         }
     }
-
-    var isSuccess: Bool {
-        if case .success = self {
-            return true
-        } else {
-            return false
-        }
-    }
 }

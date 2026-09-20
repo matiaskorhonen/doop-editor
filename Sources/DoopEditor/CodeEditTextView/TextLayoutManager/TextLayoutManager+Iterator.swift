@@ -8,22 +8,6 @@
 import Foundation
 
 public extension TextLayoutManager {
-    /// Iterate over all visible lines.
-    ///
-    /// Visible lines are any lines contained by the rect returned by ``TextLayoutManagerDelegate/visibleRect`` or,
-    /// if there is no delegate from `0` to the estimated document height.
-    ///
-    /// - Returns: An iterator to iterate through all visible lines.
-    func visibleLines() -> YPositionIterator {
-        let visibleRect = delegate?.visibleRect ?? NSRect(
-            x: 0,
-            y: 0,
-            width: 0,
-            height: estimatedHeight()
-        )
-        return YPositionIterator(minY: max(visibleRect.minY, 0), maxY: max(visibleRect.maxY, 0), layoutManager: self)
-    }
-
     /// Iterate over all lines in the y position range.
     /// - Parameters:
     ///   - minY: The minimum y position to begin at.
