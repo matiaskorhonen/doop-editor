@@ -9,7 +9,7 @@ import Foundation
 
 extension TextSelectionManager {
     public func didReplaceCharacters(in range: NSRange, replacementLength: Int) {
-        let delta = replacementLength == 0 ? -range.length : replacementLength
+        let delta = replacementLength - range.length
         for textSelection in self.textSelections {
             if textSelection.range.location > range.max {
                 textSelection.range.location = max(0, textSelection.range.location + delta)
