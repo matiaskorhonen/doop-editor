@@ -317,6 +317,37 @@ struct CEUndoManagerTests {
 
     // MARK: - Disabling and clearing
 
+    /// Edits made while the manager is disabled leave the stack untouched.
+    ///
+    /// This is what `setMarkedText` and `unmarkText` rely on: an IME composing a character
+    /// rewrites the marked range on every keystroke, and none of those intermediate states is
+    /// an edit the user could meaningfully undo to.
+    ///
+    /// The two words are typed separately so the second proves registration resumes; they are
+    /// deliberately not adjacent, because two adjacent runs would coalesce into one group and
+    /// the count could not tell "the first was ignored" apart from "both were merged".
+    @Test
+    func disabledMutationsAreNotRecorded() {
+        let textView = textView()
+        let manager = undoManager(for: textView)
+
+        manager.disable()
+        type("ignored", into: textView)
+        manager.enable()
+
+        #expect(text(textView) == "ignored")
+        #expect(manager.undoCount == 0)
+        #expect(!manager.canUndo)
+
+        textView.replaceCharacters(in: NSRange(location: 0, length: 0), with: "counted")
+        #expect(manager.undoCount == 1)
+
+        // Undoing reaches only the recorded edit; the disabled one is not history to return to.
+        manager.undo()
+        #expect(text(textView) == "ignored")
+        #expect(!manager.canUndo)
+    }
+
     /// `undo` itself respects the disabled flag, so a disabled manager cannot rewrite the document
     /// out from under whatever disabled it.
     @Test
