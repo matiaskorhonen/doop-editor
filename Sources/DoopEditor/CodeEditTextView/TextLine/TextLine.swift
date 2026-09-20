@@ -76,17 +76,23 @@ public final class TextLine: Identifiable, Equatable {
         public let lineHeightMultiplier: CGFloat
         public let estimatedLineHeight: CGFloat
         public let breakStrategy: LineBreakStrategy
+        /// The font lines are set in, if known. Line fragments take their height and baseline from this font
+        /// rather than from the fonts they were drawn with, so that a character the font can't draw (an emoji, say,
+        /// which CoreText substitutes a much taller font for) doesn't make its line taller than the rest.
+        public let baseFont: NSFont?
 
         public init(
             maxWidth: CGFloat,
             lineHeightMultiplier: CGFloat,
             estimatedLineHeight: CGFloat,
-            breakStrategy: LineBreakStrategy = .character
+            breakStrategy: LineBreakStrategy = .character,
+            baseFont: NSFont? = nil
         ) {
             self.maxWidth = maxWidth
             self.lineHeightMultiplier = lineHeightMultiplier
             self.estimatedLineHeight = estimatedLineHeight
             self.breakStrategy = breakStrategy
+            self.baseFont = baseFont
         }
     }
 }

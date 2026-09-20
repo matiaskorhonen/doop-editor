@@ -59,6 +59,7 @@ public class TextLayoutManager: NSObject {
         didSet {
             // Rebuild using potentially overridden behavior.
             _estimateLineHeight = nil
+            _baseFont = nil
             lineStorage.removeAll()
             prepareTextLines()
         }
@@ -221,11 +222,26 @@ public class TextLayoutManager: NSObject {
     /// this estimate rather than measuring their own (contentless) text.
     public func invalidateEstimatedLineHeight() {
         _estimateLineHeight = nil
+        _baseFont = nil
     }
 
     /// The last known line height estimate. If  set to `nil`, will be recalculated the next time
     /// ``TextLayoutManager/estimateLineHeight()`` is called.
     private var _estimateLineHeight: CGFloat?
+
+    /// The font lines are laid out in, taken from the current typing attributes. Line fragments size themselves
+    /// using this font rather than the fonts they end up drawn with, so a substituted font (Apple Color Emoji, for
+    /// instance) can't change how tall a line is. Invalidated along with the line height estimate.
+    var baseFont: NSFont? {
+        if let cachedFont = _baseFont {
+            return cachedFont
+        }
+        let font = delegate?.layoutManagerTypingAttributes()[.font] as? NSFont
+        _baseFont = font
+        return font
+    }
+
+    private var _baseFont: NSFont?
 
     deinit {
         lineStorage.removeAll()

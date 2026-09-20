@@ -285,3 +285,58 @@ class TypesetterTests: XCTestCase {
         XCTAssertEqual(typesetter.lineFragments.count, 1)
     }
 }
+
+/// Covers the height and baseline a line fragment reports, which every line on screen is positioned by.
+class TypesetterHeightTests: XCTestCase {
+    /// The system font cascades to an emoji face with matched metrics; a named font like Menlo falls back to Apple
+    /// Color Emoji, whose metrics are far taller. That's the case that shifts lines.
+    let font = NSFont(name: "Menlo", size: 12)!
+
+    /// Typesets one line and returns the height and descent of its only fragment.
+    private func fragmentMetrics(
+        for string: String,
+        baseFont: NSFont?
+    ) throws -> (height: CGFloat, descent: CGFloat) {
+        // An `NSTextStorage`, like the one a text view lays out, fixes font attributes as it's edited: it rewrites
+        // the font over an emoji to Apple Color Emoji, so the attributes can't tell us what font the line is set in.
+        let storage = NSTextStorage(string: string)
+        storage.addAttribute(.font, value: font, range: NSRange(location: 0, length: storage.length))
+
+        let typesetter = Typesetter()
+        typesetter.typeset(
+            storage,
+            documentRange: NSRange(location: 0, length: storage.length),
+            displayData: TextLine.DisplayData(
+                maxWidth: .infinity,
+                lineHeightMultiplier: 1.0,
+                estimatedLineHeight: 20.0,
+                breakStrategy: .word,
+                baseFont: baseFont
+            ),
+            markedRanges: nil
+        )
+        XCTAssertEqual(typesetter.lineFragments.count, 1)
+        let fragment = try XCTUnwrap(typesetter.lineFragments.getLine(atIndex: 0)?.data)
+        return (fragment.height, fragment.descent)
+    }
+
+    /// An emoji has no glyph in a text font, so CoreText draws it with Apple Color Emoji, which declares a much
+    /// taller ascent and descent at the same point size. A fragment should keep the height and baseline of the font
+    /// the line is set in, so that typing an emoji doesn't shift the line it's on.
+    func test_emojiDoesNotChangeFragmentHeight() throws {
+        let plain = try fragmentMetrics(for: "hello", baseFont: font)
+        let emoji = try fragmentMetrics(for: "hello \u{1F600}", baseFont: font)
+
+        XCTAssertEqual(plain.height, font.ascender - font.descender + font.leading, accuracy: 0.001)
+        XCTAssertEqual(emoji.height, plain.height, accuracy: 0.001)
+        XCTAssertEqual(emoji.descent, plain.descent, accuracy: 0.001)
+    }
+
+    /// Without a font to lay out against, fragments still measure what was drawn.
+    func test_withoutBaseFontMetricsComeFromTheDrawnLine() throws {
+        let plain = try fragmentMetrics(for: "hello", baseFont: nil)
+        let emoji = try fragmentMetrics(for: "hello \u{1F600}", baseFont: nil)
+
+        XCTAssertGreaterThan(emoji.height, plain.height)
+    }
+}

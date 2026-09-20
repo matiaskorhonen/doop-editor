@@ -102,6 +102,27 @@ struct TextLayoutManagerTests {
         layoutManager.lineStorage.validateInternalState()
     }
 
+    /// Typing an emoji used to make its line ~40% taller than its neighbors, because CoreText substitutes Apple
+    /// Color Emoji, which declares much taller metrics than the editor's font. Every line should stay the same
+    /// height, and the lines below it shouldn't move.
+    @Test
+    func emojiDoesNotChangeLineHeights() throws {
+        textView.font = try #require(NSFont(name: "Menlo", size: 12))
+        textView.layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+
+        let heightsBefore = (0..<layoutManager.lineCount).compactMap { layoutManager.textLineForIndex($0)?.height }
+        let totalBefore = layoutManager.lineStorage.height
+
+        // Replace "B" with an emoji.
+        textStorage.replaceCharacters(in: NSRange(location: 2, length: 1), with: "\u{1F600}")
+        layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+
+        let heightsAfter = (0..<layoutManager.lineCount).compactMap { layoutManager.textLineForIndex($0)?.height }
+
+        #expect(heightsAfter == heightsBefore)
+        #expect(layoutManager.lineStorage.height == totalBefore)
+    }
+
     /// This ensures that getting line rect info does not invalidate layout. The issue was previously caused by a
     /// call to ``TextLayoutManager/preparePositionForDisplay``.
     @Test

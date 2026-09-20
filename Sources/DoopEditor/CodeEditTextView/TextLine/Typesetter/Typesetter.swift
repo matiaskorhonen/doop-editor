@@ -184,7 +184,7 @@ final public class Typesetter {
             // Convert the absolute position to an offset relative to the typesetter's range.
             let startOffset = context.currentPosition - range.location
             let typesetSubrange = NSRange(location: startOffset, length: lineBreak - startOffset)
-            let typesetData = typesetLine(typesetter: typesetter, range: typesetSubrange)
+            let typesetData = typesetLine(typesetter: typesetter, range: typesetSubrange, displayData: displayData)
 
             // The typesetter won't tell us if 0 characters can fit in the constrained space. This checks to
             // make sure we can fit something. If not, we pop and continue
@@ -207,21 +207,38 @@ final public class Typesetter {
 
     /// Typeset a new fragment.
     /// - Parameters:
-    ///   - range: The range of the fragment.
-    ///   - lineHeightMultiplier: The multiplier to apply to the line's height.
+    ///   - typesetter: The typesetter to create the line with.
+    ///   - range: The range of the fragment, relative to the typesetter's string.
+    ///   - displayData: Display information for the line being typeset.
     /// - Returns: A new line fragment.
-    private func typesetLine(typesetter: CTTypesetter, range: NSRange) -> CTLineTypesetData {
+    private func typesetLine(
+        typesetter: CTTypesetter,
+        range: NSRange,
+        displayData: TextLine.DisplayData
+    ) -> CTLineTypesetData {
         let ctLine = CTTypesetterCreateLine(typesetter, CFRangeMake(range.location, range.length))
         var ascent: CGFloat = 0
         var descent: CGFloat = 0
         var leading: CGFloat = 0
         let width = CGFloat(CTLineGetTypographicBounds(ctLine, &ascent, &descent, &leading))
-        let height = ascent + descent + leading
+
+        // `CTLineGetTypographicBounds` measures the fonts the line was actually drawn with, including any font
+        // substituted in for characters the editor's font can't draw. Apple Color Emoji, the usual substitute,
+        // declares an ascent and descent around 40% taller than a text font at the same size, so measuring the drawn
+        // line makes every line containing an emoji taller than its neighbors and moves their baselines. Measure the
+        // editor's own font instead, so a line is as tall as the font it's set in no matter what it contains. The
+        // emoji is drawn on the same baseline, slightly overhanging the fragment.
+        if let baseFont = displayData.baseFont {
+            ascent = CTFontGetAscent(baseFont)
+            descent = CTFontGetDescent(baseFont)
+            leading = CTFontGetLeading(baseFont)
+        }
+
         return CTLineTypesetData(
             ctLine: ctLine,
             descent: descent,
             width: width,
-            height: height
+            height: ascent + descent + leading
         )
     }
 

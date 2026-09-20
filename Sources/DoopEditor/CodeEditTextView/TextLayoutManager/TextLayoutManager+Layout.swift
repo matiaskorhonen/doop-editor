@@ -223,7 +223,8 @@ extension TextLayoutManager {
             maxWidth: layoutData.maxWidth,
             lineHeightMultiplier: lineHeightMultiplier,
             estimatedLineHeight: estimateLineHeight(),
-            breakStrategy: lineBreakStrategy
+            breakStrategy: lineBreakStrategy,
+            baseFont: baseFont
         )
 
         let line = position.data
