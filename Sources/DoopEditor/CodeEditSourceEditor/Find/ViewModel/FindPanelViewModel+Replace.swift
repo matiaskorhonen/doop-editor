@@ -76,12 +76,13 @@ extension FindPanelViewModel {
         // Set cursor positions to the match range
         textView.replaceCharacters(in: range, with: replaceText)
 
-        // Adjust the length of the replacement
+        // How much the document grew or shrank at this match.
         let lengthDiff = replaceText.utf16.count - range.length
 
-        // Update all match ranges after the current match
+        // Every match after this one sits that much further along: right when the replacement
+        // was longer than what it replaced, left when it was shorter.
         for idx in matches.dropFirst(index + 1).indices {
-            matches[idx].location -= lengthDiff
+            matches[idx].location += lengthDiff
         }
     }
 }

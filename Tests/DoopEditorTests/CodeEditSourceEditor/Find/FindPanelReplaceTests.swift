@@ -159,4 +159,51 @@ struct FindPanelReplaceTests {
 
         #expect(text(controller) == "cow dog cat")
     }
+
+    /// The match after a longer replacement has moved right in the document, and replacing it
+    /// next has to land on it rather than on the text beside it.
+    ///
+    /// This is the case the offset sign gets wrong: replacing "a" with "alpha" moves the second
+    /// match four characters right, and carrying that as four characters left put the second
+    /// replacement inside the first, giving "alalphaha one a".
+    @Test
+    func replacingTwiceInSequenceTracksTheShiftedMatch() {
+        let controller = controller("a one a")
+        let viewModel = viewModel(controller, find: "a", replace: "alpha")
+        viewModel.currentFindMatchIndex = 0
+
+        viewModel.replace()
+        #expect(text(controller) == "alpha one a")
+
+        viewModel.replace()
+        #expect(text(controller) == "alpha one alpha")
+    }
+
+    /// The same shift, shrinking instead of growing.
+    @Test
+    func replacingTwiceInSequenceTracksAShorterReplacement() {
+        let controller = controller("alpha one alpha")
+        let viewModel = viewModel(controller, find: "alpha", replace: "a")
+        viewModel.currentFindMatchIndex = 0
+
+        viewModel.replace()
+        #expect(text(controller) == "a one alpha")
+
+        viewModel.replace()
+        #expect(text(controller) == "a one a")
+    }
+
+    /// Replace-all leaves the cursor at the start of the last replacement, which it works out
+    /// from the same running offset. Here the two earlier replacements each add four characters,
+    /// so the last match's original location of 20 has become 28.
+    @Test
+    func replaceAllLeavesTheCursorAtTheLastReplacement() {
+        let controller = controller("a one a two a three a")
+        let viewModel = viewModel(controller, find: "a", replace: "alpha")
+
+        viewModel.replaceAll()
+
+        #expect(text(controller) == "alpha one alpha two alpha three alpha")
+        #expect(controller.cursorPositions.first?.range.location == 32)
+    }
 }
