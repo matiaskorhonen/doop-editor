@@ -251,21 +251,30 @@ extension Highlighter: @preconcurrency NSTextStorageDelegate {
 
 extension Highlighter: StyledRangeContainerDelegate {
     func styleContainerDidUpdate(in range: NSRange) {
-        guard let textView, let attributeProvider else { return }
-        textView.textStorage.beginEditing()
+        guard let textView, let attributeProvider, let storage = textView.textStorage else { return }
 
-        let storage = textView.textStorage
+        // A highlight query that ran asynchronously can come back after the document has been
+        // edited out from under it — text replaced wholesale while the query was in flight, say.
+        // Its range is then measured against text that no longer exists, and `setAttributes`
+        // raises NSRangeException rather than failing quietly. Clamp to the document as it is
+        // now; the edit invalidated these ranges anyway, so a fresh query is already on its way.
+        guard let range = range.intersection(NSRange(location: 0, length: storage.length)),
+              range.length > 0 else {
+            return
+        }
+
+        storage.beginEditing()
 
         var offset = range.location
         for run in styleContainer.runsIn(range: range) {
             guard let range = NSRange(location: offset, length: run.length).intersection(range) else {
                 continue
             }
-            storage?.setAttributes(attributeProvider.attributesFor(run.value?.capture), range: range)
+            storage.setAttributes(attributeProvider.attributesFor(run.value?.capture), range: range)
             offset += range.length
         }
 
-        textView.textStorage.endEditing()
+        storage.endEditing()
     }
 }
 

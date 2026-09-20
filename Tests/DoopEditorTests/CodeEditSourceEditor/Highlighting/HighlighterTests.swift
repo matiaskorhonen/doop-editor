@@ -31,8 +31,17 @@ final class HighlighterTests: XCTestCase {
             completion: @escaping @MainActor (Result<[HighlightRange], Error>) -> Void
         ) {
             queryCount += 1
-            completion(queryResponse())
+            if deferQueries {
+                pendingQueries.append((range, completion))
+            } else {
+                completion(queryResponse())
+            }
         }
+
+        /// Set to hold each query's completion in ``pendingQueries`` instead of answering it
+        /// immediately, standing in for a provider that answers on another thread.
+        var deferQueries = false
+        var pendingQueries: [(range: NSRange, completion: @MainActor (Result<[HighlightRange], Error>) -> Void)] = []
     }
 
     class MockAttributeProvider: ThemeAttributesProviding {
@@ -90,6 +99,42 @@ final class HighlighterTests: XCTestCase {
             didQueryAgain,
             "Highlighter did not query again after cancelling the first request"
         )
+    }
+
+    /// A query that comes back after the document shrank used to style a range that no longer
+    /// existed, raising `NSRangeException` from `NSTextStorage.setAttributes(_:range:)`. Doop
+    /// hits this when a script replaces the whole document while a query is in flight.
+    @MainActor
+    func test_queryReturningAfterDocumentShrankDoesNotStyleOutOfBounds() {
+        let highlightProvider = MockHighlightProvider()
+        highlightProvider.deferQueries = true
+
+        let textView = Mock.textView()
+        textView.frame = NSRect(x: 0, y: 0, width: 1000, height: 1000)
+        textView.setText(String(repeating: "Hello World!\n", count: 20))
+
+        let highlighter = Mock.highlighter(
+            textView: textView,
+            highlightProviders: [highlightProvider],
+            attributeProvider: attributeProvider
+        )
+
+        highlighter.invalidate()
+
+        let pending = highlightProvider.pendingQueries
+        XCTAssertFalse(pending.isEmpty, "Highlighter did not query the provider")
+
+        textView.setText("Hi")
+        highlightProvider.pendingQueries = []
+
+        for query in pending {
+            XCTAssertGreaterThan(
+                query.range.max,
+                textView.textStorage.length,
+                "Test needs a query range that outlives the shortened document"
+            )
+            query.completion(.success([]))
+        }
     }
 
     @MainActor
