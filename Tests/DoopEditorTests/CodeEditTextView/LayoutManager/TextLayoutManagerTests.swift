@@ -1,7 +1,6 @@
 import Testing
 import AppKit
 @testable import DoopEditor
-import CodeEditTextViewObjC
 
 extension TextLineStorage {
     /// Validate that the internal tree is intact and correct.
@@ -351,23 +350,26 @@ struct TextLayoutManagerLockTests {
 }
 
 @Suite
-struct ObjCExceptionCatcherTests {
-    /// Swift can't catch an `NSException`, so `layoutLines` hands its locked region to this to release
-    /// the lock and commit its `CATransaction` after one.
+@MainActor
+struct TextLayoutManagerStaleLineStorageTests {
+    /// A layout pass triggered by a scroll in the middle of an edit sees line ranges that no longer fit
+    /// the text storage. It must wait rather than typeset them, which raised `NSRangeException`.
     @Test
-    func returnsTheExceptionTheBlockRaised() {
-        let exception = CatchObjCException {
-            NSException(name: .rangeException, reason: "out of range", userInfo: nil).raise()
-        }
-        #expect(exception?.name == .rangeException)
-        #expect(exception?.reason == "out of range")
-    }
+    func layoutPassWaitsWhileLineStorageDisagreesWithTextStorage() {
+        let textView = TextView(string: "A\nB\nC\nD")
+        textView.frame = NSRect(x: 0, y: 0, width: 1000, height: 1000)
+        let layoutManager = textView.layoutManager!
+        let rect = NSRect(x: 0, y: 0, width: 1000, height: 1000)
 
-    @Test
-    func returnsNilWhenTheBlockReturns() {
-        var ran = false
-        let exception = CatchObjCException { ran = true }
-        #expect(exception == nil)
-        #expect(ran)
+        // Make the line storage claim more text than the text storage holds, as it does mid-edit.
+        layoutManager.lineStorage.update(atOffset: 0, delta: 40, deltaHeight: 0)
+        let whileStale = layoutManager.layoutLines(in: rect)
+        #expect(whileStale.isEmpty)
+        #expect(layoutManager.needsLayout)
+
+        // Once the line storage agrees again, the pass that follows lays everything out.
+        layoutManager.lineStorage.update(atOffset: 0, delta: -40, deltaHeight: 0)
+        let afterwards = layoutManager.layoutLines(in: rect)
+        #expect(!afterwards.isEmpty)
     }
 }

@@ -167,7 +167,6 @@ let package = Package(
                 // The tests reach into the implementation through @testable, so they name
                 // types from the modules the module itself keeps internal.
                 "TextStory",
-                "CodeEditTextViewObjC",
                 .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
                 .product(name: "CustomDump", package: "swift-custom-dump"),
             ],

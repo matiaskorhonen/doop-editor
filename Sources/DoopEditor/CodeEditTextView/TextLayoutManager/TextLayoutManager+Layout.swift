@@ -7,7 +7,6 @@
 
 import AppKit
 import OSLog
-internal import CodeEditTextViewObjC
 
 extension TextLayoutManager {
     private static let logger = Logger(
@@ -78,6 +77,16 @@ extension TextLayoutManager {
             return []
         }
 
+        // A scroll during an edit (undo and paste select and scroll to the result) can land here after the text
+        // storage has changed but before the line storage has caught up. Typesetting a line from its stale
+        // range then reads past the end of the text storage and raises `NSRangeException`, and an exception
+        // unwinding through Swift frames leaves the layout lock held and corrupts exclusivity tracking. Wait
+        // for the edit to finish instead; layout is marked dirty so the pass that follows it redoes everything.
+        guard lineStorage.length == textStorage.length else {
+            needsLayout = true
+            return []
+        }
+
         // A lock that is still held here was leaked, or this pass was re-entered. The lock isn't recursive, so
         // waiting on it would hang the main thread for good (a spindump of such a hang showed the main thread
         // blocked on a lock it owned, with no layout pass beneath it). Skip the pass instead, and say so.
@@ -103,77 +112,64 @@ extension TextLayoutManager {
 #if DEBUG
         var laidOutLines: Set<TextLine.ID> = []
 #endif
-        // An exception raised in here (an out-of-range text system call, say) would skip the unlock and the
-        // commit below, leaving this lock held and the `CATransaction` open for good: every later pass is
-        // then skipped, and views in other windows stop being laid out. Catch it, release both, and say so.
-        let exception = CatchObjCException {
-            // Layout all lines, fetching lines lazily as they are laid out.
-            for linePosition in linesStartingAt(minY, until: maxY).lazy {
-                guard linePosition.yPos < maxY else { continue }
-                // Three ways to determine if a line needs to be re-calculated.
-                let linePositionNeedsLayout = linePosition.data.needsLayout(maxWidth: maxLineLayoutWidth)
-                let wasNotVisible = !visibleLineIds.contains(linePosition.data.id)
-                let lineNotEntirelyLaidOut = linePosition.height != linePosition.data.lineFragments.height
+        // Layout all lines, fetching lines lazily as they are laid out.
+        for linePosition in linesStartingAt(minY, until: maxY).lazy {
+            guard linePosition.yPos < maxY else { continue }
+            // Three ways to determine if a line needs to be re-calculated.
+            let linePositionNeedsLayout = linePosition.data.needsLayout(maxWidth: maxLineLayoutWidth)
+            let wasNotVisible = !visibleLineIds.contains(linePosition.data.id)
+            let lineNotEntirelyLaidOut = linePosition.height != linePosition.data.lineFragments.height
 
-                defer { newVisibleLines.insert(linePosition.data.id) }
+            defer { newVisibleLines.insert(linePosition.data.id) }
 
-                func fullLineLayout() {
-                    let yAdjustment = layoutLine(
-                        linePosition,
-                        usedFragmentIDs: &usedFragmentIDs,
-                        textStorage: textStorage,
-                        yRange: minY..<maxY,
-                        maxFoundLineWidth: &maxFoundLineWidth
-                    )
-                    yContentAdjustment += yAdjustment
-    #if DEBUG
-                    laidOutLines.insert(linePosition.data.id)
-    #endif
-                }
-
-                if forceLayout || linePositionNeedsLayout || wasNotVisible || lineNotEntirelyLaidOut {
-                    fullLineLayout()
-                } else {
-                    // The line's typesetting is up to date, but its fragment *views* may not be. `layoutLineViews`
-                    // only places fragments that intersected the layout window at the time the line was laid out, so
-                    // a wrapped line can hold fragments that never got a view: a line first laid out with its lower
-                    // half below the window keeps that hole for as long as it stays visible, and the checks above
-                    // won't catch it (its typesetting and total height are both correct). The blank space that
-                    // leaves reads as a line with a far too large line height.
-                    //
-                    // This re-syncs which fragments have views, and repositions the views that already exist for
-                    // when a line above changed height. No re-typesetting: the checks above ruled that out, and the
-                    // lazy line iteration means this line's `yPos` already accounts for any height change above it.
-                    placeVisibleFragments(
-                        linePosition,
-                        layoutData: LineLayoutData(minY: minY, maxY: maxY, maxWidth: maxLineLayoutWidth),
-                        laidOutFragmentIDs: &usedFragmentIDs
-                    )
-                }
+            func fullLineLayout() {
+                let yAdjustment = layoutLine(
+                    linePosition,
+                    usedFragmentIDs: &usedFragmentIDs,
+                    textStorage: textStorage,
+                    yRange: minY..<maxY,
+                    maxFoundLineWidth: &maxFoundLineWidth
+                )
+                yContentAdjustment += yAdjustment
+#if DEBUG
+                laidOutLines.insert(linePosition.data.id)
+#endif
             }
 
-            // Enqueue any lines not used in this layout pass.
-            viewReuseQueue.enqueueViews(notInSet: usedFragmentIDs)
-
-            // Update the visible lines with the new set.
-            visibleLineIds = newVisibleLines
-
-            // The delegate methods below may call another layout pass, make sure we don't send it into a loop of forced
-            // layout.
-            needsLayout = false
+            if forceLayout || linePositionNeedsLayout || wasNotVisible || lineNotEntirelyLaidOut {
+                fullLineLayout()
+            } else {
+                // The line's typesetting is up to date, but its fragment *views* may not be. `layoutLineViews`
+                // only places fragments that intersected the layout window at the time the line was laid out, so
+                // a wrapped line can hold fragments that never got a view: a line first laid out with its lower
+                // half below the window keeps that hole for as long as it stays visible, and the checks above
+                // won't catch it (its typesetting and total height are both correct). The blank space that
+                // leaves reads as a line with a far too large line height.
+                //
+                // This re-syncs which fragments have views, and repositions the views that already exist for
+                // when a line above changed height. No re-typesetting: the checks above ruled that out, and the
+                // lazy line iteration means this line's `yPos` already accounts for any height change above it.
+                placeVisibleFragments(
+                    linePosition,
+                    layoutData: LineLayoutData(minY: minY, maxY: maxY, maxWidth: maxLineLayoutWidth),
+                    laidOutFragmentIDs: &usedFragmentIDs
+                )
+            }
         }
+
+        // Enqueue any lines not used in this layout pass.
+        viewReuseQueue.enqueueViews(notInSet: usedFragmentIDs)
+
+        // Update the visible lines with the new set.
+        visibleLineIds = newVisibleLines
+
+        // The delegate methods below may call another layout pass, make sure we don't send it into a loop of forced
+        // layout.
+        needsLayout = false
 
         // Commit the view tree changes we just made.
         layoutLock.unlock()
         CATransaction.commit()
-
-        if let exception {
-            Self.logger.fault(
-                "layoutLines raised \(exception.name.rawValue, privacy: .public): \(exception.reason ?? "no reason", privacy: .public)\n\(exception.callStackSymbols.joined(separator: "\n"), privacy: .public)"
-            )
-            needsLayout = true // Try again on the next pass
-            return []
-        }
 
         if maxFoundLineWidth > maxLineWidth {
             maxLineWidth = maxFoundLineWidth
