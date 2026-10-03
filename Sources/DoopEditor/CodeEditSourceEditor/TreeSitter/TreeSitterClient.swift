@@ -234,7 +234,12 @@ public final class TreeSitterClient: HighlightProviding {
             executor.cancelAll(below: .reset) // Cancel all edits, add it to the pending edit queue
             executor.execAsync(
                 priority: .edit,
-                operation: { completion(.success(operation())) },
+                operation: {
+                    // The edit runs here, off the main thread, but its result lands in main-actor state (the
+                    // highlight provider's index sets), so the completion has to be delivered on the main thread.
+                    let invalidated = operation()
+                    DispatchQueue.dispatchMainIfNot { completion(.success(invalidated)) }
+                },
                 onCancel: { [weak self] in
                     self?.pendingEdits.mutate { edits in
                         edits.append(edit)

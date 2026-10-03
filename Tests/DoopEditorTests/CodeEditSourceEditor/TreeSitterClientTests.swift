@@ -66,6 +66,27 @@ final class TreeSitterClientTests: XCTestCase {
         XCTAssertFalse(client.editsAreSlow.value())
     }
 
+    /// An asynchronous edit reports its result on the main thread: the completion mutates main-actor state, and
+    /// calling it from the executor's background task corrupted a `HighlightProviderState`'s index sets.
+    @MainActor
+    func test_asyncEditCompletionRunsOnTheMainThread() async {
+        let client = Mock.treeSitterClient()
+        let textView = Mock.textView()
+        textView.setText("let a = 1\n")
+        client.setUp(textView: textView, codeLanguage: .swift)
+        while client.state == nil { try? await Task.sleep(for: .milliseconds(20)) }
+
+        // `maxSyncContentLength` is 0 in `setUp()`, so every edit takes the asynchronous path.
+        let finished = XCTestExpectation(description: "edit")
+        var onMainThread: Bool?
+        performEdit(textView: textView, client: client, string: "x", range: NSRange(location: 0, length: 0)) { _ in
+            onMainThread = Thread.isMainThread
+            finished.fulfill()
+        }
+        await fulfillment(of: [finished], timeout: 5)
+        XCTAssertEqual(onMainThread, true)
+    }
+
     /// A document over the limit isn't parsed or highlighted, and highlighting starts again, over the whole
     /// document, once it is back under.
     @MainActor
