@@ -324,3 +324,27 @@ struct TextLayoutManagerTests {
         #expect(invalidatedLineIds.isSuperset(of: Set(expectedLineIds)))
     }
 }
+
+@Suite
+@MainActor
+struct TextLayoutManagerLockTests {
+    /// A leaked `layoutLock` used to hang the main thread on the next layout pass, because the
+    /// lock isn't recursive and the thread already owned it. The pass is skipped instead.
+    @Test
+    func layoutPassIsSkippedWhileLayoutLockIsHeld() {
+        let textView = TextView(string: "A\nB\nC\nD")
+        textView.frame = NSRect(x: 0, y: 0, width: 1000, height: 1000)
+        let layoutManager = textView.layoutManager!
+
+        layoutManager.layoutLock.lock()
+        let laidOut = layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+        layoutManager.layoutLock.unlock()
+
+        #expect(laidOut.isEmpty)
+
+        // Once the lock is free again, laying out works as before.
+        layoutManager.needsLayout = true
+        let laidOutAfter = layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
+        #expect(!laidOutAfter.isEmpty)
+    }
+}

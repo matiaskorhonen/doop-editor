@@ -6,8 +6,12 @@
 //
 
 import AppKit
+import OSLog
 
 extension TextLayoutManager {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "", category: "TextLayoutManager")
+
     /// Contains all data required to perform layout on a text line.
     private struct LineLayoutData {
         let minY: CGFloat
@@ -73,11 +77,18 @@ extension TextLayoutManager {
             return []
         }
 
+        // A lock that is still held here was leaked, or this pass was re-entered. The lock isn't recursive, so
+        // waiting on it would hang the main thread for good (a spindump of such a hang showed the main thread
+        // blocked on a lock it owned, with no layout pass beneath it). Skip the pass instead, and say so.
+        guard layoutLock.try() else {
+            Self.logger.fault("layoutLines found layoutLock already held; skipping the layout pass")
+            return []
+        }
+
         // The macOS may call `layout` on the textView while we're laying out fragment views. This ensures the view
         // tree modifications caused by this method are atomic, so macOS won't call `layout` while we're already doing
         // that
         CATransaction.begin()
-        layoutLock.lock()
 
         let minY = max(visibleRect.minY - verticalLayoutPadding, 0)
         let maxY = max(visibleRect.maxY + verticalLayoutPadding, 0)
