@@ -1,6 +1,7 @@
 import Testing
 import AppKit
 @testable import DoopEditor
+import CodeEditTextViewObjC
 
 extension TextLineStorage {
     /// Validate that the internal tree is intact and correct.
@@ -346,5 +347,27 @@ struct TextLayoutManagerLockTests {
         layoutManager.needsLayout = true
         let laidOutAfter = layoutManager.layoutLines(in: NSRect(x: 0, y: 0, width: 1000, height: 1000))
         #expect(!laidOutAfter.isEmpty)
+    }
+}
+
+@Suite
+struct ObjCExceptionCatcherTests {
+    /// Swift can't catch an `NSException`, so `layoutLines` hands its locked region to this to release
+    /// the lock and commit its `CATransaction` after one.
+    @Test
+    func returnsTheExceptionTheBlockRaised() {
+        let exception = CatchObjCException {
+            NSException(name: .rangeException, reason: "out of range", userInfo: nil).raise()
+        }
+        #expect(exception?.name == .rangeException)
+        #expect(exception?.reason == "out of range")
+    }
+
+    @Test
+    func returnsNilWhenTheBlockReturns() {
+        var ran = false
+        let exception = CatchObjCException { ran = true }
+        #expect(exception == nil)
+        #expect(ran)
     }
 }
