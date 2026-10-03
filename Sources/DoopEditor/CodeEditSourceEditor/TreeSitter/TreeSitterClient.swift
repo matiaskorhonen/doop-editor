@@ -49,6 +49,21 @@ public final class TreeSitterClient: HighlightProviding {
 
     internal var pendingEdits: Atomic<[InputEdit]> = Atomic([])
 
+    /// Whether the last edit took longer than ``Constants/maxSyncEditDuration``, which sends the next one off the
+    /// main thread. Cleared again when an edit comes back under the limit.
+    ///
+    /// Some grammars have scanners that read to the end of the document on every reparse (an unclosed Lua long
+    /// bracket, for one), so how long an edit takes depends on the text rather than on its length, and the length
+    /// checks alone can't keep that off the main thread.
+    let editsAreSlow = Atomic(false)
+
+    /// The language last given to ``setUp(textView:codeLanguage:)``, kept so highlighting can start again when a
+    /// document that outgrew ``Constants/maxHighlightableContentLength`` shrinks back under it.
+    private var codeLanguage: CodeLanguage?
+
+    /// True while the document is over ``Constants/maxHighlightableContentLength`` and nothing is parsed.
+    private(set) var isOverHighlightLimit = false
+
     /// Optional flag to force every operation to be done on the caller's thread.
     var forceSyncOperation: Bool = false
 
@@ -75,6 +90,17 @@ public final class TreeSitterClient: HighlightProviding {
 
         /// The maximum length a document can be before all queries and edits must be processed asynchronously.
         public static var maxSyncContentLength: Int = 1_000_000
+
+        /// How long a synchronous edit may take before later edits are processed asynchronously.
+        public static var maxSyncEditDuration: TimeInterval = 0.03
+
+        /// The maximum length a document can be before it is no longer highlighted at all.
+        ///
+        /// Every edit re-runs the language's query over the whole tree to look for injections, so the cost of an
+        /// edit grows with the document: about 1.1µs per character in a release build, which is roughly 280ms per
+        /// edit at this limit and nearly a second at 800,000 characters. Past the limit the client stops parsing and
+        /// returns no highlights, until the document shrinks back under it or a new language is set.
+        public static var maxHighlightableContentLength: Int = 250_000
 
         /// The maximum length a query can be before it must be performed asynchronously.
         public static var maxSyncQueryLength: Int = 4096
@@ -112,6 +138,13 @@ public final class TreeSitterClient: HighlightProviding {
     public func setUp(textView: TextView, codeLanguage: CodeLanguage) {
         Self.logger.debug("TreeSitterClient setting up with language: \(codeLanguage.id.rawValue, privacy: .public)")
 
+        self.codeLanguage = codeLanguage
+        if textView.documentRange.length > Constants.maxHighlightableContentLength {
+            stopHighlighting()
+            return
+        }
+        isOverHighlightLimit = false
+
         let readBlock = textView.createReadBlock()
         let readCallback = textView.createReadCallback()
         self.readBlock = readBlock
@@ -134,6 +167,15 @@ public final class TreeSitterClient: HighlightProviding {
         }
     }
 
+    /// Drops the parse state and anything queued against it, and answers every later edit and query with nothing.
+    private func stopHighlighting() {
+        isOverHighlightLimit = true
+        executor.cancelAll(below: .all)
+        pendingEdits.mutate { $0.removeAll() }
+        oldEndPoint = nil
+        state = nil
+    }
+
     // MARK: - HighlightProviding
 
     /// Notifies the highlighter of an edit and in exchange gets a set of indices that need to be re-highlighted.
@@ -149,6 +191,19 @@ public final class TreeSitterClient: HighlightProviding {
         delta: Int,
         completion: @escaping @MainActor (Result<IndexSet, Error>) -> Void
     ) {
+        if textView.documentRange.length > Constants.maxHighlightableContentLength {
+            if !isOverHighlightLimit {
+                stopHighlighting()
+            }
+            completion(.success(IndexSet()))
+            return
+        } else if isOverHighlightLimit, let codeLanguage {
+            // The document came back under the limit. Parse it from scratch and highlight all of it.
+            setUp(textView: textView, codeLanguage: codeLanguage)
+            completion(.success(IndexSet(integersIn: 0..<textView.documentRange.length)))
+            return
+        }
+
         let oldEndPoint: Point = self.oldEndPoint ?? textView.pointForLocation(range.max) ?? .zero
         guard let edit = InputEdit(range: range, delta: delta, oldEndPoint: oldEndPoint, textView: textView) else {
             completion(.failure(TreeSitterClientError.invalidEdit))
@@ -156,12 +211,16 @@ public final class TreeSitterClient: HighlightProviding {
         }
 
         let operation = { [weak self] in
-            return self?.applyEdit(edit: edit) ?? IndexSet()
+            let start = ContinuousClock.now
+            let invalidated = self?.applyEdit(edit: edit) ?? IndexSet()
+            let elapsed = start.duration(to: .now)
+            self?.editsAreSlow.mutate { $0 = elapsed > .seconds(Constants.maxSyncEditDuration) }
+            return invalidated
         }
 
         let longEdit = range.length > Constants.maxSyncEditLength
         let longDocument = textView.documentRange.length > Constants.maxSyncContentLength
-        let execAsync = longEdit || longDocument
+        let execAsync = longEdit || longDocument || editsAreSlow.value()
 
         if !execAsync || forceSyncOperation {
             let result = executor.execSync(operation)
@@ -207,6 +266,11 @@ public final class TreeSitterClient: HighlightProviding {
         range: NSRange,
         completion: @escaping @MainActor (Result<[HighlightRange], Error>) -> Void
     ) {
+        if isOverHighlightLimit {
+            completion(.success([]))
+            return
+        }
+
         let operation = { [weak self] in
             return (self?.queryHighlightsForRange(range: range) ?? []).sorted {
                 if $0.range.location != $1.range.location {

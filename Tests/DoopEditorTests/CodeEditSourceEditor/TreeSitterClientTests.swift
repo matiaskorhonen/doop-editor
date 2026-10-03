@@ -29,6 +29,85 @@ final class TreeSitterClientTests: XCTestCase {
         client.applyEdit(textView: textView, range: range, delta: delta, completion: completion)
     }
 
+    /// An edit that overruns the sync budget sends the next one off the main thread, and one that
+    /// comes back under it brings editing back on.
+    @MainActor
+    func test_slowEditsMoveLaterEditsOffTheMainThread() async {
+        let duration = TreeSitterClient.Constants.maxSyncEditDuration
+        let length = TreeSitterClient.Constants.maxSyncContentLength
+        defer {
+            TreeSitterClient.Constants.maxSyncEditDuration = duration
+            TreeSitterClient.Constants.maxSyncContentLength = length
+        }
+        TreeSitterClient.Constants.maxSyncContentLength = 1_000_000
+
+        let client = Mock.treeSitterClient()
+        let textView = Mock.textView()
+        textView.setText("let a = 1\n")
+        client.setUp(textView: textView, codeLanguage: .swift)
+        while client.state == nil { try? await Task.sleep(for: .milliseconds(20)) }
+
+        // Nothing can finish inside a negative budget, so the first edit is slow.
+        TreeSitterClient.Constants.maxSyncEditDuration = -1
+        let first = XCTestExpectation(description: "first edit")
+        performEdit(textView: textView, client: client, string: "x", range: NSRange(location: 0, length: 0)) { _ in
+            first.fulfill()
+        }
+        await fulfillment(of: [first], timeout: 5)
+        XCTAssertTrue(client.editsAreSlow.value())
+
+        // The next one runs asynchronously, and with a generous budget it clears the flag.
+        TreeSitterClient.Constants.maxSyncEditDuration = 60
+        let second = XCTestExpectation(description: "second edit")
+        performEdit(textView: textView, client: client, string: "y", range: NSRange(location: 0, length: 0)) { _ in
+            second.fulfill()
+        }
+        await fulfillment(of: [second], timeout: 5)
+        XCTAssertFalse(client.editsAreSlow.value())
+    }
+
+    /// A document over the limit isn't parsed or highlighted, and highlighting starts again, over the whole
+    /// document, once it is back under.
+    @MainActor
+    func test_documentOverTheHighlightLimitIsNotHighlighted() async {
+        let limit = TreeSitterClient.Constants.maxHighlightableContentLength
+        defer { TreeSitterClient.Constants.maxHighlightableContentLength = limit }
+        TreeSitterClient.Constants.maxHighlightableContentLength = 30
+
+        let client = Mock.treeSitterClient()
+        let textView = Mock.textView() // 38 characters
+        client.setUp(textView: textView, codeLanguage: .swift)
+        XCTAssertTrue(client.isOverHighlightLimit)
+        XCTAssertNil(client.state)
+
+        // Edits and queries are answered without any work.
+        let edit = XCTestExpectation(description: "edit")
+        performEdit(textView: textView, client: client, string: "x", range: NSRange(location: 0, length: 0)) { result in
+            XCTAssertEqual(try? result.get(), IndexSet())
+            edit.fulfill()
+        }
+        await fulfillment(of: [edit], timeout: 5)
+
+        let query = XCTestExpectation(description: "query")
+        client.queryHighlightsFor(textView: textView, range: NSRange(location: 0, length: 10)) { result in
+            XCTAssertEqual(try? result.get().count, 0)
+            query.fulfill()
+        }
+        await fulfillment(of: [query], timeout: 5)
+        XCTAssertNil(client.state)
+
+        // Shrinking the document back under the limit brings highlighting back.
+        textView.setText("let a = 1\n")
+        let shrink = XCTestExpectation(description: "shrink")
+        client.applyEdit(textView: textView, range: NSRange(location: 0, length: 0), delta: 0) { result in
+            XCTAssertEqual(try? result.get(), IndexSet(integersIn: 0..<10))
+            shrink.fulfill()
+        }
+        await fulfillment(of: [shrink], timeout: 5)
+        XCTAssertFalse(client.isOverHighlightLimit)
+        while client.state == nil { try? await Task.sleep(for: .milliseconds(20)) }
+    }
+
     @MainActor
     func test_clientSetup() async {
         let client = Mock.treeSitterClient()
