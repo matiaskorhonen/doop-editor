@@ -116,10 +116,13 @@ extension TextSelectionManager {
             } else if CharacterSet.codeIdentifierCharacters.isSuperset(of: CharacterSet(charactersIn: substring)) {
                 hasFoundValidWordChar = true
             }
-            rangeToDelete.length += substring.count
+            // UTF-16 units, not `Character`s: the range indexes an `NSString`, and an emoji or a base letter with a
+            // combining mark is one `Character` but several units, which would leave the range short of the word.
+            let length = substring.utf16.count
+            rangeToDelete.length += length
 
             if delta < 0 {
-                rangeToDelete.location -= substring.count
+                rangeToDelete.location -= length
             }
         }
 
