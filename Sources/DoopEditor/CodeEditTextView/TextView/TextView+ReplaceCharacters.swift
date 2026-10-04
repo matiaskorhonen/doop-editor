@@ -54,8 +54,12 @@ extension TextView {
         NotificationCenter.default.post(name: Self.textDidChangeNotification, object: self)
 
         // `scrollSelectionToVisible` is a little expensive to call every time. Instead we just check if the first
-        // selection is entirely visible. `.contains` checks that all points in the rect are inside. 
-        if let selection = selectionManager.textSelections.first, !visibleRect.contains(selection.boundingRect) {
+        // selection is entirely visible. `.contains` checks that all points in the rect are inside.
+        //
+        // Not when the caller is updating the selection itself (undo, redo and indenting do): the selection is
+        // stale until they finish, and when they wrap several replacements in an outer `beginEditing()` the line
+        // storage is stale too, so asking for its rect can index past the end of the text and raise.
+        if !skipUpdateSelection, let selection = selectionManager.textSelections.first, !visibleRect.contains(selection.boundingRect) {
             scrollSelectionToVisible()
         }
     }
