@@ -90,12 +90,20 @@ extension TextViewController {
         if reverse {
             options = options.union(.reverse)
         }
+        // `limit` is derived from the visible rect, which can lag a cursor that has just moved (or an edit that has
+        // just shortened the text), leaving it on the wrong side of `from` or past the end. An inverted or
+        // out-of-bounds range raises from `enumerateSubstrings`, so there is nothing to search then.
+        let searchRange = reverse ?
+            NSRange(location: limit, length: from - limit) :
+            NSRange(location: from, length: limit - from)
+        guard from >= 0, searchRange.location >= 0, searchRange.length >= 0,
+              searchRange.upperBound <= textView.textStorage.length else {
+            return nil
+        }
         var closeCount = 0
         var index: Int?
         textView.textStorage.mutableString.enumerateSubstrings(
-            in: reverse ?
-                NSRange(location: limit, length: from - limit) :
-                NSRange(location: from, length: limit - from),
+            in: searchRange,
             options: options,
             using: { substring, range, _, stop in
                 if substring == close {
