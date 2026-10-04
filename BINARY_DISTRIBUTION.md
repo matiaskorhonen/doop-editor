@@ -179,8 +179,8 @@ uploaded zip. Don't hand-edit it.
 
 Runs that only build:
 
-- a push to any branch that changes the workflow file, anything under `Scripts/`, or
-  `Package.resolved`;
+- a push to `main`;
+- a pull request;
 - a manual run ("Run workflow") on any branch or tag.
 
 Their artifact, `doop-editor-xcframeworks-<short sha>`, expires after 7 days, and its manifest
@@ -210,7 +210,8 @@ What a run can restore is limited by GitHub's cache scoping: a run sees caches f
 branch or tag and from the default branch. Repeated pushes to a branch reuse that branch's cache.
 A release tag can only use one saved on `main`. That happens when a build on `main` misses the
 cache -- including every push to `main` that changes `Package.resolved`, which saves the cache under
-the new key before a release needs it. Entries unused for 7 days are evicted, though, so a release
+the new key before a release needs it. A pull request run only sees the cache and saves its own under
+the pull request's ref, so it never feeds a release. Entries unused for 7 days are evicted, though, so a release
 after a quiet spell builds cold. That's slower, not wrong. Release runs don't save the cache, since a cache
 saved on a tag is visible to that tag alone.
 

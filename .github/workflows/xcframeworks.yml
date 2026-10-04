@@ -13,22 +13,14 @@ name: XCFrameworks
 #
 # If the tag already has a published release, the run stops at Prepare and does nothing further.
 #
-# Pushes that change what the build is made from -- this workflow, the build scripts, or the pinned
-# dependency versions -- build without releasing, as does a manual run on any branch or tag.
+# Pushes to `main` and pull requests build without releasing, as does a manual run on any branch or tag.
 on:
   push:
     tags:
       - "v*"
     branches:
-      - "**"
-    # Only applies to the branch pushes: GitHub doesn't evaluate path filters for tag pushes, so
-    # every version tag still builds.
-    paths:
-      - ".github/workflows/xcframeworks.yml"
-      - "Scripts/**"
-      # Also saves the SwiftPM cache under the new key when this lands on main, which is where
-      # release tags can restore it from.
-      - "Package.resolved"
+      - main
+  pull_request:
   workflow_dispatch:
 
 # Jobs opt into more below; building never needs to write anything.
@@ -152,7 +144,7 @@ jobs:
   build:
     name: Build
     needs: prepare
-    # Runs for branch pushes and manual runs, where Prepare is skipped, and for tag pushes that
+    # Runs for branch pushes, pull requests and manual runs, where Prepare is skipped, and for tag pushes that
     # Prepare cleared for release. `!cancelled()` because otherwise a skipped Prepare would skip
     # this job too.
     if: ${{ !cancelled() && (needs.prepare.result == 'skipped' || needs.prepare.outputs.release == 'true') }}
