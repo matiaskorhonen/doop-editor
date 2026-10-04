@@ -100,3 +100,25 @@ public extension TextSelectionManager {
         return true
     }
 }
+
+extension TextSelectionManager {
+    /// Folds each selection that overlaps, or sits exactly on, an earlier one into it, and sorts the rest by location.
+    ///
+    /// Several cursors can end up covering the same text: extending them all by word or line, or moving them onto
+    /// the same spot. Edits then replace the shared text once per selection, and the later replacements reach past
+    /// the end of the shortened string.
+    func mergeOverlappingSelections() {
+        let sorted = textSelections.sorted(by: { $0.range.location < $1.range.location })
+        var merged: [TextSelection] = []
+        for selection in sorted {
+            if let last = merged.last,
+               selection.range.location < last.range.upperBound || selection.range == last.range {
+                last.range = last.range.union(selection.range)
+                selection.view?.removeFromSuperview()
+            } else {
+                merged.append(selection)
+            }
+        }
+        textSelections = merged
+    }
+}

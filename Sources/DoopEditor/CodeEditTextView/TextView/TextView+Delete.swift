@@ -44,22 +44,6 @@ extension TextView {
         delete(direction: .forward, destination: .line)
     }
 
-    /// Two cursors on one line both extend over the same text when deleting by word or line. Replacing those
-    /// overlapping ranges one after the other deletes the shared text twice, and the second range then reaches
-    /// past the end of the shortened string. Folds each selection that overlaps its predecessor into it.
-    /// Expects `selectionManager.textSelections` sorted by location.
-    private func mergeOverlappingSelections() {
-        var merged: [TextSelectionManager.TextSelection] = []
-        for selection in selectionManager.textSelections {
-            if let last = merged.last, selection.range.location < last.range.upperBound {
-                last.range = last.range.union(selection.range)
-            } else {
-                merged.append(selection)
-            }
-        }
-        selectionManager.textSelections = merged
-    }
-
     private func delete(
         direction: TextSelectionManager.Direction,
         destination: TextSelectionManager.Destination,
@@ -77,7 +61,7 @@ extension TextView {
             textSelection.range.formUnion(extendedRange)
         }
         selectionManager.textSelections.sort(by: { $0.range.location < $1.range.location })
-        mergeOverlappingSelections()
+        selectionManager.mergeOverlappingSelections()
         KillRing.shared.kill(
             strings: selectionManager.textSelections.map(\.range).compactMap({ textStorage.substring(from: $0) })
         )
