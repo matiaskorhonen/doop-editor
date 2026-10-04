@@ -59,6 +59,11 @@ extension TextSelectionManager {
 
         // Update pivot if necessary
         if modifySelection {
+            // Edits and non-extending moves change the selection without touching its pivot. A pivot that is no
+            // longer one of the selection's ends would anchor the extension to text that is not selected.
+            if let pivot = selection.pivot, pivot != selection.range.location, pivot != selection.range.max {
+                selection.pivot = nil
+            }
             updateSelectionPivot(selection, direction: direction)
         }
 
@@ -177,27 +182,17 @@ extension TextSelectionManager {
                 assertionFailure("Pivot should always exist when modifying a selection.")
                 return
             }
+            // The selection runs from the pivot to wherever the move ended. Computing it from the pivot, not by
+            // growing or shrinking the old range by the move's length, keeps the length from going negative when a
+            // move crosses the pivot.
+            let movedEnd: Int
             switch direction {
             case .down, .forward:
-                if range.contains(pivot) {
-                    selection.range.location = pivot
-                    selection.range.length = range.length - (pivot - range.location)
-                } else if pivot > selection.range.location {
-                    selection.range.location += range.length
-                    selection.range.length -= range.length
-                } else {
-                    selection.range.formUnion(range)
-                }
+                movedEnd = range.max
             case .up, .backward:
-                if range.contains(pivot) {
-                    selection.range.location = range.location
-                    selection.range.length = pivot - range.location
-                } else if pivot < selection.range.max {
-                    selection.range.length -= range.length
-                } else {
-                    selection.range.formUnion(range)
-                }
+                movedEnd = range.location
             }
+            selection.range = NSRange(start: min(pivot, movedEnd), end: max(pivot, movedEnd))
         } else {
             switch direction {
             case .up, .backward:
