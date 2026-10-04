@@ -144,7 +144,15 @@ public class CEUndoManager: UndoManager {
             let mergedRanges = mutations.reduce(into: IndexSet(), { set, mutation in
                 set.insert(range: mutation.range)
             })
-            textView?.selectionManager.setSelectedRanges(mergedRanges.rangeView.map { NSRange($0) })
+            // The ranges of a grouped item are each relative to the text as it was when that mutation ran, so after
+            // the whole group they can reach past the end. `setSelectedRanges` drops those, which can drop them all
+            // and leave the editor with no selection; clamp them instead.
+            let length = textView?.textStorage.length ?? 0
+            let clamped = mergedRanges.rangeView.map { range -> NSRange in
+                let location = min(range.lowerBound, length)
+                return NSRange(location: location, length: min(range.upperBound, length) - location)
+            }
+            textView?.selectionManager.setSelectedRanges(clamped)
         }
     }
 
