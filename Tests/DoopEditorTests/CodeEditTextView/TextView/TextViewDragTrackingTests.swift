@@ -31,24 +31,20 @@ final class TextViewDragTrackingTests: XCTestCase {
         return textView
     }
 
-    /// A mouse event at the vertical middle of `line`, just inside the first character.
-    private func event(
-        _ type: NSEvent.EventType,
-        _ textView: TextView,
-        line: Int,
-        modifierFlags: NSEvent.ModifierFlags
-    ) throws -> NSEvent {
-        let linePosition = try XCTUnwrap(textView.layoutManager.textLineForIndex(line))
+    /// A mouse event just inside the first character, at `y` in the text view.
+    ///
+    /// Only the press is passed to `mouseDown` directly. The drags and the mouse up go through the window's event
+    /// queue, which round-trips them through screen coordinates - and on a CI runner, whose screen isn't this
+    /// Mac's, that can land them a line or two away from where they were aimed. So the queued events aim well
+    /// below the last line, where a shift either way still covers every line.
+    private func event(_ type: NSEvent.EventType, _ textView: TextView, y: CGFloat) throws -> NSEvent {
         let firstCharacter = try XCTUnwrap(textView.layoutManager.rectForOffset(0))
-        let point = textView.convert(
-            CGPoint(x: firstCharacter.minX + 1, y: linePosition.yPos + linePosition.height / 2),
-            to: nil
-        )
+        let point = textView.convert(CGPoint(x: firstCharacter.minX + 1, y: y), to: nil)
         return try XCTUnwrap(
             NSEvent.mouseEvent(
                 with: type,
                 location: point,
-                modifierFlags: modifierFlags,
+                modifierFlags: .option,
                 timestamp: 0,
                 windowNumber: window.windowNumber,
                 context: nil,
@@ -59,15 +55,26 @@ final class TextViewDragTrackingTests: XCTestCase {
         )
     }
 
+    /// The press: the vertical middle of the first line.
+    private func pressY(_ textView: TextView) throws -> CGFloat {
+        let firstLine = try XCTUnwrap(textView.layoutManager.textLineForIndex(0))
+        return firstLine.yPos + firstLine.height / 2
+    }
+
+    /// Well below the last line, but inside the text view.
+    private func belowTheTextY(_ textView: TextView) -> CGFloat {
+        textView.layoutManager.estimatedHeight() + 60
+    }
+
     func test_dragEventsQueuedBeforeTheMouseUpAreAllApplied() throws {
         let textView = makeTextView(string: "1\n\n2\n\n3")
 
-        for line in 1...4 {
-            window.postEvent(try event(.leftMouseDragged, textView, line: line, modifierFlags: .option), atStart: false)
+        for _ in 0..<4 {
+            window.postEvent(try event(.leftMouseDragged, textView, y: belowTheTextY(textView)), atStart: false)
         }
-        window.postEvent(try event(.leftMouseUp, textView, line: 4, modifierFlags: .option), atStart: false)
+        window.postEvent(try event(.leftMouseUp, textView, y: belowTheTextY(textView)), atStart: false)
 
-        textView.mouseDown(with: try event(.leftMouseDown, textView, line: 0, modifierFlags: .option))
+        textView.mouseDown(with: try event(.leftMouseDown, textView, y: try pressY(textView)))
 
         XCTAssertEqual(
             textView.selectionManager.textSelections.map(\.range),
@@ -79,13 +86,13 @@ final class TextViewDragTrackingTests: XCTestCase {
     /// The live button state still ends a drag whose mouse up never arrives - once the queue is empty.
     func test_aDragWithNoMouseUpEndsOnceTheQueueIsEmpty() throws {
         let textView = makeTextView(string: "1\n\n2\n\n3")
-        window.postEvent(try event(.leftMouseDragged, textView, line: 2, modifierFlags: .option), atStart: false)
+        window.postEvent(try event(.leftMouseDragged, textView, y: belowTheTextY(textView)), atStart: false)
 
-        textView.mouseDown(with: try event(.leftMouseDown, textView, line: 0, modifierFlags: .option))
+        textView.mouseDown(with: try event(.leftMouseDown, textView, y: try pressY(textView)))
 
         XCTAssertEqual(
             textView.selectionManager.textSelections.map(\.range),
-            [0, 2, 3].map { NSRange(location: $0, length: 0) }
+            [0, 2, 3, 5, 6].map { NSRange(location: $0, length: 0) }
         )
         XCTAssertNil(textView.mouseDragAnchor)
     }
