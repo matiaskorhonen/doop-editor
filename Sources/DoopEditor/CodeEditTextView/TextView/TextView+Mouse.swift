@@ -144,12 +144,11 @@ extension TextView {
         while true {
             // Receiving the mouse up is not the only way this drag can end, and this loop has no other exit, so
             // check the conditions that end it without one. A drag-and-drop session started by
-            // ``TextView/DragSelectionGesture`` runs its own event loop and consumes the mouse up, and
-            // `pressedMouseButtons` covers anything else that swallows it (a modal sheet, another tracking
-            // loop). Without these the loop spins at `autoscrollInterval` forever, reapplying `lastDragEvent`
-            // to the selection and hanging the editor. Note that bailing here leaves any not-yet-delivered
-            // mouse up in the queue, so the responder chain still gets it.
-            guard !isDragging, NSEvent.pressedMouseButtons & (1 << 0) != 0 else {
+            // ``TextView/DragSelectionGesture`` runs its own event loop and consumes the mouse up. Without this
+            // the loop spins at `autoscrollInterval` forever, reapplying `lastDragEvent` to the selection and
+            // hanging the editor. Note that bailing here leaves any not-yet-delivered mouse up in the queue, so
+            // the responder chain still gets it.
+            guard !isDragging else {
                 mouseDragAnchor = nil
                 return
             }
@@ -172,8 +171,17 @@ extension TextView {
                 lastDragEvent = event
                 processDragEvent(event!)
             default:
-                // Timed out waiting for a new event. Re-process the last known drag position so the selection
-                // keeps expanding/autoscrolling while the mouse is held outside the view.
+                // Timed out waiting for a new event. `pressedMouseButtons` ends a drag whose mouse up something
+                // else swallowed (a modal sheet, another tracking loop). It is the button's state *now*, not
+                // where the queue has got to, so it is only checked here, with the queue empty: checked before
+                // every event, it found the button already up whenever the editor had fallen behind the
+                // pointer, and the drags still queued ahead of the mouse up were thrown away.
+                guard NSEvent.pressedMouseButtons & (1 << 0) != 0 else {
+                    mouseDragAnchor = nil
+                    return
+                }
+                // Re-process the last known drag position so the selection keeps expanding/autoscrolling while
+                // the mouse is held outside the view.
                 if let lastDragEvent {
                     processDragEvent(lastDragEvent)
                 }
