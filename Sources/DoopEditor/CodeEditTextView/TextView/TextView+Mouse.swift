@@ -9,10 +9,11 @@ import AppKit
 
 extension TextView {
     override public func mouseDown(with event: NSEvent) {
-        // Set cursor
+        // Set cursor. The location is clamped like a drag's, so a press in the left inset - left of where the
+        // layout manager can resolve an offset - lands at the start of the line instead of being ignored.
         guard isSelectable,
               event.type == .leftMouseDown,
-              let offset = layoutManager.textOffsetAtPoint(self.convert(event.locationInWindow, from: nil)) else {
+              let offset = layoutManager.textOffsetAtPoint(layoutLocation(for: event)) else {
             super.mouseDown(with: event)
             return
         }

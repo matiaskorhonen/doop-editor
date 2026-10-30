@@ -143,6 +143,55 @@ public class GutterView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // MARK: - Mouse
+
+    /// Hands clicks in the gutter to the text view, as a click at the text's leading edge.
+    ///
+    /// The gutter floats over the text view's left inset, trailing padding included, so the strip just before
+    /// the first character - where an option-drag for a column of cursors naturally starts - belongs to the
+    /// gutter. Left to the responder chain, the press never reached ``TextView``: no drag anchor was set and
+    /// no selection tracking started, so the drag that followed lost lines. The location is moved to the
+    /// gutter's trailing edge rather than passed through, because text scrolled horizontally sits under the
+    /// gutter and a click here shouldn't land on a character the user can't see.
+    override public func mouseDown(with event: NSEvent) {
+        guard let textView else {
+            super.mouseDown(with: event)
+            return
+        }
+        let trailingEdge = convert(NSPoint(x: bounds.maxX, y: 0), to: nil).x
+        let location = NSPoint(x: max(event.locationInWindow.x, trailingEdge), y: event.locationInWindow.y)
+        let forwarded = NSEvent.mouseEvent(
+            with: event.type,
+            location: location,
+            modifierFlags: event.modifierFlags,
+            timestamp: event.timestamp,
+            windowNumber: event.windowNumber,
+            context: nil,
+            eventNumber: event.eventNumber,
+            clickCount: event.clickCount,
+            pressure: event.pressure
+        )
+        textView.mouseDown(with: forwarded ?? event)
+    }
+
+    /// The text view tracks a drag itself once it has the mouse down, but anything it leaves in the queue is
+    /// delivered here, to the view the press landed on.
+    override public func mouseDragged(with event: NSEvent) {
+        guard let textView else {
+            super.mouseDragged(with: event)
+            return
+        }
+        textView.mouseDragged(with: event)
+    }
+
+    override public func mouseUp(with event: NSEvent) {
+        guard let textView else {
+            super.mouseUp(with: event)
+            return
+        }
+        textView.mouseUp(with: event)
+    }
+
     /// Updates the width of the gutter if needed to match the maximum line number found.
     func updateWidthIfNeeded() {
         guard let textView else { return }
