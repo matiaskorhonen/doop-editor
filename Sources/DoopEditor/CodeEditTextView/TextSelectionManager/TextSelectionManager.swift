@@ -148,7 +148,9 @@ public class TextSelectionManager: NSObject {
 
         for textSelection in textSelections {
             if textSelection.range.isEmpty {
-                didUpdate = didUpdate || repositionCursorSelection(textSelection: textSelection)
+                // Reposition first: `didUpdate || reposition…` short-circuits, and skipped every cursor after the
+                // first one that moved, leaving them without a view.
+                didUpdate = repositionCursorSelection(textSelection: textSelection) || didUpdate
             } else if !textSelection.range.isEmpty && textSelection.view != nil {
                 textSelection.view?.removeFromSuperview()
                 textSelection.view = nil
